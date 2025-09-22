@@ -17,7 +17,7 @@ const App = () => {
   const [comments, setComments] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true); // Changed to true by default
   const [currentUser, setCurrentUser] = useState(null);
 
   // API Configuration
@@ -73,10 +73,13 @@ const App = () => {
     // Use refs for form inputs to avoid controlled component issues
     const titleInputRef = useRef(null);
     const contentInputRef = useRef(null);
+    const fileInputRef = useRef(null);
     
     // Local state for everything else
     const [isFeatured, setIsFeatured] = useState(false);
     const [media, setMedia] = useState([]);
+    const [isDragging, setIsDragging] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(null);
     const [formatting, setFormatting] = useState({
       fontFamily: 'Arial',
       fontSize: '16px',
@@ -110,38 +113,14 @@ const App = () => {
       }));
     };
 
-    const embedMedia = (type) => {
-      let url = '';
+    // Handle file processing
+    const processFile = async (file) => {
+      // Validate file type
+      const validTypes = ['image/', 'video/', 'audio/'];
+      const isValid = validTypes.some(type => file.type.startsWith(type));
       
-      switch(type) {
-        case 'image':
-          url = window.prompt('Enter image URL (e.g., https://example.com/image.jpg):');
-          break;
-        case 'video':
-          url = window.prompt('Enter video URL (YouTube or Vimeo):');
-          break;
-        case 'audio':
-          url = window.prompt('Enter audio file URL (MP3, WAV, or OGG):');
-          break;
-        default:
-          return;
-      }
-      
-      if (url && url.trim()) {
-        // Validate URL
-        try {
-          new URL(url);
-          setMedia(prev => [...prev, { type, url, id: Date.now() }]);
-        } catch (e) {
-          alert('Please enter a valid URL');
-        }
-      }
-    };
-
-    const uploadToCloudinary = async (file) => {
-      // Check if Cloudinary is configured
-      if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
-        alert('Cloudinary is not configured. Please set environment variables in Netlify.');
+      if (!isValid) {
+        alert('Please upload an image, video, or audio file');
         return;
       }
 
@@ -151,71 +130,121 @@ const App = () => {
         return;
       }
 
-      // Show loading state
-      const loadingDiv = document.createElement('div');
-      loadingDiv.innerHTML = 'Uploading...';
-      loadingDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:#000;color:#fff;padding:10px;border-radius:5px;z-index:9999';
-      document.body.appendChild(loadingDiv);
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_PRESET);
+      // For now, create a local URL for the file
+      // In production, you'd upload to Cloudinary here
+      const localUrl = URL.createObjectURL(file);
+      const mediaType = file.type.startsWith('audio') ? 'audio' : 
+                       file.type.startsWith('video') ? 'video' : 'image';
       
-      try {
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
-          { 
-            method: 'POST', 
-            body: formData 
+      setUploadProgress('Processing...');
+      
+      // If Cloudinary is configured, upload it
+      if (CLOUDINARY_CLOUD && CLOUDINARY_PRESET) {
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('upload_preset', CLOUDINARY_PRESET);
+          
+          setUploadProgress('Uploading to Cloudinary...');
+          
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
+            { 
+              method: 'POST', 
+              body: formData 
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            setMedia(prev => [...prev, { 
+              type: mediaType, 
+              url: data.secure_url, 
+              id: Date.now(),
+              name: file.name
+            }]);
+            setUploadProgress(null);
+          } else {
+            throw new Error('Upload failed');
           }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
+        } catch (error) {
+          console.error('Cloudinary upload failed, using local preview:', error);
+          // Fall back to local preview
+          setMedia(prev => [...prev, { 
+            type: mediaType, 
+            url: localUrl, 
+            id: Date.now(),
+            name: file.name,
+            local: true
+          }]);
+          setUploadProgress(null);
         }
-
-        const data = await response.json();
-        
-        if (!data.secure_url) {
-          throw new Error('No URL returned from Cloudinary');
-        }
-
-        const mediaType = file.type.startsWith('audio') ? 'audio' : 
-                         file.type.startsWith('video') ? 'video' : 'image';
-        
+      } else {
+        // No Cloudinary, just use local preview
         setMedia(prev => [...prev, { 
           type: mediaType, 
-          url: data.secure_url, 
-          id: Date.now() 
+          url: localUrl, 
+          id: Date.now(),
+          name: file.name,
+          local: true
         }]);
-
-        // Remove loading indicator
-        document.body.removeChild(loadingDiv);
-        alert('Upload successful!');
-      } catch (error) {
-        console.error('Upload error:', error);
-        // Remove loading indicator
-        if (loadingDiv.parentNode) {
-          document.body.removeChild(loadingDiv);
+        setUploadProgress(null);
+        
+        if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
+          alert('Note: File added for preview only. Configure Cloudinary to save permanently.');
         }
-        alert('Upload failed: ' + error.message + '\n\nPlease check your Cloudinary configuration.');
       }
     };
 
-    const handleFileUpload = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        // Reset the input so the same file can be uploaded again if needed
-        e.target.value = '';
-        uploadToCloudinary(file);
+    // Drag and drop handlers
+    const handleDragEnter = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+    };
+
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDrop = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      for (const file of files) {
+        await processFile(file);
       }
+    };
+
+    // File input handler
+    const handleFileSelect = async (e) => {
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+        await processFile(file);
+      }
+      // Reset input
+      e.target.value = '';
+    };
+
+    // Open file browser
+    const openFileBrowser = () => {
+      fileInputRef.current?.click();
     };
 
     const handleSave = async (isDraft = false) => {
       const contentData = {
         title: titleInputRef.current?.value || '',
         content: contentInputRef.current?.value || '',
-        media: JSON.stringify(media),
+        media: JSON.stringify(media.filter(m => !m.local)), // Only save non-local media
         formatting: JSON.stringify(formatting),
         isFeatured: isFeatured,
         status: isDraft ? 'draft' : 'published',
@@ -404,69 +433,91 @@ const App = () => {
               }}
             />
 
-            {/* Media Embedding */}
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">Add media by URL or upload files (requires Cloudinary):</p>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => embedMedia('image')}
-                  className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-2"
-                >
-                  <Image size={20} /> Add Image URL
-                </button>
-                
-                <button
-                  onClick={() => embedMedia('video')}
-                  className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center gap-2"
-                >
-                  <Film size={20} /> Add Video URL
-                </button>
-
-                <button
-                  onClick={() => embedMedia('audio')}
-                  className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center gap-2"
-                >
-                  <Music size={20} /> Add Audio URL
-                </button>
-
-                {CLOUDINARY_CLOUD && CLOUDINARY_PRESET ? (
-                  <label className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2 cursor-pointer">
-                    <Upload size={20} /> Upload Media
-                    <input
-                      type="file"
-                      accept="image/*,video/*,audio/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
+            {/* Media Upload - Drag & Drop Zone */}
+            <div
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                mb-4 p-6 border-2 border-dashed rounded-lg text-center transition-all
+                ${isDragging ? 
+                  'border-blue-500 bg-blue-50' : 
+                  'border-gray-300 hover:border-gray-400 bg-gray-50'
+                }
+              `}
+            >
+              <div className="space-y-2">
+                <div className="flex justify-center">
+                  <Upload size={40} className={isDragging ? 'text-blue-500' : 'text-gray-400'} />
+                </div>
+                <div>
+                  <p className="text-lg font-medium">
+                    {isDragging ? 'Drop files here!' : 'Drag & drop media files here'}
+                  </p>
+                  <p className="text-sm text-gray-500">or</p>
                   <button
-                    onClick={() => alert('Please configure Cloudinary in Netlify environment variables to enable uploads')}
-                    className="px-3 py-2 bg-gray-400 text-white rounded flex items-center gap-2 cursor-not-allowed"
+                    type="button"
+                    onClick={openFileBrowser}
+                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
-                    <Upload size={20} /> Upload (Not Configured)
+                    Browse Files
                   </button>
-                )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*,audio/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Supports: Images, Videos, Audio (Max 10MB per file)
+                </p>
               </div>
+              
+              {uploadProgress && (
+                <div className="mt-4 p-2 bg-blue-100 text-blue-700 rounded">
+                  {uploadProgress}
+                </div>
+              )}
             </div>
 
             {/* Media Preview in Editor */}
             {media.length > 0 && (
               <div className="mb-4">
-                <h3 className="font-semibold mb-2">Embedded Media:</h3>
+                <h3 className="font-semibold mb-2">Attached Media:</h3>
                 <div className="space-y-2">
                   {media.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 border rounded">
-                      <span>{item.type}: {item.url.substring(0, 50)}...</span>
+                    <div key={item.id} className="flex items-center justify-between p-3 border rounded bg-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                          {item.type === 'image' && <Image size={20} className="text-green-600" />}
+                          {item.type === 'video' && <Film size={20} className="text-purple-600" />}
+                          {item.type === 'audio' && <Music size={20} className="text-indigo-600" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{item.name || 'Media file'}</p>
+                          <p className="text-xs text-gray-500">
+                            {item.local ? 'Local preview (not saved)' : 'Uploaded'}
+                          </p>
+                        </div>
+                      </div>
                       <button
                         onClick={() => setMedia(prev => prev.filter(m => m.id !== item.id))}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 p-1"
                       >
                         <X size={20} />
                       </button>
                     </div>
                   ))}
                 </div>
+                {media.some(m => m.local) && (
+                  <p className="text-xs text-orange-600 mt-2">
+                    ⚠️ Local files shown for preview only. Configure Cloudinary to save permanently.
+                  </p>
+                )}
               </div>
             )}
 
@@ -487,9 +538,9 @@ const App = () => {
             </div>
           </div>
 
-          {/* Live Preview Panel */}
+          {/* Live Preview Panel - RESTORED */}
           {showPreview && (
-            <div className="border rounded p-4 bg-gray-50">
+            <div className="border rounded p-4 bg-gray-50 overflow-y-auto max-h-screen">
               <h3 className="text-lg font-semibold mb-4 text-gray-700">Live Preview</h3>
               <PostCard 
                 post={{
