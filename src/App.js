@@ -218,8 +218,6 @@ const App = () => {
         }]);
         setUploadProgress(null);
       }
-    };
-
     // Drag and drop handlers
     const handleDragEnter = (e) => {
       e.preventDefault();
