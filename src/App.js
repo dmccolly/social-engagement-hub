@@ -115,24 +115,48 @@ const App = () => {
       
       switch(type) {
         case 'image':
-          url = prompt('Enter image URL:');
+          url = window.prompt('Enter image URL (e.g., https://example.com/image.jpg):');
           break;
         case 'video':
-          url = prompt('Enter YouTube/Vimeo URL:');
+          url = window.prompt('Enter video URL (YouTube or Vimeo):');
           break;
         case 'audio':
-          url = prompt('Enter audio file URL (MP3, WAV, OGG):');
+          url = window.prompt('Enter audio file URL (MP3, WAV, or OGG):');
           break;
         default:
           return;
       }
       
-      if (url) {
-        setMedia(prev => [...prev, { type, url, id: Date.now() }]);
+      if (url && url.trim()) {
+        // Validate URL
+        try {
+          new URL(url);
+          setMedia(prev => [...prev, { type, url, id: Date.now() }]);
+        } catch (e) {
+          alert('Please enter a valid URL');
+        }
       }
     };
 
     const uploadToCloudinary = async (file) => {
+      // Check if Cloudinary is configured
+      if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
+        alert('Cloudinary is not configured. Please set environment variables in Netlify.');
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+
+      // Show loading state
+      const loadingDiv = document.createElement('div');
+      loadingDiv.innerHTML = 'Uploading...';
+      loadingDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:#000;color:#fff;padding:10px;border-radius:5px;z-index:9999';
+      document.body.appendChild(loadingDiv);
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_PRESET);
@@ -140,11 +164,22 @@ const App = () => {
       try {
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
-          { method: 'POST', body: formData }
+          { 
+            method: 'POST', 
+            body: formData 
+          }
         );
         
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
         const data = await response.json();
         
+        if (!data.secure_url) {
+          throw new Error('No URL returned from Cloudinary');
+        }
+
         const mediaType = file.type.startsWith('audio') ? 'audio' : 
                          file.type.startsWith('video') ? 'video' : 'image';
         
@@ -153,14 +188,25 @@ const App = () => {
           url: data.secure_url, 
           id: Date.now() 
         }]);
+
+        // Remove loading indicator
+        document.body.removeChild(loadingDiv);
+        alert('Upload successful!');
       } catch (error) {
-        alert('Upload failed: ' + error.message);
+        console.error('Upload error:', error);
+        // Remove loading indicator
+        if (loadingDiv.parentNode) {
+          document.body.removeChild(loadingDiv);
+        }
+        alert('Upload failed: ' + error.message + '\n\nPlease check your Cloudinary configuration.');
       }
     };
 
     const handleFileUpload = (e) => {
       const file = e.target.files[0];
       if (file) {
+        // Reset the input so the same file can be uploaded again if needed
+        e.target.value = '';
         uploadToCloudinary(file);
       }
     };
@@ -359,37 +405,49 @@ const App = () => {
             />
 
             {/* Media Embedding */}
-            <div className="mb-4 flex gap-2">
-              <button
-                onClick={() => embedMedia('image')}
-                className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-2"
-              >
-                <Image size={20} /> Add Image
-              </button>
-              
-              <button
-                onClick={() => embedMedia('video')}
-                className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center gap-2"
-              >
-                <Film size={20} /> Add Video
-              </button>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">Add media by URL or upload files (requires Cloudinary):</p>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => embedMedia('image')}
+                  className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-2"
+                >
+                  <Image size={20} /> Add Image URL
+                </button>
+                
+                <button
+                  onClick={() => embedMedia('video')}
+                  className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 flex items-center gap-2"
+                >
+                  <Film size={20} /> Add Video URL
+                </button>
 
-              <button
-                onClick={() => embedMedia('audio')}
-                className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center gap-2"
-              >
-                <Music size={20} /> Add Audio
-              </button>
+                <button
+                  onClick={() => embedMedia('audio')}
+                  className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center gap-2"
+                >
+                  <Music size={20} /> Add Audio URL
+                </button>
 
-              <label className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2 cursor-pointer">
-                <Upload size={20} /> Upload Media
-                <input
-                  type="file"
-                  accept="image/*,video/*,audio/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
+                {CLOUDINARY_CLOUD && CLOUDINARY_PRESET ? (
+                  <label className="px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2 cursor-pointer">
+                    <Upload size={20} /> Upload Media
+                    <input
+                      type="file"
+                      accept="image/*,video/*,audio/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <button
+                    onClick={() => alert('Please configure Cloudinary in Netlify environment variables to enable uploads')}
+                    className="px-3 py-2 bg-gray-400 text-white rounded flex items-center gap-2 cursor-not-allowed"
+                  >
+                    <Upload size={20} /> Upload (Not Configured)
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Media Preview in Editor */}
@@ -946,8 +1004,21 @@ const App = () => {
           <h3 className="text-lg font-semibold mb-3">API Configuration</h3>
           <div className="space-y-2 text-sm">
             <p><span className="font-medium">Xano URL:</span> {XANO_BASE_URL || 'Not configured'}</p>
-            <p><span className="font-medium">Cloudinary:</span> {CLOUDINARY_CLOUD || 'Not configured'}</p>
+            <p><span className="font-medium">Cloudinary Cloud:</span> {CLOUDINARY_CLOUD || 'Not configured'}</p>
+            <p><span className="font-medium">Cloudinary Preset:</span> {CLOUDINARY_PRESET || 'Not configured'}</p>
           </div>
+          
+          {(!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+              <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Cloudinary Setup Required</h4>
+              <ol className="text-sm text-yellow-700 space-y-1">
+                <li>1. Go to Netlify Dashboard → Site Settings → Environment Variables</li>
+                <li>2. Add REACT_APP_CLOUDINARY_CLOUD_NAME (from Cloudinary dashboard)</li>
+                <li>3. Add REACT_APP_CLOUDINARY_UPLOAD_PRESET (create unsigned preset in Cloudinary)</li>
+                <li>4. Redeploy the site</li>
+              </ol>
+            </div>
+          )}
         </div>
       </div>
     </div>
