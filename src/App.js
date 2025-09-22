@@ -40,11 +40,11 @@ const App = () => {
   const titleRef = useRef(null);
   const contentRef = useRef(null);
 
-  // API Configuration
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || '';
-  const XANO_API_KEY = process.env.REACT_APP_XANO_API_KEY || '';
-  const CLOUDINARY_CLOUD = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || '';
-  const CLOUDINARY_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || '';
+  // API Configuration - safe for browser environment
+  const XANO_BASE_URL = (typeof process !== 'undefined' && process.env?.REACT_APP_XANO_BASE_URL) || '';
+  const XANO_API_KEY = (typeof process !== 'undefined' && process.env?.REACT_APP_XANO_API_KEY) || '';
+  const CLOUDINARY_CLOUD = (typeof process !== 'undefined' && process.env?.REACT_APP_CLOUDINARY_CLOUD_NAME) || '';
+  const CLOUDINARY_PRESET = (typeof process !== 'undefined' && process.env?.REACT_APP_CLOUDINARY_UPLOAD_PRESET) || '';
 
   // Initialize data
   useEffect(() => {
@@ -507,7 +507,7 @@ const App = () => {
       if (post.id && comments.length > 0) {
         setPostComments(comments.filter(c => c.post_id === post.id));
       }
-    }, [post.id, comments]);
+    }, [post.id]);
 
     const handleAddComment = async () => {
       if (!newComment.trim()) return;
@@ -544,7 +544,7 @@ const App = () => {
       }
     };
 
-    const formatContent = post.formatting ? JSON.parse(post.formatting) : editorContent.formatting;
+    const formatContent = post.formatting ? (typeof post.formatting === 'string' ? JSON.parse(post.formatting) : post.formatting) : editorContent.formatting;
     const media = post.media ? (typeof post.media === 'string' ? JSON.parse(post.media) : post.media) : [];
 
     return (
