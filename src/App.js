@@ -88,18 +88,7 @@ const App = () => {
     const [media, setMedia] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(null);
-    
-    // Separate formatting for title and content for preview
-    const [titleFormatting, setTitleFormatting] = useState({
-      fontFamily: 'Arial',
-      fontSize: '24px',
-      fontColor: '#000000',
-      fontWeight: 'normal',
-      fontStyle: 'normal',
-      textAlign: 'left'
-    });
-    
-    const [contentFormatting, setContentFormatting] = useState({
+    const [formatting, setFormatting] = useState({
       fontFamily: 'Arial',
       fontSize: '16px',
       fontColor: '#000000',
@@ -107,13 +96,10 @@ const App = () => {
       fontStyle: 'normal',
       textAlign: 'left'
     });
-    
     const [previewContent, setPreviewContent] = useState({
       title: '',
       content: ''
     });
-    
-    const [activeField, setActiveField] = useState('content'); // Track which field is active
 
     // Update preview with debouncing
     useEffect(() => {
@@ -129,21 +115,13 @@ const App = () => {
     }, []);
 
     const applyFormatting = (format, value) => {
-      // Apply to the active field only
-      if (activeField === 'title') {
-        setTitleFormatting(prev => ({
-          ...prev,
-          [format]: value
-        }));
-      } else {
-        setContentFormatting(prev => ({
-          ...prev,
-          [format]: value
-        }));
-      }
+      setFormatting(prev => ({
+        ...prev,
+        [format]: value
+      }));
     };
 
-    // Handle file processing with better error handling
+    // Handle file processing
     const processFile = async (file) => {
       // Validate file type
       const validTypes = ['image/', 'video/', 'audio/'];
@@ -160,15 +138,16 @@ const App = () => {
         return;
       }
 
-      // Create local preview first
+      // For now, create a local URL for the file
+      // In production, you'd upload to Cloudinary here
       const localUrl = URL.createObjectURL(file);
       const mediaType = file.type.startsWith('audio') ? 'audio' : 
                        file.type.startsWith('video') ? 'video' : 'image';
       
       setUploadProgress('Processing...');
       
-      // Check if Cloudinary is actually configured
-      if (CLOUDINARY_CLOUD && CLOUDINARY_PRESET && CLOUDINARY_CLOUD !== '' && CLOUDINARY_PRESET !== '') {
+      // If Cloudinary is configured, upload it
+      if (CLOUDINARY_CLOUD && CLOUDINARY_PRESET) {
         try {
           const formData = new FormData();
           formData.append('file', file);
@@ -176,33 +155,28 @@ const App = () => {
           
           setUploadProgress('Uploading to Cloudinary...');
           
-          const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`;
-          console.log('Uploading to:', uploadUrl);
-          
-          const response = await fetch(uploadUrl, { 
-            method: 'POST', 
-            body: formData 
-          });
+          const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
+            { 
+              method: 'POST', 
+              body: formData 
+            }
+          );
           
           if (response.ok) {
             const data = await response.json();
-            if (data.secure_url) {
-              setMedia(prev => [...prev, { 
-                type: mediaType, 
-                url: data.secure_url, 
-                id: Date.now(),
-                name: file.name
-              }]);
-              setUploadProgress(null);
-              console.log('Upload successful:', data.secure_url);
-            }
+            setMedia(prev => [...prev, { 
+              type: mediaType, 
+              url: data.secure_url, 
+              id: Date.now(),
+              name: file.name
+            }]);
+            setUploadProgress(null);
           } else {
-            const errorText = await response.text();
-            console.error('Upload failed:', response.status, errorText);
-            throw new Error(`Upload failed: ${response.status}`);
+            throw new Error('Upload failed');
           }
         } catch (error) {
-          console.error('Cloudinary upload error:', error);
+          console.error('Cloudinary upload failed, using local preview:', error);
           // Fall back to local preview
           setMedia(prev => [...prev, { 
             type: mediaType, 
@@ -212,11 +186,9 @@ const App = () => {
             local: true
           }]);
           setUploadProgress(null);
-          alert(`Upload to Cloudinary failed. Using local preview. Error: ${error.message}`);
         }
       } else {
-        // No Cloudinary configured, use local preview
-        console.log('Cloudinary not configured. Cloud:', CLOUDINARY_CLOUD, 'Preset:', CLOUDINARY_PRESET);
+        // No Cloudinary, just use local preview
         setMedia(prev => [...prev, { 
           type: mediaType, 
           url: localUrl, 
@@ -225,7 +197,10 @@ const App = () => {
           local: true
         }]);
         setUploadProgress(null);
-        alert('Cloudinary not configured. File added for preview only.\n\nTo enable uploads:\n1. Go to Netlify Dashboard\n2. Add environment variables\n3. Redeploy the site');
+        
+        if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
+          alert('Note: File added for preview only. Configure Cloudinary to save permanently.');
+        }
       }
     };
 
@@ -278,8 +253,7 @@ const App = () => {
         title: titleInputRef.current?.value || '',
         content: contentInputRef.current?.value || '',
         media: JSON.stringify(media.filter(m => !m.local)), // Only save non-local media
-        titleFormatting: JSON.stringify(titleFormatting),
-        contentFormatting: JSON.stringify(contentFormatting),
+        formatting: JSON.stringify(formatting),
         isFeatured: isFeatured,
         status: isDraft ? 'draft' : 'published',
         created_at: new Date().toISOString(),
@@ -287,32 +261,24 @@ const App = () => {
       };
 
       try {
-        if (XANO_BASE_URL && XANO_API_KEY) {
-          const response = await fetch(`${XANO_BASE_URL}/post`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${XANO_API_KEY}`
-            },
-            body: JSON.stringify(contentData)
-          });
+        const response = await fetch(`${XANO_BASE_URL}/post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${XANO_API_KEY}`
+          },
+          body: JSON.stringify(contentData)
+        });
 
-          if (response.ok) {
-            alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
-            setIsCreating(false);
-            fetchData();
-            // Clear form
-            if (titleInputRef.current) titleInputRef.current.value = '';
-            if (contentInputRef.current) contentInputRef.current.value = '';
-            setMedia([]);
-            setIsFeatured(false);
-          }
-        } else {
-          // Save locally if no Xano configured
-          const newPost = { ...contentData, id: Date.now() };
-          setPosts(prev => [newPost, ...prev]);
-          alert(isDraft ? 'Saved as draft locally!' : 'Published locally!');
+        if (response.ok) {
+          alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
           setIsCreating(false);
+          fetchData();
+          // Clear form
+          if (titleInputRef.current) titleInputRef.current.value = '';
+          if (contentInputRef.current) contentInputRef.current.value = '';
+          setMedia([]);
+          setIsFeatured(false);
         }
       } catch (error) {
         alert('Error saving: ' + error.message);
@@ -370,103 +336,76 @@ const App = () => {
           {/* Editor Panel */}
           <div>
             {/* Formatting Toolbar */}
-            <div className="mb-4 p-3 border rounded">
-              <p className="text-xs text-gray-500 mb-2">
-                Formatting applies to: <strong>{activeField === 'title' ? 'Title' : 'Content'}</strong>
-              </p>
-              <div className="flex flex-wrap gap-2 items-center">
-                <select 
-                  value={activeField === 'title' ? titleFormatting.fontFamily : contentFormatting.fontFamily}
-                  onChange={(e) => applyFormatting('fontFamily', e.target.value)}
-                  className="px-2 py-1 border rounded text-sm"
-                >
-                  <option value="Arial">Arial</option>
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Verdana">Verdana</option>
-                  <option value="Courier New">Courier New</option>
-                </select>
+            <div className="mb-4 p-3 border rounded flex flex-wrap gap-2 items-center">
+              <select 
+                value={formatting.fontFamily}
+                onChange={(e) => applyFormatting('fontFamily', e.target.value)}
+                className="px-2 py-1 border rounded"
+              >
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Comic Sans MS">Comic Sans MS</option>
+              </select>
 
-                <select 
-                  value={activeField === 'title' ? titleFormatting.fontSize : contentFormatting.fontSize}
-                  onChange={(e) => applyFormatting('fontSize', e.target.value)}
-                  className="px-2 py-1 border rounded text-sm"
-                >
-                  <option value="12px">12px</option>
-                  <option value="14px">14px</option>
-                  <option value="16px">16px</option>
-                  <option value="18px">18px</option>
-                  <option value="20px">20px</option>
-                  <option value="24px">24px</option>
-                  <option value="28px">28px</option>
-                  <option value="32px">32px</option>
-                </select>
+              <select 
+                value={formatting.fontSize}
+                onChange={(e) => applyFormatting('fontSize', e.target.value)}
+                className="px-2 py-1 border rounded"
+              >
+                <option value="12px">12px</option>
+                <option value="14px">14px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
+                <option value="20px">20px</option>
+                <option value="24px">24px</option>
+                <option value="28px">28px</option>
+                <option value="32px">32px</option>
+              </select>
 
-                <input
-                  type="color"
-                  value={activeField === 'title' ? titleFormatting.fontColor : contentFormatting.fontColor}
-                  onChange={(e) => applyFormatting('fontColor', e.target.value)}
-                  className="w-10 h-8 border rounded cursor-pointer"
-                />
+              <input
+                type="color"
+                value={formatting.fontColor}
+                onChange={(e) => applyFormatting('fontColor', e.target.value)}
+                className="w-10 h-8 border rounded cursor-pointer"
+              />
 
-                <button
-                  onClick={() => {
-                    const currentWeight = activeField === 'title' ? 
-                      titleFormatting.fontWeight : contentFormatting.fontWeight;
-                    applyFormatting('fontWeight', currentWeight === 'bold' ? 'normal' : 'bold');
-                  }}
-                  className={`p-1 border rounded ${
-                    (activeField === 'title' ? titleFormatting.fontWeight : contentFormatting.fontWeight) === 'bold' 
-                    ? 'bg-blue-500 text-white' : ''
-                  }`}
-                >
-                  <Bold size={20} />
-                </button>
+              <button
+                onClick={() => applyFormatting('fontWeight', formatting.fontWeight === 'bold' ? 'normal' : 'bold')}
+                className={`p-1 border rounded ${formatting.fontWeight === 'bold' ? 'bg-gray-200' : ''}`}
+              >
+                <Bold size={20} />
+              </button>
 
-                <button
-                  onClick={() => {
-                    const currentStyle = activeField === 'title' ? 
-                      titleFormatting.fontStyle : contentFormatting.fontStyle;
-                    applyFormatting('fontStyle', currentStyle === 'italic' ? 'normal' : 'italic');
-                  }}
-                  className={`p-1 border rounded ${
-                    (activeField === 'title' ? titleFormatting.fontStyle : contentFormatting.fontStyle) === 'italic' 
-                    ? 'bg-blue-500 text-white' : ''
-                  }`}
-                >
-                  <Italic size={20} />
-                </button>
+              <button
+                onClick={() => applyFormatting('fontStyle', formatting.fontStyle === 'italic' ? 'normal' : 'italic')}
+                className={`p-1 border rounded ${formatting.fontStyle === 'italic' ? 'bg-gray-200' : ''}`}
+              >
+                <Italic size={20} />
+              </button>
 
-                <button
-                  onClick={() => applyFormatting('textAlign', 'left')}
-                  className={`p-1 border rounded ${
-                    (activeField === 'title' ? titleFormatting.textAlign : contentFormatting.textAlign) === 'left' 
-                    ? 'bg-blue-500 text-white' : ''
-                  }`}
-                >
-                  <AlignLeft size={20} />
-                </button>
+              <button
+                onClick={() => applyFormatting('textAlign', 'left')}
+                className={`p-1 border rounded ${formatting.textAlign === 'left' ? 'bg-gray-200' : ''}`}
+              >
+                <AlignLeft size={20} />
+              </button>
 
-                <button
-                  onClick={() => applyFormatting('textAlign', 'center')}
-                  className={`p-1 border rounded ${
-                    (activeField === 'title' ? titleFormatting.textAlign : contentFormatting.textAlign) === 'center' 
-                    ? 'bg-blue-500 text-white' : ''
-                  }`}
-                >
-                  <AlignCenter size={20} />
-                </button>
+              <button
+                onClick={() => applyFormatting('textAlign', 'center')}
+                className={`p-1 border rounded ${formatting.textAlign === 'center' ? 'bg-gray-200' : ''}`}
+              >
+                <AlignCenter size={20} />
+              </button>
 
-                <button
-                  onClick={() => applyFormatting('textAlign', 'right')}
-                  className={`p-1 border rounded ${
-                    (activeField === 'title' ? titleFormatting.textAlign : contentFormatting.textAlign) === 'right' 
-                    ? 'bg-blue-500 text-white' : ''
-                  }`}
-                >
-                  <AlignRight size={20} />
-                </button>
-              </div>
+              <button
+                onClick={() => applyFormatting('textAlign', 'right')}
+                className={`p-1 border rounded ${formatting.textAlign === 'right' ? 'bg-gray-200' : ''}`}
+              >
+                <AlignRight size={20} />
+              </button>
             </div>
 
             {/* Title Input - UNCONTROLLED */}
@@ -475,9 +414,14 @@ const App = () => {
               type="text"
               placeholder="Enter title..."
               defaultValue=""
-              onFocus={() => setActiveField('title')}
               className="w-full px-4 py-2 border rounded mb-4"
-              style={titleFormatting}
+              style={{
+                fontFamily: formatting.fontFamily,
+                fontSize: '24px',
+                color: formatting.fontColor,
+                fontWeight: formatting.fontWeight,
+                fontStyle: formatting.fontStyle
+              }}
             />
 
             {/* Content Textarea - UNCONTROLLED */}
@@ -486,9 +430,15 @@ const App = () => {
               placeholder="Enter content..."
               defaultValue=""
               rows="10"
-              onFocus={() => setActiveField('content')}
               className="w-full px-4 py-2 border rounded mb-4"
-              style={contentFormatting}
+              style={{
+                fontFamily: formatting.fontFamily,
+                fontSize: formatting.fontSize,
+                color: formatting.fontColor,
+                fontWeight: formatting.fontWeight,
+                fontStyle: formatting.fontStyle,
+                textAlign: formatting.textAlign
+              }}
             />
 
             {/* Media Upload - Drag & Drop Zone */}
@@ -606,8 +556,7 @@ const App = () => {
                   content: previewContent.content || 'Your content will appear here...',
                   media: media,
                   isFeatured: isFeatured,
-                  titleFormatting: titleFormatting,
-                  contentFormatting: contentFormatting,
+                  formatting: formatting,
                   created_at: new Date().toISOString()
                 }}
                 isPreview={true}
