@@ -76,26 +76,18 @@ const App = () => {
     }
   };
 
-  // Content Editor Component - FIXED typing issue
+  // Content Editor Component - WITH PROPER RICH TEXT EDITING
   const ContentEditor = () => {
-    // Use refs for form inputs to avoid controlled component issues
-    const titleInputRef = useRef(null);
-    const contentInputRef = useRef(null);
+    // Use refs for editors
+    const titleEditorRef = useRef(null);
+    const contentEditorRef = useRef(null);
     const fileInputRef = useRef(null);
     
-    // Local state for everything else
+    // Local state
     const [isFeatured, setIsFeatured] = useState(false);
     const [media, setMedia] = useState([]);
     const [isDragging, setIsDragging] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(null);
-    const [formatting, setFormatting] = useState({
-      fontFamily: 'Arial',
-      fontSize: '16px',
-      fontColor: '#000000',
-      fontWeight: 'normal',
-      fontStyle: 'normal',
-      textAlign: 'left'
-    });
     const [previewContent, setPreviewContent] = useState({
       title: '',
       content: ''
@@ -105,8 +97,8 @@ const App = () => {
     useEffect(() => {
       const updatePreview = () => {
         setPreviewContent({
-          title: titleInputRef.current?.value || '',
-          content: contentInputRef.current?.value || ''
+          title: titleEditorRef.current?.innerHTML || '',
+          content: contentEditorRef.current?.innerHTML || ''
         });
       };
 
@@ -114,14 +106,39 @@ const App = () => {
       return () => clearInterval(interval);
     }, []);
 
-    const applyFormatting = (format, value) => {
-      setFormatting(prev => ({
-        ...prev,
-        [format]: value
-      }));
+    // Format selected text
+    const formatSelection = (command, value = null) => {
+      // Save selection first
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      
+      // Execute formatting command
+      document.execCommand(command, false, value);
+      
+      // Keep focus
+      if (selection.anchorNode) {
+        const range = selection.getRangeAt(0);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     };
 
-    // Handle file processing
+    // Insert link
+    const insertLink = () => {
+      const url = window.prompt('Enter URL:');
+      if (url) {
+        formatSelection('createLink', url);
+      }
+    };
+
+    // Handle paste - clean up formatting
+    const handlePaste = (e) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    };
+
+    // Handle file processing with better Cloudinary integration
     const processFile = async (file) => {
       // Validate file type
       const validTypes = ['image/', 'video/', 'audio/'];
@@ -138,15 +155,14 @@ const App = () => {
         return;
       }
 
-      // For now, create a local URL for the file
-      // In production, you'd upload to Cloudinary here
+      // Create local preview first
       const localUrl = URL.createObjectURL(file);
       const mediaType = file.type.startsWith('audio') ? 'audio' : 
                        file.type.startsWith('video') ? 'video' : 'image';
       
       setUploadProgress('Processing...');
       
-      // If Cloudinary is configured, upload it
+      // Check if Cloudinary is configured (variables should be loaded now after redeploy)
       if (CLOUDINARY_CLOUD && CLOUDINARY_PRESET) {
         try {
           const formData = new FormData();
@@ -155,28 +171,30 @@ const App = () => {
           
           setUploadProgress('Uploading to Cloudinary...');
           
-          const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
-            { 
-              method: 'POST', 
-              body: formData 
-            }
-          );
+          const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`;
+          console.log('Uploading to Cloudinary:', uploadUrl);
           
-          if (response.ok) {
-            const data = await response.json();
+          const response = await fetch(uploadUrl, { 
+            method: 'POST', 
+            body: formData 
+          });
+          
+          const responseData = await response.json();
+          
+          if (response.ok && responseData.secure_url) {
             setMedia(prev => [...prev, { 
               type: mediaType, 
-              url: data.secure_url, 
+              url: responseData.secure_url, 
               id: Date.now(),
               name: file.name
             }]);
             setUploadProgress(null);
+            console.log('Upload successful!');
           } else {
-            throw new Error('Upload failed');
+            throw new Error(responseData.error?.message || 'Upload failed');
           }
         } catch (error) {
-          console.error('Cloudinary upload failed, using local preview:', error);
+          console.error('Upload error:', error);
           // Fall back to local preview
           setMedia(prev => [...prev, { 
             type: mediaType, 
@@ -186,9 +204,11 @@ const App = () => {
             local: true
           }]);
           setUploadProgress(null);
+          alert(`Upload failed: ${error.message}\n\nUsing local preview instead.`);
         }
       } else {
-        // No Cloudinary, just use local preview
+        // No Cloudinary configured
+        console.log('Cloudinary not configured');
         setMedia(prev => [...prev, { 
           type: mediaType, 
           url: localUrl, 
@@ -197,10 +217,6 @@ const App = () => {
           local: true
         }]);
         setUploadProgress(null);
-        
-        if (!CLOUDINARY_CLOUD || !CLOUDINARY_PRESET) {
-          alert('Note: File added for preview only. Configure Cloudinary to save permanently.');
-        }
       }
     };
 
@@ -250,10 +266,9 @@ const App = () => {
 
     const handleSave = async (isDraft = false) => {
       const contentData = {
-        title: titleInputRef.current?.value || '',
-        content: contentInputRef.current?.value || '',
+        title: titleEditorRef.current?.innerHTML || '',
+        content: contentEditorRef.current?.innerHTML || '',
         media: JSON.stringify(media.filter(m => !m.local)), // Only save non-local media
-        formatting: JSON.stringify(formatting),
         isFeatured: isFeatured,
         status: isDraft ? 'draft' : 'published',
         created_at: new Date().toISOString(),
@@ -261,24 +276,34 @@ const App = () => {
       };
 
       try {
-        const response = await fetch(`${XANO_BASE_URL}/post`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${XANO_API_KEY}`
-          },
-          body: JSON.stringify(contentData)
-        });
+        if (XANO_BASE_URL && XANO_API_KEY) {
+          const response = await fetch(`${XANO_BASE_URL}/post`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${XANO_API_KEY}`
+            },
+            body: JSON.stringify(contentData)
+          });
 
-        if (response.ok) {
-          alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
+          if (response.ok) {
+            alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
+            setIsCreating(false);
+            fetchData();
+            // Clear form
+            if (titleEditorRef.current) titleEditorRef.current.innerHTML = '';
+            if (contentEditorRef.current) contentEditorRef.current.innerHTML = '';
+            setMedia([]);
+            setIsFeatured(false);
+          } else {
+            throw new Error('Save failed');
+          }
+        } else {
+          // Save locally if no Xano
+          const newPost = { ...contentData, id: Date.now() };
+          setPosts(prev => [newPost, ...prev]);
+          alert('Saved locally!');
           setIsCreating(false);
-          fetchData();
-          // Clear form
-          if (titleInputRef.current) titleInputRef.current.value = '';
-          if (contentInputRef.current) contentInputRef.current.value = '';
-          setMedia([]);
-          setIsFeatured(false);
         }
       } catch (error) {
         alert('Error saving: ' + error.message);
@@ -335,111 +360,384 @@ const App = () => {
         <div className={`grid ${showPreview ? 'grid-cols-2 gap-6' : 'grid-cols-1'}`}>
           {/* Editor Panel */}
           <div>
-            {/* Formatting Toolbar */}
-            <div className="mb-4 p-3 border rounded flex flex-wrap gap-2 items-center">
-              <select 
-                value={formatting.fontFamily}
-                onChange={(e) => applyFormatting('fontFamily', e.target.value)}
-                className="px-2 py-1 border rounded"
-              >
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Verdana">Verdana</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Comic Sans MS">Comic Sans MS</option>
-              </select>
-
-              <select 
-                value={formatting.fontSize}
-                onChange={(e) => applyFormatting('fontSize', e.target.value)}
-                className="px-2 py-1 border rounded"
-              >
-                <option value="12px">12px</option>
-                <option value="14px">14px</option>
-                <option value="16px">16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
-                <option value="24px">24px</option>
-                <option value="28px">28px</option>
-                <option value="32px">32px</option>
-              </select>
-
-              <input
-                type="color"
-                value={formatting.fontColor}
-                onChange={(e) => applyFormatting('fontColor', e.target.value)}
-                className="w-10 h-8 border rounded cursor-pointer"
-              />
-
-              <button
-                onClick={() => applyFormatting('fontWeight', formatting.fontWeight === 'bold' ? 'normal' : 'bold')}
-                className={`p-1 border rounded ${formatting.fontWeight === 'bold' ? 'bg-gray-200' : ''}`}
-              >
-                <Bold size={20} />
-              </button>
-
-              <button
-                onClick={() => applyFormatting('fontStyle', formatting.fontStyle === 'italic' ? 'normal' : 'italic')}
-                className={`p-1 border rounded ${formatting.fontStyle === 'italic' ? 'bg-gray-200' : ''}`}
-              >
-                <Italic size={20} />
-              </button>
-
-              <button
-                onClick={() => applyFormatting('textAlign', 'left')}
-                className={`p-1 border rounded ${formatting.textAlign === 'left' ? 'bg-gray-200' : ''}`}
-              >
-                <AlignLeft size={20} />
-              </button>
-
-              <button
-                onClick={() => applyFormatting('textAlign', 'center')}
-                className={`p-1 border rounded ${formatting.textAlign === 'center' ? 'bg-gray-200' : ''}`}
-              >
-                <AlignCenter size={20} />
-              </button>
-
-              <button
-                onClick={() => applyFormatting('textAlign', 'right')}
-                className={`p-1 border rounded ${formatting.textAlign === 'right' ? 'bg-gray-200' : ''}`}
-              >
-                <AlignRight size={20} />
-              </button>
+            {/* Rich Text Formatting Toolbar */}
+            <div className="mb-4 p-3 border rounded bg-gray-50">
+              <p className="text-xs text-gray-500 mb-2">Select text to format it:</p>
+              <div className="flex flex-wrap gap-2 items-center">
+                <button
+                  type="button"
+                  onClick={() => formatSelection('bold')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Bold (Ctrl+B)"
+                >
+                  <Bold size={18} />
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => formatSelection('italic')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Italic (Ctrl+I)"
+                >
+                  <Italic size={18} />
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => formatSelection('underline')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Underline (Ctrl+U)"
+                >
+                  <Underline size={18} />
+                </button>
+                
+                <div className="w-px h-6 bg-gray-300"></div>
+                
+                <select 
+                  onChange={(e) => formatSelection('fontSize', e.target.value)}
+                  className="px-2 py-1 border bg-white rounded"
+                  defaultValue=""
+                >
+                  <option value="">Size</option>
+                  <option value="1">Small</option>
+                  <option value="3">Normal</option>
+                  <option value="5">Large</option>
+                  <option value="7">Huge</option>
+                </select>
+                
+                <input
+                  type="color"
+                  onChange={(e) => formatSelection('foreColor', e.target.value)}
+                  className="w-10 h-8 border rounded cursor-pointer"
+                  title="Text Color"
+                />
+                
+                <div className="w-px h-6 bg-gray-300"></div>
+                
+                <button
+                  type="button"
+                  onClick={() => formatSelection('justifyLeft')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Align Left"
+                >
+                  <AlignLeft size={18} />
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => formatSelection('justifyCenter')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Align Center"
+                >
+                  <AlignCenter size={18} />
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => formatSelection('justifyRight')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Align Right"
+                >
+                  <AlignRight size={18} />
+                </button>
+                
+                <div className="w-px h-6 bg-gray-300"></div>
+                
+                <button
+                  type="button"
+                  onClick={() => formatSelection('insertUnorderedList')}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Bullet List"
+                >
+                  <List size={18} />
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={insertLink}
+                  className="p-2 border bg-white rounded hover:bg-gray-100"
+                  title="Insert Link"
+                >
+                  <Link size={18} />
+                </button>
+              </div>
             </div>
 
-            {/* Title Input - UNCONTROLLED */}
-            <input
-              ref={titleInputRef}
-              type="text"
-              placeholder="Enter title..."
-              defaultValue=""
-              className="w-full px-4 py-2 border rounded mb-4"
-              style={{
-                fontFamily: formatting.fontFamily,
-                fontSize: '24px',
-                color: formatting.fontColor,
-                fontWeight: formatting.fontWeight,
-                fontStyle: formatting.fontStyle
-              }}
-            />
+            {/* Title Editor */}
+            <div className="mb-4">
+              <div
+                ref={titleEditorRef}
+                contentEditable
+                className="w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ minHeight: '50px', fontSize: '24px', fontWeight: 'bold' }}
+                data-placeholder="Enter title..."
+                onPaste={handlePaste}
+                suppressContentEditableWarning={true}
+              />
+            </div>
 
-            {/* Content Textarea - UNCONTROLLED */}
-            <textarea
-              ref={contentInputRef}
-              placeholder="Enter content..."
-              defaultValue=""
-              rows="10"
-              className="w-full px-4 py-2 border rounded mb-4"
-              style={{
-                fontFamily: formatting.fontFamily,
-                fontSize: formatting.fontSize,
-                color: formatting.fontColor,
-                fontWeight: formatting.fontWeight,
-                fontStyle: formatting.fontStyle,
-                textAlign: formatting.textAlign
-              }}
-            />
+            {/* Content Editor */}
+            <div className="mb-4">
+              <div
+                ref={contentEditorRef}
+                contentEditable
+                className="w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ minHeight: '200px' }}
+                data-placeholder="Enter your content... Select any text to format it!"
+                onPaste={handlePaste}
+                suppressContentEditableWarning={true}
+              />
+            </div>
+
+            <style>{`
+              [contenteditable]:empty:before {
+                content: attr(data-placeholder);
+                color: #999;
+              }
+              [contenteditable]:focus {
+                outline: none;
+              }
+            `}</style>
+
+    // Drag and drop handlers
+    const handleDragEnter = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+    };
+
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDrop = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const files = Array.from(e.dataTransfer.files);
+      for (const file of files) {
+        await processFile(file);
+      }
+    };
+
+    // File input handler
+    const handleFileSelect = async (e) => {
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+        await processFile(file);
+      }
+      // Reset input
+      e.target.value = '';
+    };
+
+    // Open file browser
+    const openFileBrowser = () => {
+      fileInputRef.current?.click();
+    };
+
+    const handleSave = async (isDraft = false) => {
+      const contentData = {
+        title: titleInputRef.current?.value || '',
+        content: contentInputRef.current?.value || '',
+        media: JSON.stringify(media.filter(m => !m.local)), // Only save non-local media
+        titleFormatting: JSON.stringify(titleFormatting),
+        contentFormatting: JSON.stringify(contentFormatting),
+        isFeatured: isFeatured,
+        status: isDraft ? 'draft' : 'published',
+        created_at: new Date().toISOString(),
+        type: contentType
+      };
+
+      try {
+        if (XANO_BASE_URL && XANO_API_KEY) {
+          const response = await fetch(`${XANO_BASE_URL}/post`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${XANO_API_KEY}`
+            },
+            body: JSON.stringify(contentData)
+          });
+
+          if (response.ok) {
+            alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
+            setIsCreating(false);
+            fetchData();
+            // Clear form
+            if (titleInputRef.current) titleInputRef.current.value = '';
+            if (contentInputRef.current) contentInputRef.current.value = '';
+            setMedia([]);
+            setIsFeatured(false);
+          }
+        } else {
+          // Save locally if no Xano configured
+          const newPost = { ...contentData, id: Date.now() };
+          setPosts(prev => [newPost, ...prev]);
+          alert(isDraft ? 'Saved as draft locally!' : 'Published locally!');
+          setIsCreating(false);
+        }
+      } catch (error) {
+        alert('Error saving: ' + error.message);
+      }
+    };
+
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">
+            Create {contentType === 'post' ? 'Blog Post' : contentType === 'email' ? 'Email Campaign' : 'Content'}
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2"
+            >
+              <Eye size={20} />
+              {showPreview ? 'Hide' : 'Show'} Preview
+            </button>
+            <button
+              onClick={() => setIsCreating(false)}
+              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        {/* Featured Post Toggle */}
+        {contentType === 'post' && (
+          <div className="mb-6 p-4 border rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sparkles className="text-orange-500" size={24} />
+                <div>
+                  <h3 className="font-semibold">Featured Post</h3>
+                  <p className="text-sm text-gray-600">Make this post stand out with special styling</p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div className={`grid ${showPreview ? 'grid-cols-2 gap-6' : 'grid-cols-1'}`}>
+          {/* Editor Panel */}
+          <div>
+            {/* Media Upload - Drag & Drop Zone */}
+            <div
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                mb-4 p-6 border-2 border-dashed rounded-lg text-center transition-all
+                ${isDragging ? 
+                  'border-blue-500 bg-blue-50' : 
+                  'border-gray-300 hover:border-gray-400 bg-gray-50'
+                }
+              `}
+            >
+              <div className="space-y-2">
+                <div className="flex justify-center">
+                  <Upload size={40} className={isDragging ? 'text-blue-500' : 'text-gray-400'} />
+                </div>
+                <div>
+                  <p className="text-lg font-medium">
+                    {isDragging ? 'Drop files here!' : 'Drag & drop media files here'}
+                  </p>
+                  <p className="text-sm text-gray-500">or</p>
+                  <button
+                    type="button"
+                    onClick={openFileBrowser}
+                    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Browse Files
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*,audio/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Supports: Images, Videos, Audio (Max 10MB per file)
+                </p>
+              </div>
+              
+              {uploadProgress && (
+                <div className="mt-4 p-2 bg-blue-100 text-blue-700 rounded">
+                  {uploadProgress}
+                </div>
+              )}
+            </div>
+
+            {/* Media Preview in Editor */}
+            {media.length > 0 && (
+              <div className="mb-4">
+                <h3 className="font-semibold mb-2">Attached Media:</h3>
+                <div className="space-y-2">
+                  {media.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 border rounded bg-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                          {item.type === 'image' && <Image size={20} className="text-green-600" />}
+                          {item.type === 'video' && <Film size={20} className="text-purple-600" />}
+                          {item.type === 'audio' && <Music size={20} className="text-indigo-600" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{item.name || 'Media file'}</p>
+                          <p className="text-xs text-gray-500">
+                            {item.local ? 'Local preview (not saved)' : 'Uploaded to Cloudinary'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setMedia(prev => prev.filter(m => m.id !== item.id))}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSave(false)}
+                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {contentType === 'email' ? 'Send Campaign' : 'Publish'}
+              </button>
+              <button
+                onClick={() => handleSave(true)}
+                className="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                Save as Draft
+              </button>
+            </div>
+          </div>
 
             {/* Media Upload - Drag & Drop Zone */}
             <div
@@ -546,21 +844,64 @@ const App = () => {
             </div>
           </div>
 
-          {/* Live Preview Panel - RESTORED */}
+          {/* Live Preview Panel */}
           {showPreview && (
             <div className="border rounded p-4 bg-gray-50 overflow-y-auto max-h-screen">
               <h3 className="text-lg font-semibold mb-4 text-gray-700">Live Preview</h3>
-              <PostCard 
-                post={{
-                  title: previewContent.title || 'Your Title Here',
-                  content: previewContent.content || 'Your content will appear here...',
-                  media: media,
-                  isFeatured: isFeatured,
-                  formatting: formatting,
-                  created_at: new Date().toISOString()
-                }}
-                isPreview={true}
-              />
+              <div className={`
+                rounded-lg p-6 mb-4
+                ${isFeatured ? 
+                  'bg-gradient-to-r from-yellow-50 via-orange-50 to-yellow-50 border-2 border-orange-300 shadow-xl' : 
+                  'bg-white border shadow'
+                }
+              `}>
+                {isFeatured && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Crown className="text-orange-500" size={20} />
+                    <span className="text-orange-600 font-semibold text-sm">FEATURED POST</span>
+                  </div>
+                )}
+                
+                {/* Preview uses innerHTML to show formatted content */}
+                <h2 
+                  className={`mb-3 ${isFeatured ? 'text-3xl' : 'text-2xl'}`}
+                  dangerouslySetInnerHTML={{ __html: previewContent.title || 'Your Title Here' }}
+                />
+                
+                <p className="text-sm text-gray-500 mb-4">
+                  {new Date().toLocaleDateString()}
+                </p>
+                
+                <div 
+                  className="mb-4"
+                  dangerouslySetInnerHTML={{ __html: previewContent.content || 'Your content will appear here...' }}
+                />
+
+                {/* Media Preview */}
+                {media.length > 0 && media.map((item) => (
+                  <div key={item.id} className="mb-4">
+                    {item.type === 'image' && (
+                      <img src={item.url} alt="Embedded" className="max-w-full rounded" />
+                    )}
+                    {item.type === 'video' && (
+                      <div className="aspect-video">
+                        {item.url.includes('youtube') ? (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${item.url.split('v=')[1]?.split('&')[0]}`}
+                            className="w-full h-full rounded"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <video src={item.url} controls className="w-full rounded" />
+                        )}
+                      </div>
+                    )}
+                    {item.type === 'audio' && (
+                      <audio src={item.url} controls className="w-full" />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
