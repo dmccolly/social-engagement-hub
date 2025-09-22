@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Home, FileText, Mail, Users, Settings, Calendar, BarChart3, 
   Plus, Edit, Trash2, Search, Bell, Upload, Send, Clock, 
@@ -19,26 +19,6 @@ const App = () => {
   const [contentType, setContentType] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // Content Editor State
-  const [editorContent, setEditorContent] = useState({
-    title: '',
-    content: '',
-    media: [],
-    isFeatured: false,
-    formatting: {
-      fontFamily: 'Arial',
-      fontSize: '16px',
-      fontColor: '#000000',
-      fontWeight: 'normal',
-      fontStyle: 'normal',
-      textAlign: 'left'
-    }
-  });
-
-  // Editor refs to prevent backwards typing
-  const titleRef = useRef(null);
-  const contentRef = useRef(null);
 
   // API Configuration
   const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || '';
@@ -88,40 +68,45 @@ const App = () => {
     }
   };
 
-  // Enhanced Content Editor with Featured Post Toggle
+  // Content Editor Component - FIXED typing issue
   const ContentEditor = () => {
-    // Use local state for immediate updates
-    const [localTitle, setLocalTitle] = useState(editorContent.title);
-    const [localContent, setLocalContent] = useState(editorContent.content);
+    // Use refs for form inputs to avoid controlled component issues
+    const titleInputRef = useRef(null);
+    const contentInputRef = useRef(null);
     
-    // Update parent state less frequently
+    // Local state for everything else
+    const [isFeatured, setIsFeatured] = useState(false);
+    const [media, setMedia] = useState([]);
+    const [formatting, setFormatting] = useState({
+      fontFamily: 'Arial',
+      fontSize: '16px',
+      fontColor: '#000000',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'left'
+    });
+    const [previewContent, setPreviewContent] = useState({
+      title: '',
+      content: ''
+    });
+
+    // Update preview with debouncing
     useEffect(() => {
-      const timer = setTimeout(() => {
-        setEditorContent(prev => ({
-          ...prev,
-          title: localTitle,
-          content: localContent
-        }));
-      }, 300); // Debounce updates
-      
-      return () => clearTimeout(timer);
-    }, [localTitle, localContent]);
+      const updatePreview = () => {
+        setPreviewContent({
+          title: titleInputRef.current?.value || '',
+          content: contentInputRef.current?.value || ''
+        });
+      };
 
-    const handleTitleChange = (e) => {
-      setLocalTitle(e.target.value);
-    };
-
-    const handleContentChange = (e) => {
-      setLocalContent(e.target.value);
-    };
+      const interval = setInterval(updatePreview, 500);
+      return () => clearInterval(interval);
+    }, []);
 
     const applyFormatting = (format, value) => {
-      setEditorContent(prev => ({
+      setFormatting(prev => ({
         ...prev,
-        formatting: {
-          ...prev.formatting,
-          [format]: value
-        }
+        [format]: value
       }));
     };
 
@@ -143,10 +128,7 @@ const App = () => {
       }
       
       if (url) {
-        setEditorContent(prev => ({
-          ...prev,
-          media: [...prev.media, { type, url, id: Date.now() }]
-        }));
+        setMedia(prev => [...prev, { type, url, id: Date.now() }]);
       }
     };
 
@@ -166,14 +148,11 @@ const App = () => {
         const mediaType = file.type.startsWith('audio') ? 'audio' : 
                          file.type.startsWith('video') ? 'video' : 'image';
         
-        setEditorContent(prev => ({
-          ...prev,
-          media: [...prev.media, { 
-            type: mediaType, 
-            url: data.secure_url, 
-            id: Date.now() 
-          }]
-        }));
+        setMedia(prev => [...prev, { 
+          type: mediaType, 
+          url: data.secure_url, 
+          id: Date.now() 
+        }]);
       } catch (error) {
         alert('Upload failed: ' + error.message);
       }
@@ -183,6 +162,43 @@ const App = () => {
       const file = e.target.files[0];
       if (file) {
         uploadToCloudinary(file);
+      }
+    };
+
+    const handleSave = async (isDraft = false) => {
+      const contentData = {
+        title: titleInputRef.current?.value || '',
+        content: contentInputRef.current?.value || '',
+        media: JSON.stringify(media),
+        formatting: JSON.stringify(formatting),
+        isFeatured: isFeatured,
+        status: isDraft ? 'draft' : 'published',
+        created_at: new Date().toISOString(),
+        type: contentType
+      };
+
+      try {
+        const response = await fetch(`${XANO_BASE_URL}/post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${XANO_API_KEY}`
+          },
+          body: JSON.stringify(contentData)
+        });
+
+        if (response.ok) {
+          alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
+          setIsCreating(false);
+          fetchData();
+          // Clear form
+          if (titleInputRef.current) titleInputRef.current.value = '';
+          if (contentInputRef.current) contentInputRef.current.value = '';
+          setMedia([]);
+          setIsFeatured(false);
+        }
+      } catch (error) {
+        alert('Error saving: ' + error.message);
       }
     };
 
@@ -223,8 +239,8 @@ const App = () => {
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={editorContent.isFeatured}
-                  onChange={(e) => setEditorContent(prev => ({ ...prev, isFeatured: e.target.checked }))}
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
@@ -239,7 +255,7 @@ const App = () => {
             {/* Formatting Toolbar */}
             <div className="mb-4 p-3 border rounded flex flex-wrap gap-2 items-center">
               <select 
-                value={editorContent.formatting.fontFamily}
+                value={formatting.fontFamily}
                 onChange={(e) => applyFormatting('fontFamily', e.target.value)}
                 className="px-2 py-1 border rounded"
               >
@@ -252,7 +268,7 @@ const App = () => {
               </select>
 
               <select 
-                value={editorContent.formatting.fontSize}
+                value={formatting.fontSize}
                 onChange={(e) => applyFormatting('fontSize', e.target.value)}
                 className="px-2 py-1 border rounded"
               >
@@ -268,77 +284,77 @@ const App = () => {
 
               <input
                 type="color"
-                value={editorContent.formatting.fontColor}
+                value={formatting.fontColor}
                 onChange={(e) => applyFormatting('fontColor', e.target.value)}
                 className="w-10 h-8 border rounded cursor-pointer"
               />
 
               <button
-                onClick={() => applyFormatting('fontWeight', editorContent.formatting.fontWeight === 'bold' ? 'normal' : 'bold')}
-                className={`p-1 border rounded ${editorContent.formatting.fontWeight === 'bold' ? 'bg-gray-200' : ''}`}
+                onClick={() => applyFormatting('fontWeight', formatting.fontWeight === 'bold' ? 'normal' : 'bold')}
+                className={`p-1 border rounded ${formatting.fontWeight === 'bold' ? 'bg-gray-200' : ''}`}
               >
                 <Bold size={20} />
               </button>
 
               <button
-                onClick={() => applyFormatting('fontStyle', editorContent.formatting.fontStyle === 'italic' ? 'normal' : 'italic')}
-                className={`p-1 border rounded ${editorContent.formatting.fontStyle === 'italic' ? 'bg-gray-200' : ''}`}
+                onClick={() => applyFormatting('fontStyle', formatting.fontStyle === 'italic' ? 'normal' : 'italic')}
+                className={`p-1 border rounded ${formatting.fontStyle === 'italic' ? 'bg-gray-200' : ''}`}
               >
                 <Italic size={20} />
               </button>
 
               <button
                 onClick={() => applyFormatting('textAlign', 'left')}
-                className={`p-1 border rounded ${editorContent.formatting.textAlign === 'left' ? 'bg-gray-200' : ''}`}
+                className={`p-1 border rounded ${formatting.textAlign === 'left' ? 'bg-gray-200' : ''}`}
               >
                 <AlignLeft size={20} />
               </button>
 
               <button
                 onClick={() => applyFormatting('textAlign', 'center')}
-                className={`p-1 border rounded ${editorContent.formatting.textAlign === 'center' ? 'bg-gray-200' : ''}`}
+                className={`p-1 border rounded ${formatting.textAlign === 'center' ? 'bg-gray-200' : ''}`}
               >
                 <AlignCenter size={20} />
               </button>
 
               <button
                 onClick={() => applyFormatting('textAlign', 'right')}
-                className={`p-1 border rounded ${editorContent.formatting.textAlign === 'right' ? 'bg-gray-200' : ''}`}
+                className={`p-1 border rounded ${formatting.textAlign === 'right' ? 'bg-gray-200' : ''}`}
               >
                 <AlignRight size={20} />
               </button>
             </div>
 
-            {/* Title Input */}
+            {/* Title Input - UNCONTROLLED */}
             <input
+              ref={titleInputRef}
               type="text"
               placeholder="Enter title..."
-              value={localTitle}
-              onChange={handleTitleChange}
+              defaultValue=""
               className="w-full px-4 py-2 border rounded mb-4"
               style={{
-                fontFamily: editorContent.formatting.fontFamily,
+                fontFamily: formatting.fontFamily,
                 fontSize: '24px',
-                color: editorContent.formatting.fontColor,
-                fontWeight: editorContent.formatting.fontWeight,
-                fontStyle: editorContent.formatting.fontStyle
+                color: formatting.fontColor,
+                fontWeight: formatting.fontWeight,
+                fontStyle: formatting.fontStyle
               }}
             />
 
-            {/* Content Textarea */}
+            {/* Content Textarea - UNCONTROLLED */}
             <textarea
+              ref={contentInputRef}
               placeholder="Enter content..."
-              value={localContent}
-              onChange={handleContentChange}
+              defaultValue=""
               rows="10"
               className="w-full px-4 py-2 border rounded mb-4"
               style={{
-                fontFamily: editorContent.formatting.fontFamily,
-                fontSize: editorContent.formatting.fontSize,
-                color: editorContent.formatting.fontColor,
-                fontWeight: editorContent.formatting.fontWeight,
-                fontStyle: editorContent.formatting.fontStyle,
-                textAlign: editorContent.formatting.textAlign
+                fontFamily: formatting.fontFamily,
+                fontSize: formatting.fontSize,
+                color: formatting.fontColor,
+                fontWeight: formatting.fontWeight,
+                fontStyle: formatting.fontStyle,
+                textAlign: formatting.textAlign
               }}
             />
 
@@ -377,20 +393,15 @@ const App = () => {
             </div>
 
             {/* Media Preview in Editor */}
-            {editorContent.media.length > 0 && (
+            {media.length > 0 && (
               <div className="mb-4">
                 <h3 className="font-semibold mb-2">Embedded Media:</h3>
                 <div className="space-y-2">
-                  {editorContent.media.map((item) => (
+                  {media.map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-2 border rounded">
                       <span>{item.type}: {item.url.substring(0, 50)}...</span>
                       <button
-                        onClick={() => {
-                          setEditorContent(prev => ({
-                            ...prev,
-                            media: prev.media.filter(m => m.id !== item.id)
-                          }));
-                        }}
+                        onClick={() => setMedia(prev => prev.filter(m => m.id !== item.id))}
                         className="text-red-500 hover:text-red-700"
                       >
                         <X size={20} />
@@ -404,13 +415,13 @@ const App = () => {
             {/* Action Buttons */}
             <div className="flex gap-2">
               <button
-                onClick={saveContent}
+                onClick={() => handleSave(false)}
                 className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 {contentType === 'email' ? 'Send Campaign' : 'Publish'}
               </button>
               <button
-                onClick={() => saveContent(true)}
+                onClick={() => handleSave(true)}
                 className="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
               >
                 Save as Draft
@@ -424,11 +435,11 @@ const App = () => {
               <h3 className="text-lg font-semibold mb-4 text-gray-700">Live Preview</h3>
               <PostCard 
                 post={{
-                  title: localTitle || 'Your Title Here',
-                  content: localContent || 'Your content will appear here...',
-                  media: editorContent.media,
-                  isFeatured: editorContent.isFeatured,
-                  formatting: editorContent.formatting,
+                  title: previewContent.title || 'Your Title Here',
+                  content: previewContent.content || 'Your content will appear here...',
+                  media: media,
+                  isFeatured: isFeatured,
+                  formatting: formatting,
                   created_at: new Date().toISOString()
                 }}
                 isPreview={true}
@@ -438,52 +449,6 @@ const App = () => {
         </div>
       </div>
     );
-  };
-
-  const saveContent = async (isDraft = false) => {
-    const contentData = {
-      title: editorContent.title || localTitle,
-      content: editorContent.content || localContent,
-      media: JSON.stringify(editorContent.media),
-      formatting: JSON.stringify(editorContent.formatting),
-      isFeatured: editorContent.isFeatured,
-      status: isDraft ? 'draft' : 'published',
-      created_at: new Date().toISOString(),
-      type: contentType
-    };
-
-    try {
-      const response = await fetch(`${XANO_BASE_URL}/post`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${XANO_API_KEY}`
-        },
-        body: JSON.stringify(contentData)
-      });
-
-      if (response.ok) {
-        alert(isDraft ? 'Saved as draft!' : 'Published successfully!');
-        setIsCreating(false);
-        fetchData();
-        setEditorContent({
-          title: '',
-          content: '',
-          media: [],
-          isFeatured: false,
-          formatting: {
-            fontFamily: 'Arial',
-            fontSize: '16px',
-            fontColor: '#000000',
-            fontWeight: 'normal',
-            fontStyle: 'normal',
-            textAlign: 'left'
-          }
-        });
-      }
-    } catch (error) {
-      alert('Error saving: ' + error.message);
-    }
   };
 
   // Post Card Component with Featured Styling and Comments
@@ -498,7 +463,7 @@ const App = () => {
       if (post.id && comments.length > 0) {
         setPostComments(comments.filter(c => c.post_id === post.id));
       }
-    }, [post.id, comments]);
+    }, [post.id]);
 
     const handleAddComment = async () => {
       if (!newComment.trim()) return;
@@ -535,8 +500,12 @@ const App = () => {
       }
     };
 
-    const formatContent = post.formatting ? JSON.parse(post.formatting) : editorContent.formatting;
-    const media = post.media ? (typeof post.media === 'string' ? JSON.parse(post.media) : post.media) : [];
+    const formatContent = post.formatting ? 
+      (typeof post.formatting === 'string' ? JSON.parse(post.formatting) : post.formatting) : 
+      {};
+    const media = post.media ? 
+      (typeof post.media === 'string' ? JSON.parse(post.media) : post.media) : 
+      [];
 
     return (
       <div className={`
@@ -557,11 +526,11 @@ const App = () => {
         <h2 
           className={`mb-3 ${post.isFeatured ? 'text-3xl' : 'text-2xl'}`}
           style={{
-            fontFamily: formatContent.fontFamily,
-            color: formatContent.fontColor,
+            fontFamily: formatContent.fontFamily || 'Arial',
+            color: formatContent.fontColor || '#000000',
             fontWeight: formatContent.fontWeight || 'bold',
-            fontStyle: formatContent.fontStyle,
-            textAlign: formatContent.textAlign
+            fontStyle: formatContent.fontStyle || 'normal',
+            textAlign: formatContent.textAlign || 'left'
           }}
         >
           {post.title}
@@ -574,12 +543,12 @@ const App = () => {
         <div 
           className="mb-4 whitespace-pre-wrap"
           style={{
-            fontFamily: formatContent.fontFamily,
-            fontSize: formatContent.fontSize,
-            color: formatContent.fontColor,
-            fontWeight: formatContent.fontWeight,
-            fontStyle: formatContent.fontStyle,
-            textAlign: formatContent.textAlign
+            fontFamily: formatContent.fontFamily || 'Arial',
+            fontSize: formatContent.fontSize || '16px',
+            color: formatContent.fontColor || '#000000',
+            fontWeight: formatContent.fontWeight || 'normal',
+            fontStyle: formatContent.fontStyle || 'normal',
+            textAlign: formatContent.textAlign || 'left'
           }}
         >
           {post.content}
