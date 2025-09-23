@@ -2,35 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Home, MessageSquare, FileText, Mail, Users, Calendar, BarChart3, Settings,
   Plus, Send, Clock, Edit, Trash2, Heart, MessageCircle, Bookmark,
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload, Save, Eye
+  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload
 } from 'lucide-react';
 
 const App = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('post');
-  const [editingPost, setEditingPost] = useState(null);
   const [posts, setPosts] = useState([
-    { 
-      id: 1, 
-      title: 'Welcome to Our Platform', 
-      content: 'This is a featured post!', 
-      htmlContent: 'This is a featured post!',
-      date: '9/23/2025', 
-      featured: true,
-      status: 'published'
-    },
-    { 
-      id: 2, 
-      title: 'Latest Updates', 
-      content: 'Check out our new features', 
-      htmlContent: 'Check out our new features',
-      date: '9/23/2025', 
-      featured: false,
-      status: 'published'
-    }
+    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true },
+    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false }
   ]);
-  const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [members, setMembers] = useState([]);
   const [newsFeedPosts, setNewsFeedPosts] = useState([
@@ -59,44 +41,14 @@ const App = () => {
     }
   ]);
 
-  // Rich Blog Editor Component with ALL formatting tools and fixes
-  const RichBlogEditor = ({ onSave, onCancel, initialPost = null }) => {
-    const [title, setTitle] = useState(initialPost?.title || '');
-    const [content, setContent] = useState(initialPost?.htmlContent || '');
+  // Rich Blog Editor Component with ALL formatting tools
+  const RichBlogEditor = ({ onSave, onCancel }) => {
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const contentRef = useRef(null);
     const fileInputRef = useRef(null);
-
-    // Initialize content if editing
-    useEffect(() => {
-      if (initialPost && contentRef.current) {
-        contentRef.current.innerHTML = initialPost.htmlContent || '';
-        setContent(initialPost.htmlContent || '');
-      }
-    }, [initialPost]);
-
-    // Clean up floating toolbars when component unmounts or changes
-    useEffect(() => {
-      return () => {
-        cleanupImageSelection();
-      };
-    }, []);
-
-    const cleanupImageSelection = () => {
-      // Remove all floating toolbars and handles
-      document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-      document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-      
-      // Remove selection styling
-      document.querySelectorAll('.selected-image').forEach(el => {
-        el.classList.remove('selected-image');
-        el.style.border = '2px solid transparent';
-        el.style.boxShadow = 'none';
-      });
-      
-      setSelectedImageId(null);
-    };
 
     // Text formatting functions
     const applyFormat = (command) => {
@@ -151,18 +103,13 @@ const App = () => {
     };
 
     const addLink = () => {
-      const selection = window.getSelection();
-      if (selection.rangeCount === 0) {
-        alert('Please select some text first, then add a link.');
-        return;
-      }
-      
-      const url = prompt('Enter the URL:');
+      const url = document.getElementById('linkUrl').value;
       if (url) {
         document.execCommand('createLink', false, url);
         if (contentRef.current) {
           setContent(contentRef.current.innerHTML);
         }
+        document.getElementById('linkUrl').value = '';
       }
     };
 
@@ -215,14 +162,20 @@ const App = () => {
       }
     };
 
-    // Image selection and manipulation - FIXED to clean up properly
+    // Image selection and manipulation
     const selectImage = (imageId) => {
       console.log('Image selected:', imageId);
-      
-      // Clean up any existing selections first
-      cleanupImageSelection();
-      
       setSelectedImageId(imageId);
+      
+      // Clean up previous selections
+      document.querySelectorAll('.selected-image').forEach(el => {
+        el.classList.remove('selected-image');
+        el.style.border = '2px solid transparent';
+        el.style.boxShadow = 'none';
+      });
+      
+      document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+      document.querySelectorAll('.resize-handle').forEach(el => el.remove());
       
       // Find and select the image
       const img = document.getElementById(`img-${imageId}`);
@@ -256,7 +209,6 @@ const App = () => {
         <button onclick="window.positionImageTo('${imageId}', 'left')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Left</button>
         <button onclick="window.positionImageTo('${imageId}', 'center')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Center</button>
         <button onclick="window.positionImageTo('${imageId}', 'right')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Right</button>
-        <button onclick="window.closeImageToolbar()" style="background: #d32f2f; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">✕</button>
       `;
       
       document.body.appendChild(toolbar);
@@ -328,10 +280,6 @@ const App = () => {
         
         setContent(contentRef.current.innerHTML);
       };
-
-      window.closeImageToolbar = () => {
-        cleanupImageSelection();
-      };
     }, []);
 
     // Handle content changes with cursor position fix
@@ -357,75 +305,19 @@ const App = () => {
       }
     };
 
-    // Click outside to deselect images
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (!event.target.closest('.image-toolbar') && !event.target.closest('img')) {
-          cleanupImageSelection();
-        }
-      };
-
-      document.addEventListener('click', handleClickOutside);
-      return () => {
-        document.removeEventListener('click', handleClickOutside);
-        cleanupImageSelection();
-      };
-    }, []);
-
-    // Convert HTML content to plain text for display
-    const getPlainTextContent = (htmlContent) => {
-      const div = document.createElement('div');
-      div.innerHTML = htmlContent;
-      return div.textContent || div.innerText || '';
-    };
-
-    const handleSaveDraft = () => {
-      const post = {
-        id: initialPost?.id || Date.now(),
-        title,
-        content: getPlainTextContent(content),
-        htmlContent: content,
-        date: new Date().toLocaleDateString(),
-        status: 'draft'
-      };
-      onSave(post, 'draft');
-    };
-
-    const handlePublishPost = () => {
-      const post = {
-        id: initialPost?.id || Date.now(),
-        title,
-        content: getPlainTextContent(content),
-        htmlContent: content,
-        date: new Date().toLocaleDateString(),
-        status: 'published'
-      };
-      onSave(post, 'published');
-    };
-
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">
-            {initialPost ? 'Edit Post' : 'Create Blog Post'}
-          </h2>
+          <h2 className="text-2xl font-bold">Create Blog Post</h2>
           <div className="flex gap-2">
             <button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50">
               Cancel
             </button>
             <button 
-              onClick={handleSaveDraft}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
+              onClick={() => onSave({ title, content })}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
-              <Save size={16} />
-              Save Draft
-            </button>
-            <button 
-              onClick={handlePublishPost}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-            >
-              <Eye size={16} />
-              Publish Post
+              Save Post
             </button>
           </div>
         </div>
@@ -518,15 +410,20 @@ const App = () => {
             </select>
           </div>
 
-          {/* Links - FIXED */}
+          {/* Links */}
           <div className="flex flex-wrap gap-2">
+            <input 
+              type="url" 
+              placeholder="https://example.com"
+              className="px-3 py-1 border rounded flex-1 min-w-48"
+              id="linkUrl"
+            />
             <button onClick={addLink} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
               Add Link
             </button>
             <button onClick={removeLink} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
               Remove Link
             </button>
-            <span className="text-sm text-gray-600 px-2 py-1">Select text first, then click Add Link</span>
           </div>
         </div>
 
@@ -548,7 +445,7 @@ const App = () => {
             {isUploading ? 'Uploading...' : 'Upload Image'}
           </button>
           <p className="text-sm text-gray-600 mt-2">
-            Upload an image, then click on it to resize and position it. Click the ✕ to close the toolbar.
+            Upload an image, then click on it to resize and position it.
           </p>
         </div>
 
@@ -577,7 +474,7 @@ const App = () => {
     );
   };
 
-  // News Feed Component (unchanged)
+  // News Feed Component
   const NewsFeed = () => {
     const [newPost, setNewPost] = useState('');
 
@@ -691,7 +588,7 @@ const App = () => {
     );
   };
 
-  // Dashboard Component (unchanged)
+  // Dashboard Component
   const Dashboard = () => (
     <div>
       <h2 className="text-2xl font-bold mb-6">Social Engagement Hub</h2>
@@ -699,7 +596,7 @@ const App = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <button
-          onClick={() => { setContentType('post'); setIsCreating(true); setEditingPost(null); }}
+          onClick={() => { setContentType('post'); setIsCreating(true); }}
           className="p-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-3"
         >
           <Plus size={24} />
@@ -736,8 +633,8 @@ const App = () => {
           <p className="text-2xl font-bold text-purple-600">{members.length}</p>
         </div>
         <div className="bg-green-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-600">Drafts</h3>
-          <p className="text-2xl font-bold text-green-600">{drafts.length}</p>
+          <h3 className="text-sm font-medium text-gray-600">Total Comments</h3>
+          <p className="text-2xl font-bold text-green-600">0</p>
         </div>
       </div>
 
@@ -755,10 +652,7 @@ const App = () => {
             </div>
             <h4 className="font-semibold text-lg mb-1">{post.title}</h4>
             <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-            <div 
-              className="text-gray-700 prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: post.htmlContent || post.content }}
-            />
+            <p className="text-gray-700">{post.content}</p>
             <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
               <MessageCircle size={16} />
               <span>0 Comments</span>
@@ -777,14 +671,7 @@ const App = () => {
               <p className="text-sm text-gray-500">{post.date}</p>
             </div>
             <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  setEditingPost(post);
-                  setContentType('post');
-                  setIsCreating(true);
-                }}
-                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-              >
+              <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
                 <Edit size={16} />
               </button>
               <button className="p-1 text-red-600 hover:bg-red-50 rounded">
@@ -802,29 +689,11 @@ const App = () => {
     if (contentType === 'post') {
       return (
         <RichBlogEditor
-          initialPost={editingPost}
-          onSave={(post, status) => {
-            if (status === 'draft') {
-              if (editingPost) {
-                setDrafts(prev => prev.map(d => d.id === post.id ? post : d));
-              } else {
-                setDrafts(prev => [post, ...prev]);
-              }
-            } else {
-              if (editingPost) {
-                setPosts(prev => prev.map(p => p.id === post.id ? post : p));
-                setDrafts(prev => prev.filter(d => d.id !== post.id));
-              } else {
-                setPosts(prev => [post, ...prev]);
-              }
-            }
+          onSave={(post) => {
+            setPosts(prev => [{ ...post, id: Date.now(), date: new Date().toLocaleDateString() }, ...prev]);
             setIsCreating(false);
-            setEditingPost(null);
           }}
-          onCancel={() => {
-            setIsCreating(false);
-            setEditingPost(null);
-          }}
+          onCancel={() => setIsCreating(false)}
         />
       );
     }
@@ -842,27 +711,17 @@ const App = () => {
     );
   };
 
-  // Post Component - FIXED to render HTML properly
+  // Post Component
   const PostCard = ({ post }) => (
     <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <h3 className="font-semibold">{post.title}</h3>
           <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-          <div 
-            className="text-gray-700 prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.htmlContent || post.content }}
-          />
+          <p className="text-gray-700">{post.content}</p>
         </div>
         <div className="flex gap-2 ml-4">
-          <button 
-            onClick={() => {
-              setEditingPost(post);
-              setContentType('post');
-              setIsCreating(true);
-            }}
-            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-          >
+          <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
             <Edit size={16} />
           </button>
           <button className="p-1 text-red-600 hover:bg-red-50 rounded">
@@ -873,7 +732,7 @@ const App = () => {
     </div>
   );
 
-  // Settings Component (unchanged)
+  // Settings Component
   const Settings = () => (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">Settings</h2>
@@ -932,58 +791,12 @@ const App = () => {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">Blog Posts</h2>
                   <button
-                    onClick={() => { setContentType('post'); setIsCreating(true); setEditingPost(null); }}
+                    onClick={() => { setContentType('post'); setIsCreating(true); }}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
                   >
                     <Plus size={20} /> New Post
                   </button>
                 </div>
-                
-                {/* Drafts Section */}
-                {drafts.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3 text-gray-600">📝 Drafts</h3>
-                    <div className="space-y-3">
-                      {drafts.map(post => (
-                        <div key={post.id} className="border rounded-lg p-4 bg-yellow-50">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full font-medium">
-                                  DRAFT
-                                </span>
-                              </div>
-                              <h3 className="font-semibold">{post.title}</h3>
-                              <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-                              <div 
-                                className="text-gray-700 prose max-w-none"
-                                dangerouslySetInnerHTML={{ __html: post.htmlContent || post.content }}
-                              />
-                            </div>
-                            <div className="flex gap-2 ml-4">
-                              <button 
-                                onClick={() => {
-                                  setEditingPost(post);
-                                  setContentType('post');
-                                  setIsCreating(true);
-                                }}
-                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                              >
-                                <Edit size={16} />
-                              </button>
-                              <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Published Posts */}
-                <h3 className="text-lg font-semibold mb-3">📰 Published Posts</h3>
                 <div className="space-y-3">
                   {posts.map(post => <PostCard key={post.id} post={post} />)}
                 </div>
