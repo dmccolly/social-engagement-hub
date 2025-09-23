@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { 
   Home, MessageSquare, FileText, Mail, Users, Calendar, BarChart3, Settings,
   Plus, Send, Clock, Edit, Trash2, Heart, MessageCircle, Bookmark,
@@ -6,11 +7,162 @@ import {
   Eye, Copy, Check, Star, TrendingUp, Activity, Vote
 } from 'lucide-react';
 
-const App = () => {
-  // Check if this is a widget route
-  const isWidgetRoute = window.location.pathname.startsWith('/widget/');
-  const widgetType = window.location.pathname.split('/')[2];
+// Standalone Blog Widget Component
+const StandaloneBlogWidget = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const settingsParam = urlParams.get('settings');
+  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
+    primaryColor: '#3b82f6',
+    showImages: true,
+    maxPosts: 3
+  };
+
+  // Sample blog posts for the widget
+  const posts = [
+    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
+    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
+  ];
+
+  const blogPosts = posts.filter(post => post.published === true);
+  const displayPosts = blogPosts.slice(0, settings.maxPosts);
   
+  return (
+    <div style={{ 
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      backgroundColor: 'white',
+      border: `3px solid ${settings.primaryColor}`,
+      borderRadius: '12px',
+      overflow: 'hidden',
+      width: '100%',
+      height: '100vh',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      position: 'relative'
+    }}>
+      {/* Widget Header */}
+      <div style={{
+        backgroundColor: settings.primaryColor,
+        color: 'white',
+        padding: '16px',
+        fontWeight: '700',
+        fontSize: '18px',
+        textAlign: 'center',
+        letterSpacing: '0.5px'
+      }}>
+        📝 Latest Blog Posts
+      </div>
+      
+      {/* Blog Posts Content */}
+      <div style={{ 
+        height: 'calc(100vh - 120px)', 
+        overflowY: 'auto',
+        backgroundColor: 'white',
+        padding: '0'
+      }}>
+        {displayPosts.length > 0 ? displayPosts.map((post, index) => (
+          <article key={post.id} style={{
+            padding: '20px',
+            borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
+            backgroundColor: 'white'
+          }}>
+            {/* Post Title */}
+            <h3 style={{
+              margin: '0 0 10px 0',
+              fontSize: '18px',
+              fontWeight: '700',
+              color: '#1a1a1a',
+              lineHeight: '1.3',
+              cursor: 'pointer'
+            }}>
+              {post.title}
+            </h3>
+            
+            {/* Post Date */}
+            <div style={{
+              color: '#666',
+              fontSize: '13px',
+              marginBottom: '12px',
+              fontWeight: '500'
+            }}>
+              📅 {post.date}
+            </div>
+            
+            {/* Post Content */}
+            <div style={{
+              color: '#333',
+              fontSize: '15px',
+              lineHeight: '1.6',
+              marginBottom: '12px'
+            }}>
+              {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
+            </div>
+            
+            {/* Featured Badge */}
+            {post.featured && (
+              <div style={{
+                display: 'inline-block',
+                backgroundColor: '#ff6b35',
+                color: 'white',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontSize: '11px',
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                ⭐ Featured
+              </div>
+            )}
+            
+            {/* Read More Link */}
+            <div style={{
+              marginTop: '12px'
+            }}>
+              <a href="#" style={{
+                color: settings.primaryColor,
+                fontSize: '14px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                borderBottom: `2px solid ${settings.primaryColor}40`
+              }}>
+                Read More →
+              </a>
+            </div>
+          </article>
+        )) : (
+          <div style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            color: '#999',
+            fontSize: '16px'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+            <div>No blog posts yet</div>
+            <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
+          </div>
+        )}
+      </div>
+      
+      {/* Widget Footer */}
+      <div style={{
+        position: 'absolute',
+        bottom: '0',
+        left: '0',
+        right: '0',
+        backgroundColor: settings.primaryColor,
+        color: 'white',
+        padding: '8px',
+        textAlign: 'center',
+        fontSize: '12px',
+        fontWeight: '600'
+      }}>
+        Powered by Social Hub
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+const MainApp = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('post');
@@ -1405,162 +1557,7 @@ const App = () => {
     </div>
   );
 
-  // Standalone Widget Components for iframe embedding
-  const StandaloneBlogWidget = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const settingsParam = urlParams.get('settings');
-    const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
-      primaryColor: '#3b82f6',
-      showImages: true,
-      maxPosts: 3
-    };
 
-    const blogPosts = posts.filter(post => post.published === true);
-    const displayPosts = blogPosts.slice(0, settings.maxPosts);
-    
-    return (
-      <div style={{ 
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        backgroundColor: 'white',
-        border: `3px solid ${settings.primaryColor}`,
-        borderRadius: '12px',
-        overflow: 'hidden',
-        width: '100%',
-        height: '100vh',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        position: 'relative'
-      }}>
-        {/* Widget Header */}
-        <div style={{
-          backgroundColor: settings.primaryColor,
-          color: 'white',
-          padding: '16px',
-          fontWeight: '700',
-          fontSize: '18px',
-          textAlign: 'center',
-          letterSpacing: '0.5px'
-        }}>
-          📝 Latest Blog Posts
-        </div>
-        
-        {/* Blog Posts Content */}
-        <div style={{ 
-          height: 'calc(100vh - 120px)', 
-          overflowY: 'auto',
-          backgroundColor: 'white',
-          padding: '0'
-        }}>
-          {displayPosts.length > 0 ? displayPosts.map((post, index) => (
-            <article key={post.id} style={{
-              padding: '20px',
-              borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-              backgroundColor: 'white'
-            }}>
-              {/* Post Title */}
-              <h3 style={{
-                margin: '0 0 10px 0',
-                fontSize: '18px',
-                fontWeight: '700',
-                color: '#1a1a1a',
-                lineHeight: '1.3',
-                cursor: 'pointer'
-              }}>
-                {post.title}
-              </h3>
-              
-              {/* Post Date */}
-              <div style={{
-                color: '#666',
-                fontSize: '13px',
-                marginBottom: '12px',
-                fontWeight: '500'
-              }}>
-                📅 {post.date}
-              </div>
-              
-              {/* Post Content */}
-              <div style={{
-                color: '#333',
-                fontSize: '15px',
-                lineHeight: '1.6',
-                marginBottom: '12px'
-              }}>
-                {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
-              </div>
-              
-              {/* Featured Badge */}
-              {post.featured && (
-                <div style={{
-                  display: 'inline-block',
-                  backgroundColor: '#ff6b35',
-                  color: 'white',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  ⭐ Featured
-                </div>
-              )}
-              
-              {/* Read More Link */}
-              <div style={{
-                marginTop: '12px'
-              }}>
-                <a href="#" style={{
-                  color: settings.primaryColor,
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  textDecoration: 'none',
-                  borderBottom: `2px solid ${settings.primaryColor}40`
-                }}>
-                  Read More →
-                </a>
-              </div>
-            </article>
-          )) : (
-            <div style={{
-              padding: '60px 20px',
-              textAlign: 'center',
-              color: '#999',
-              fontSize: '16px'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-              <div>No blog posts yet</div>
-              <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
-            </div>
-          )}
-        </div>
-        
-        {/* Widget Footer */}
-        <div style={{
-          position: 'absolute',
-          bottom: '0',
-          left: '0',
-          right: '0',
-          backgroundColor: settings.primaryColor,
-          color: 'white',
-          padding: '8px',
-          textAlign: 'center',
-          fontSize: '12px',
-          fontWeight: '600'
-        }}>
-          Powered by Social Hub
-        </div>
-      </div>
-    );
-  };
-
-  // Return widget component if this is a widget route
-  if (isWidgetRoute) {
-    if (widgetType === 'blog') {
-      return <StandaloneBlogWidget />;
-    }
-    // Add other widget types here
-    return <div>Widget not found</div>;
-  }
 
   // Store the main app JSX
   const mainApp = (
@@ -1727,6 +1724,18 @@ const App = () => {
 
   // Return main app
   return mainApp;
+};
+
+// App with Router
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/widget/blog" element={<StandaloneBlogWidget />} />
+        <Route path="/*" element={<MainApp />} />
+      </Routes>
+    </Router>
+  );
 };
 
 export default App;
