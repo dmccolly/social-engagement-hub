@@ -7,6 +7,10 @@ import {
 } from 'lucide-react';
 
 const App = () => {
+  // Check if this is a widget route
+  const isWidgetRoute = window.location.pathname.startsWith('/widget/');
+  const widgetType = window.location.pathname.split('/')[2];
+  
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('post');
@@ -1400,6 +1404,329 @@ const App = () => {
       </div>
     </div>
   );
+
+  // Standalone Widget Components for iframe embedding
+  const StandaloneBlogWidget = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const settingsParam = urlParams.get('settings');
+    const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
+      primaryColor: '#3b82f6',
+      showImages: true,
+      maxPosts: 3
+    };
+
+    const blogPosts = posts.filter(post => post.published === true);
+    const displayPosts = blogPosts.slice(0, settings.maxPosts);
+    
+    return (
+      <div style={{ 
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        backgroundColor: 'white',
+        border: `3px solid ${settings.primaryColor}`,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        width: '100%',
+        height: '100vh',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        position: 'relative'
+      }}>
+        {/* Widget Header */}
+        <div style={{
+          backgroundColor: settings.primaryColor,
+          color: 'white',
+          padding: '16px',
+          fontWeight: '700',
+          fontSize: '18px',
+          textAlign: 'center',
+          letterSpacing: '0.5px'
+        }}>
+          📝 Latest Blog Posts
+        </div>
+        
+        {/* Blog Posts Content */}
+        <div style={{ 
+          height: 'calc(100vh - 120px)', 
+          overflowY: 'auto',
+          backgroundColor: 'white',
+          padding: '0'
+        }}>
+          {displayPosts.length > 0 ? displayPosts.map((post, index) => (
+            <article key={post.id} style={{
+              padding: '20px',
+              borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
+              backgroundColor: 'white'
+            }}>
+              {/* Post Title */}
+              <h3 style={{
+                margin: '0 0 10px 0',
+                fontSize: '18px',
+                fontWeight: '700',
+                color: '#1a1a1a',
+                lineHeight: '1.3',
+                cursor: 'pointer'
+              }}>
+                {post.title}
+              </h3>
+              
+              {/* Post Date */}
+              <div style={{
+                color: '#666',
+                fontSize: '13px',
+                marginBottom: '12px',
+                fontWeight: '500'
+              }}>
+                📅 {post.date}
+              </div>
+              
+              {/* Post Content */}
+              <div style={{
+                color: '#333',
+                fontSize: '15px',
+                lineHeight: '1.6',
+                marginBottom: '12px'
+              }}>
+                {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
+              </div>
+              
+              {/* Featured Badge */}
+              {post.featured && (
+                <div style={{
+                  display: 'inline-block',
+                  backgroundColor: '#ff6b35',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  ⭐ Featured
+                </div>
+              )}
+              
+              {/* Read More Link */}
+              <div style={{
+                marginTop: '12px'
+              }}>
+                <a href="#" style={{
+                  color: settings.primaryColor,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  textDecoration: 'none',
+                  borderBottom: `2px solid ${settings.primaryColor}40`
+                }}>
+                  Read More →
+                </a>
+              </div>
+            </article>
+          )) : (
+            <div style={{
+              padding: '60px 20px',
+              textAlign: 'center',
+              color: '#999',
+              fontSize: '16px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+              <div>No blog posts yet</div>
+              <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
+            </div>
+          )}
+        </div>
+        
+        {/* Widget Footer */}
+        <div style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          backgroundColor: settings.primaryColor,
+          color: 'white',
+          padding: '8px',
+          textAlign: 'center',
+          fontSize: '12px',
+          fontWeight: '600'
+        }}>
+          Powered by Social Hub
+        </div>
+      </div>
+    );
+  };
+
+  // Return widget component if this is a widget route
+  if (isWidgetRoute) {
+    if (widgetType === 'blog') {
+      return <StandaloneBlogWidget />;
+    }
+    // Add other widget types here
+    return <div>Widget not found</div>;
+  }
+
+  // Store the main app JSX
+  const mainApp = (
+    <div className="min-h-screen bg-gray-100 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg">
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-gray-800">Social Hub</h2>
+        </div>
+        <nav className="px-4 pb-6">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveSection(item.id);
+                setIsCreating(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg mb-2 transition ${
+                activeSection === item.id
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <item.icon size={20} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        {isCreating ? (
+          <ContentEditor />
+        ) : (
+          <>
+            {activeSection === 'dashboard' && <Dashboard />}
+            {activeSection === 'newsfeed' && <NewsFeed />}
+            {activeSection === 'settings' && <Settings />}
+            {activeSection === 'posts' && (
+              <div className="space-y-6">
+                {/* Drafts Section */}
+                {drafts.length > 0 && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-xl font-semibold mb-4 text-yellow-600">📝 Drafts ({drafts.length})</h3>
+                    <div className="space-y-3">
+                      {drafts.map(draft => (
+                        <div key={draft.id} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full font-medium">
+                                  DRAFT
+                                </span>
+                              </div>
+                              <h4 className="font-semibold text-lg">{draft.title}</h4>
+                              <p className="text-sm text-gray-500 mb-2">{draft.date}</p>
+                              <p className="text-gray-700">{draft.content.length > 100 ? `${draft.content.substring(0, 100)}...` : draft.content}</p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                <Edit size={16} />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  // Publish draft
+                                  const publishedPost = { ...draft, published: true };
+                                  setPosts(prev => [...prev, publishedPost]);
+                                  setDrafts(prev => prev.filter(d => d.id !== draft.id));
+                                  alert('Draft published successfully!');
+                                }}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded"
+                                title="Publish Draft"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Published Posts Section */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">Published Posts ({posts.filter(p => p.published).length})</h2>
+                    <button
+                      onClick={() => { setContentType('post'); setIsCreating(true); }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Plus size={20} /> New Post
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeSection === 'campaigns' && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">Email Campaigns</h2>
+                  <button
+                    onClick={() => { setContentType('email'); setIsCreating(true); }}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <Send size={20} /> New Campaign
+                  </button>
+                </div>
+                {campaigns.length === 0 && (
+                  <p className="text-gray-500">No campaigns yet. Create your first one!</p>
+                )}
+              </div>
+            )}
+            {activeSection === 'members' && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-2xl font-bold mb-6">Members ({members.length})</h2>
+                <div className="space-y-2">
+                  {members.map((member, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 border rounded">
+                      <div>
+                        <p className="font-medium">{member.name || member.email}</p>
+                        <p className="text-sm text-gray-500">{member.email}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                          <Edit size={16} />
+                        </button>
+                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {members.length === 0 && (
+                    <p className="text-gray-500">No members yet.</p>
+                  )}
+                </div>
+              </div>
+            )}
+            {activeSection === 'calendar' && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-2xl font-bold mb-6">Calendar</h2>
+                <p className="text-gray-600">Calendar functionality coming soon...</p>
+              </div>
+            )}
+            {activeSection === 'analytics' && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-2xl font-bold mb-6">Analytics</h2>
+                <p className="text-gray-600">Analytics dashboard coming soon...</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  // Return main app
+  return mainApp;
 };
 
 export default App;
