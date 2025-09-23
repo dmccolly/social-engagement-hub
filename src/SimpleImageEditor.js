@@ -502,9 +502,15 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           line-height: 1.6;
           font-size: 16px;
           resize: vertical;
-          direction: ltr;
-          text-align: left;
-          unicode-bidi: normal;
+          direction: ltr !important;
+          text-align: left !important;
+          unicode-bidi: normal !important;
+          writing-mode: horizontal-tb !important;
+        }
+        
+        .simple-content-editor * {
+          direction: ltr !important;
+          unicode-bidi: normal !important;
         }
         
         .simple-content-editor:focus {
