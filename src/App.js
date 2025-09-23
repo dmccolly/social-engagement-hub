@@ -307,6 +307,26 @@ const App = () => {
       }
     };
 
+    // Clean up image toolbar when clicking elsewhere
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (!event.target.closest('.selected-image') && !event.target.closest('.image-toolbar')) {
+          // Remove all toolbars and handles
+          document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+          document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+          document.querySelectorAll('.selected-image').forEach(el => {
+            el.classList.remove('selected-image');
+            el.style.border = '2px solid transparent';
+            el.style.boxShadow = 'none';
+          });
+          setSelectedImageId(null);
+        }
+      };
+
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
@@ -720,11 +740,51 @@ const App = () => {
           onCancel={() => setIsCreating(false)}
         />
       );
+    } else if (contentType === 'email') {
+      return (
+        <RichBlogEditor
+          onSave={(postData) => {
+            const newCampaign = {
+              id: Date.now(),
+              title: postData.title,
+              content: postData.content,
+              date: new Date().toLocaleDateString(),
+              type: 'email'
+            };
+            
+            setCampaigns(prev => [...prev, newCampaign]);
+            alert('Email campaign created successfully!');
+            setIsCreating(false);
+          }}
+          onCancel={() => setIsCreating(false)}
+        />
+      );
+    } else if (contentType === 'schedule') {
+      return (
+        <RichBlogEditor
+          onSave={(postData) => {
+            const scheduledPost = {
+              id: Date.now(),
+              title: postData.title,
+              content: postData.content,
+              date: new Date().toLocaleDateString(),
+              scheduled: true,
+              published: false
+            };
+            
+            setPosts(prev => [...prev, scheduledPost]);
+            alert('Content scheduled successfully!');
+            setIsCreating(false);
+          }}
+          onCancel={() => setIsCreating(false)}
+        />
+      );
     }
+    
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-4">Other Content Types</h2>
-        <p>Email campaigns and scheduled content coming soon...</p>
+        <h2 className="text-2xl font-bold mb-4">Content Editor</h2>
+        <p>Please select a content type to continue.</p>
         <button
           onClick={() => setIsCreating(false)}
           className="mt-4 px-4 py-2 border rounded hover:bg-gray-50"
@@ -936,75 +996,83 @@ const App = () => {
     );
   };
 
-  // Settings Component with Widget Gallery
+  // Settings Component - Clean Widget Gallery
   const Settings = () => (
-    <div className="space-y-8">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-6">Settings & Widgets</h2>
-        
-        {/* Widget Gallery Section */}
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Widget Gallery</h3>
-          <p className="text-gray-600 mb-6">Embed these widgets on your website to extend your community reach</p>
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Widget Gallery</h1>
+        <p className="text-gray-600">Embed these widgets on your website to extend your community reach</p>
+      </div>
 
-          {/* Category Filter */}
-          <div className="mb-6">
-            <div className="flex gap-2 flex-wrap">
-              {widgetCategories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                    selectedCategory === category
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+      {/* Category Filter */}
+      <div className="mb-8">
+        <div className="flex gap-3 flex-wrap">
+          {widgetCategories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-6 py-2 rounded-full font-medium transition ${
+                selectedCategory === category
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Widget Grid */}
+      <div className="space-y-8">
+        {filteredWidgets.map(widget => (
+          <div key={widget.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+            {/* Widget Header */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <widget.icon size={28} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{widget.name}</h3>
+                  <p className="text-gray-600 mt-1">{widget.description}</p>
+                  <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+                    {widget.category}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Widget Grid */}
-          <div className="grid gap-8">
-            {filteredWidgets.map(widget => (
-              <div key={widget.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                {/* Widget Header */}
-                <div className="p-6 border-b bg-gray-50">
-                  <div className="flex items-center gap-3 mb-2">
-                    <widget.icon size={24} className="text-blue-600" />
-                    <h4 className="text-lg font-semibold">{widget.name}</h4>
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                      {widget.category}
-                    </span>
+            {/* Widget Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Live Preview */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">🔴 Live Preview</h4>
+                  <div className="flex justify-center p-4 bg-gray-50 rounded-lg">
+                    {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
+                    {widget.id !== 'blog' && (
+                      <div className="w-80 h-96 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <widget.icon size={48} className="mx-auto mb-2 text-gray-400" />
+                          <p>Preview for {widget.name}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-gray-600 text-sm">{widget.description}</p>
                 </div>
 
-                {/* Widget Content */}
-                <div className="p-6 flex gap-8">
-                  {/* Preview */}
-                  <div className="flex-1">
-                    <h5 className="font-medium mb-4 text-gray-700">Live Preview</h5>
-                    <div className="flex justify-center">
-                      {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
-                      {widget.id !== 'blog' && (
-                        <div className="w-80 h-96 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-                          Preview for {widget.name}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Customization */}
-                  <div className="flex-1">
-                    <h5 className="font-medium mb-4 text-gray-700">Customization</h5>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Primary Color
-                        </label>
+                {/* Settings & Embed */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Customize & Embed</h4>
+                  
+                  {/* Settings */}
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Primary Color
+                      </label>
+                      <div className="flex items-center gap-3">
                         <input
                           type="color"
                           value={widgetSettings[widget.id].primaryColor}
@@ -1012,93 +1080,93 @@ const App = () => {
                             ...prev,
                             [widget.id]: { ...prev[widget.id], primaryColor: e.target.value }
                           }))}
-                          className="w-full h-10 border rounded cursor-pointer"
+                          className="w-12 h-12 border-2 border-gray-300 rounded-lg cursor-pointer"
                         />
-                      </div>
-
-                      {/* Widget-specific settings */}
-                      {widget.id === 'blog' && (
-                        <>
-                          <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-700">
-                              <input
-                                type="checkbox"
-                                checked={widgetSettings[widget.id].showImages}
-                                onChange={(e) => setWidgetSettings(prev => ({
-                                  ...prev,
-                                  [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
-                                }))}
-                              />
-                              Show Images
-                            </label>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Max Posts
-                            </label>
-                            <select
-                              value={widgetSettings[widget.id].maxPosts}
-                              onChange={(e) => setWidgetSettings(prev => ({
-                                ...prev,
-                                [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
-                              }))}
-                              className="w-full p-2 border rounded"
-                            >
-                              <option value={1}>1</option>
-                              <option value={2}>2</option>
-                              <option value={3}>3</option>
-                              <option value={5}>5</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Embed Code */}
-                      <div className="mt-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Embed Code
-                        </label>
-                        <div className="relative">
-                          <textarea
-                            readOnly
-                            value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
-                            className="w-full h-20 p-3 border rounded bg-gray-50 text-xs font-mono resize-none"
-                          />
-                          <button
-                            onClick={() => copyEmbedCode(widget.id)}
-                            className={`absolute top-2 right-2 px-3 py-1 text-xs font-medium rounded transition ${
-                              copiedWidget === widget.id
-                                ? 'bg-green-600 text-white'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                          >
-                            {copiedWidget === widget.id ? (
-                              <>
-                                <Check size={12} className="inline mr-1" />
-                                Copied!
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={12} className="inline mr-1" />
-                                Copy
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <span className="text-sm text-gray-600">{widgetSettings[widget.id].primaryColor}</span>
                       </div>
                     </div>
+
+                    {/* Widget-specific settings */}
+                    {widget.id === 'blog' && (
+                      <>
+                        <div>
+                          <label className="flex items-center gap-3 text-sm text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={widgetSettings[widget.id].showImages}
+                              onChange={(e) => setWidgetSettings(prev => ({
+                                ...prev,
+                                [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
+                              }))}
+                              className="w-4 h-4 text-blue-600 rounded"
+                            />
+                            Show Images
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Max Posts to Display
+                          </label>
+                          <select
+                            value={widgetSettings[widget.id].maxPosts}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
+                            }))}
+                            className="w-full p-3 border border-gray-300 rounded-lg"
+                          >
+                            <option value={1}>1 Post</option>
+                            <option value={2}>2 Posts</option>
+                            <option value={3}>3 Posts</option>
+                            <option value={5}>5 Posts</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Embed Code */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📋 Embed Code (Copy & Paste)
+                    </label>
+                    <div className="relative">
+                      <textarea
+                        readOnly
+                        value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
+                        className="w-full h-24 p-3 border border-gray-300 rounded-lg bg-gray-50 text-xs font-mono resize-none"
+                        onClick={(e) => e.target.select()}
+                      />
+                      <button
+                        onClick={() => copyEmbedCode(widget.id)}
+                        className={`absolute top-2 right-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
+                          copiedWidget === widget.id
+                            ? 'bg-green-600 text-white'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {copiedWidget === widget.id ? (
+                          <>
+                            <Check size={16} className="inline mr-2" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={16} className="inline mr-2" />
+                            Copy Code
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Paste this code into your website's HTML where you want the widget to appear.
+                    </p>
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-
-        {/* Other Settings */}
-        <div className="border-t pt-8">
-          <h3 className="text-xl font-semibold mb-4">General Settings</h3>
-          <p className="text-gray-600">Account preferences and platform settings coming soon...</p>
-        </div>
+        ))}
       </div>
     </div>
   );
