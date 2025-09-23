@@ -902,120 +902,122 @@ const App = () => {
     setTimeout(() => setCopiedWidget(''), 2000);
   };
 
-  // Blog Widget Preview Component
+  // Blog Widget Preview Component - CLEAN VERSION
   const BlogWidgetPreview = ({ settings }) => {
     const displayPosts = posts.filter(post => post.published).slice(0, settings.maxPosts);
     
     return (
       <div style={{ 
-        fontFamily: 'Arial, sans-serif',
-        backgroundColor: 'transparent',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        backgroundColor: 'white',
         border: `2px solid ${settings.primaryColor}`,
-        borderRadius: '12px',
+        borderRadius: '8px',
         overflow: 'hidden',
-        maxWidth: '400px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        width: '350px',
+        height: '500px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
+        {/* Header */}
         <div style={{
           backgroundColor: settings.primaryColor,
           color: 'white',
-          padding: '16px',
-          fontWeight: 'bold',
-          fontSize: '18px'
+          padding: '12px 16px',
+          fontWeight: '600',
+          fontSize: '16px',
+          textAlign: 'center'
         }}>
           Latest Blog Posts
         </div>
-        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-          {displayPosts.map((post, index) => (
+        
+        {/* Posts */}
+        <div style={{ 
+          height: '440px', 
+          overflowY: 'auto',
+          backgroundColor: 'white'
+        }}>
+          {displayPosts.length > 0 ? displayPosts.map((post, index) => (
             <div key={post.id} style={{
-              padding: '20px',
-              borderBottom: index < displayPosts.length - 1 ? '1px solid #e5e7eb' : 'none',
-              minHeight: '400px',
-              display: 'flex',
-              flexDirection: 'column'
+              padding: '16px',
+              borderBottom: index < displayPosts.length - 1 ? '1px solid #e5e7eb' : 'none'
             }}>
-              <h3 style={{
-                margin: '0 0 12px 0',
-                fontSize: '20px',
-                fontWeight: 'bold',
-                color: '#1f2937',
-                lineHeight: '1.3'
+              <h4 style={{
+                margin: '0 0 8px 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#111827',
+                lineHeight: '1.4'
               }}>
                 {post.title}
-              </h3>
+              </h4>
               <div style={{
                 color: '#6b7280',
-                fontSize: '14px',
-                marginBottom: '12px'
+                fontSize: '12px',
+                marginBottom: '8px'
               }}>
                 {post.date}
               </div>
               <div style={{
                 color: '#374151',
-                fontSize: '16px',
-                lineHeight: '1.6',
-                flex: 1,
-                marginBottom: '16px'
+                fontSize: '14px',
+                lineHeight: '1.5'
               }}>
-                {post.content.length > 200 ? (
-                  <>
-                    {post.content.substring(0, 200)}...
-                    <button style={{
-                      background: 'none',
-                      border: 'none',
-                      color: settings.primaryColor,
-                      cursor: 'pointer',
-                      fontWeight: 'bold',
-                      marginLeft: '8px'
-                    }}>
-                      Read More
-                    </button>
-                  </>
-                ) : (
-                  post.content
-                )}
+                {post.content.length > 120 ? `${post.content.substring(0, 120)}...` : post.content}
               </div>
               {post.featured && (
                 <div style={{
                   display: 'inline-block',
-                  backgroundColor: '#fbbf24',
+                  backgroundColor: '#f59e0b',
                   color: 'white',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  alignSelf: 'flex-start'
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  fontWeight: '600',
+                  marginTop: '8px'
                 }}>
                   FEATURED
                 </div>
               )}
             </div>
-          ))}
+          )) : (
+            <div style={{
+              padding: '32px 16px',
+              textAlign: 'center',
+              color: '#6b7280',
+              fontSize: '14px'
+            }}>
+              No blog posts yet
+            </div>
+          )}
         </div>
       </div>
     );
   };
 
-  // Settings Component - Clean Widget Gallery
+  // Settings Component - TRANSPARENT BACKGROUNDS
   const Settings = () => (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Widget Gallery</h1>
-        <p className="text-gray-600">Embed these widgets on your website to extend your community reach</p>
+    <div style={{ backgroundColor: 'transparent', padding: '24px' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>Widget Gallery</h1>
+        <p style={{ color: '#6b7280' }}>Embed these widgets on your website to extend your community reach</p>
       </div>
 
       {/* Category Filter */}
-      <div className="mb-8">
-        <div className="flex gap-3 flex-wrap">
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           {widgetCategories.map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full font-medium transition ${
-                selectedCategory === category
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
+              style={{
+                padding: '8px 24px',
+                borderRadius: '9999px',
+                fontWeight: '500',
+                border: selectedCategory === category ? 'none' : '1px solid #d1d5db',
+                backgroundColor: selectedCategory === category ? '#2563eb' : 'transparent',
+                color: selectedCategory === category ? 'white' : '#374151',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
             >
               {category}
             </button>
@@ -1024,19 +1026,41 @@ const App = () => {
       </div>
 
       {/* Widget Grid */}
-      <div className="space-y-8">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
         {filteredWidgets.map(widget => (
-          <div key={widget.id} className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+          <div key={widget.id} style={{ 
+            backgroundColor: 'transparent', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '12px', 
+            overflow: 'hidden' 
+          }}>
             {/* Widget Header */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <widget.icon size={28} className="text-blue-600" />
+            <div style={{ 
+              backgroundColor: 'transparent', 
+              padding: '24px', 
+              borderBottom: '1px solid #e5e7eb' 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ 
+                  padding: '12px', 
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                  borderRadius: '8px' 
+                }}>
+                  <widget.icon size={28} style={{ color: '#2563eb' }} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{widget.name}</h3>
-                  <p className="text-gray-600 mt-1">{widget.description}</p>
-                  <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', margin: 0 }}>{widget.name}</h3>
+                  <p style={{ color: '#6b7280', marginTop: '4px', margin: 0 }}>{widget.description}</p>
+                  <span style={{
+                    display: 'inline-block',
+                    marginTop: '8px',
+                    padding: '4px 12px',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    color: '#1e40af',
+                    fontSize: '12px',
+                    borderRadius: '9999px',
+                    fontWeight: '500'
+                  }}>
                     {widget.category}
                   </span>
                 </div>
@@ -1044,17 +1068,33 @@ const App = () => {
             </div>
 
             {/* Widget Content */}
-            <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div style={{ padding: '24px', backgroundColor: 'transparent' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
                 {/* Live Preview */}
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">🔴 Live Preview</h4>
-                  <div className="flex justify-center p-4 bg-gray-50 rounded-lg">
+                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>🔴 Live Preview</h4>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    padding: '16px', 
+                    backgroundColor: 'transparent', 
+                    borderRadius: '8px' 
+                  }}>
                     {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
                     {widget.id !== 'blog' && (
-                      <div className="w-80 h-96 bg-white border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
-                        <div className="text-center">
-                          <widget.icon size={48} className="mx-auto mb-2 text-gray-400" />
+                      <div style={{
+                        width: '320px',
+                        height: '384px',
+                        backgroundColor: 'transparent',
+                        border: '2px dashed #d1d5db',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#6b7280'
+                      }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <widget.icon size={48} style={{ color: '#9ca3af', marginBottom: '8px' }} />
                           <p>Preview for {widget.name}</p>
                         </div>
                       </div>
@@ -1064,15 +1104,21 @@ const App = () => {
 
                 {/* Settings & Embed */}
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Customize & Embed</h4>
+                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>⚙️ Customize & Embed</h4>
                   
                   {/* Settings */}
-                  <div className="space-y-4 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#374151', 
+                        marginBottom: '8px' 
+                      }}>
                         Primary Color
                       </label>
-                      <div className="flex items-center gap-3">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <input
                           type="color"
                           value={widgetSettings[widget.id].primaryColor}
@@ -1080,17 +1126,29 @@ const App = () => {
                             ...prev,
                             [widget.id]: { ...prev[widget.id], primaryColor: e.target.value }
                           }))}
-                          className="w-12 h-12 border-2 border-gray-300 rounded-lg cursor-pointer"
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            border: '2px solid #d1d5db',
+                            borderRadius: '8px',
+                            cursor: 'pointer'
+                          }}
                         />
-                        <span className="text-sm text-gray-600">{widgetSettings[widget.id].primaryColor}</span>
+                        <span style={{ fontSize: '14px', color: '#6b7280' }}>{widgetSettings[widget.id].primaryColor}</span>
                       </div>
                     </div>
 
                     {/* Widget-specific settings */}
                     {widget.id === 'blog' && (
                       <>
-                        <div>
-                          <label className="flex items-center gap-3 text-sm text-gray-700">
+                        <div style={{ marginBottom: '16px' }}>
+                          <label style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '12px', 
+                            fontSize: '14px', 
+                            color: '#374151' 
+                          }}>
                             <input
                               type="checkbox"
                               checked={widgetSettings[widget.id].showImages}
@@ -1098,13 +1156,19 @@ const App = () => {
                                 ...prev,
                                 [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
                               }))}
-                              className="w-4 h-4 text-blue-600 rounded"
+                              style={{ width: '16px', height: '16px' }}
                             />
                             Show Images
                           </label>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <div style={{ marginBottom: '16px' }}>
+                          <label style={{ 
+                            display: 'block', 
+                            fontSize: '14px', 
+                            fontWeight: '500', 
+                            color: '#374151', 
+                            marginBottom: '8px' 
+                          }}>
                             Max Posts to Display
                           </label>
                           <select
@@ -1113,7 +1177,13 @@ const App = () => {
                               ...prev,
                               [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
                             }))}
-                            className="w-full p-3 border border-gray-300 rounded-lg"
+                            style={{
+                              width: '100%',
+                              padding: '12px',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '8px',
+                              backgroundColor: 'transparent'
+                            }}
                           >
                             <option value={1}>1 Post</option>
                             <option value={2}>2 Posts</option>
@@ -1127,38 +1197,63 @@ const App = () => {
 
                   {/* Embed Code */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label style={{ 
+                      display: 'block', 
+                      fontSize: '14px', 
+                      fontWeight: '500', 
+                      color: '#374151', 
+                      marginBottom: '8px' 
+                    }}>
                       📋 Embed Code (Copy & Paste)
                     </label>
-                    <div className="relative">
+                    <div style={{ position: 'relative' }}>
                       <textarea
                         readOnly
                         value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
-                        className="w-full h-24 p-3 border border-gray-300 rounded-lg bg-gray-50 text-xs font-mono resize-none"
+                        style={{
+                          width: '100%',
+                          height: '96px',
+                          padding: '12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          backgroundColor: 'transparent',
+                          fontSize: '12px',
+                          fontFamily: 'monospace',
+                          resize: 'none'
+                        }}
                         onClick={(e) => e.target.select()}
                       />
                       <button
                         onClick={() => copyEmbedCode(widget.id)}
-                        className={`absolute top-2 right-2 px-4 py-2 text-sm font-medium rounded-lg transition ${
-                          copiedWidget === widget.id
-                            ? 'bg-green-600 text-white'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          padding: '8px 16px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: copiedWidget === widget.id ? '#16a34a' : '#2563eb',
+                          color: 'white',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
                       >
                         {copiedWidget === widget.id ? (
                           <>
-                            <Check size={16} className="inline mr-2" />
+                            <Check size={16} style={{ display: 'inline', marginRight: '8px' }} />
                             Copied!
                           </>
                         ) : (
                           <>
-                            <Copy size={16} className="inline mr-2" />
+                            <Copy size={16} style={{ display: 'inline', marginRight: '8px' }} />
                             Copy Code
                           </>
                         )}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
                       Paste this code into your website's HTML where you want the widget to appear.
                     </p>
                   </div>
