@@ -9,7 +9,12 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
   const fileInputRef = useRef(null);
   const contentRef = useRef(null);
 
-  // Upload image to Cloudinary
+  // Handle content change for contentEditable
+  const handleContentChange = (e) => {
+    setContent(e.target.innerHTML);
+  };
+
+  // Handle file upload
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -63,32 +68,53 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
 
   // Insert image into content
   const insertImageIntoContent = (image) => {
-    const imageHtml = `<div class="image-container" id="container-${image.id}">
-      <img 
-        id="img-${image.id}" 
-        src="${image.src}" 
-        alt="${image.alt}"
-        data-size="${image.size}"
-        data-position="${image.position}"
-        style="width: ${image.width}px; height: auto; cursor: pointer; border-radius: 8px; margin: 10px;"
-        onclick="selectImage(${image.id})"
-        draggable="true"
-        ondragstart="handleImageDragStart(event, ${image.id})"
-      />
-    </div>`;
-    
-    if (contentRef.current) {
+    const editor = contentRef.current;
+    if (editor) {
       const selection = window.getSelection();
+      let range;
+      
+      // If there's a selection, use it; otherwise, insert at the end
       if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createRange().createContextualFragment(imageHtml));
+        range = selection.getRangeAt(0);
       } else {
-        contentRef.current.innerHTML += imageHtml;
+        range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
       }
       
+      // Create image element
+      const img = document.createElement('img');
+      img.id = `img-${image.id}`;
+      img.src = image.src;
+      img.alt = image.alt;
+      img.className = `size-${image.size} position-${image.position}`;
+      img.setAttribute('data-size', image.size);
+      img.setAttribute('data-position', image.position);
+      img.style.cssText = 'cursor: pointer; border-radius: 8px;';
+      
+      // Add click handler for selection
+      img.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectImage(image.id);
+      });
+      
+      // Insert image at cursor position
+      range.deleteContents();
+      range.insertNode(img);
+      
+      // Add some space after the image
+      const textNode = document.createTextNode(' ');
+      range.setStartAfter(img);
+      range.insertNode(textNode);
+      
+      // Move cursor after the space
+      range.setStartAfter(textNode);
+      range.setEndAfter(textNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
       // Update content state
-      setContent(contentRef.current.innerHTML);
+      setContent(editor.innerHTML);
     }
   };
 
@@ -501,7 +527,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           background: white;
           line-height: 1.6;
           font-size: 16px;
-          resize: vertical;
+          outline: none;
           direction: ltr !important;
           text-align: left !important;
           unicode-bidi: normal !important;
@@ -511,6 +537,55 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
         .simple-content-editor * {
           direction: ltr !important;
           unicode-bidi: normal !important;
+        }
+        
+        .simple-content-editor img {
+          max-width: 100%;
+          height: auto;
+          border: 2px solid transparent;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        }
+        
+        .simple-content-editor img:hover {
+          border-color: #667eea;
+        }
+        
+        .simple-content-editor img.selected-image {
+          border-color: #667eea;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+        
+        .simple-content-editor img.size-small {
+          width: 200px;
+        }
+        
+        .simple-content-editor img.size-medium {
+          width: 400px;
+        }
+        
+        .simple-content-editor img.size-large {
+          width: 600px;
+        }
+        
+        .simple-content-editor img.size-full {
+          width: 100%;
+        }
+        
+        .simple-content-editor img.position-left {
+          float: left;
+          margin: 0 15px 15px 0;
+        }
+        
+        .simple-content-editor img.position-right {
+          float: right;
+          margin: 0 0 15px 15px;
+        }
+        
+        .simple-content-editor img.position-center {
+          display: block;
+          margin: 15px auto;
         }
         
         .simple-content-editor:focus {
@@ -889,12 +964,19 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
             </span>
           </div>
 
-          <textarea
+          <div
             ref={contentRef}
             className="simple-content-editor"
-            value={content.replace(/<[^>]*>/g, '')}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Start writing your content... Click here and start typing."
+            contentEditable
+            suppressContentEditableWarning={true}
+            onInput={handleContentChange}
+            dangerouslySetInnerHTML={{ __html: content || '<p>Start writing your content... Click here and start typing.</p>' }}
+            style={{
+              direction: 'ltr',
+              textAlign: 'left',
+              unicodeBidi: 'normal',
+              writingMode: 'horizontal-tb'
+            }}
           />
         </div>
 
