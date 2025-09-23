@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Home, MessageSquare, FileText, Mail, Users, Calendar, BarChart3, Settings,
   Plus, Send, Clock, Edit, Trash2, Heart, MessageCircle, Bookmark,
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload
+  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload,
+  Eye, Copy, Check, Star, TrendingUp, Activity, Vote
 } from 'lucide-react';
 
 const App = () => {
@@ -10,9 +11,10 @@ const App = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('post');
   const [posts, setPosts] = useState([
-    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true },
-    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false }
+    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
+    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
   ]);
+  const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [members, setMembers] = useState([]);
   const [newsFeedPosts, setNewsFeedPosts] = useState([
@@ -314,10 +316,16 @@ const App = () => {
               Cancel
             </button>
             <button 
-              onClick={() => onSave({ title, content })}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => onSave({ title, content, isDraft: true })}
+              className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
             >
-              Save Post
+              Save Draft
+            </button>
+            <button 
+              onClick={() => onSave({ title, content, isDraft: false })}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Publish Post
             </button>
           </div>
         </div>
@@ -689,8 +697,24 @@ const App = () => {
     if (contentType === 'post') {
       return (
         <RichBlogEditor
-          onSave={(post) => {
-            setPosts(prev => [{ ...post, id: Date.now(), date: new Date().toLocaleDateString() }, ...prev]);
+          onSave={(postData) => {
+            const newPost = {
+              id: Date.now(),
+              title: postData.title,
+              content: postData.content,
+              date: new Date().toLocaleDateString(),
+              featured: false,
+              published: !postData.isDraft
+            };
+            
+            if (postData.isDraft) {
+              setDrafts(prev => [...prev, newPost]);
+              alert('Draft saved successfully! You can find it in the Drafts section.');
+            } else {
+              setPosts(prev => [...prev, newPost]);
+              alert('Post published successfully!');
+            }
+            
             setIsCreating(false);
           }}
           onCancel={() => setIsCreating(false)}
@@ -732,11 +756,350 @@ const App = () => {
     </div>
   );
 
-  // Settings Component
+  // Widget state
+  const [activeWidget, setActiveWidget] = useState('blog');
+  const [widgetSettings, setWidgetSettings] = useState({
+    blog: { primaryColor: '#3b82f6', showImages: true, maxPosts: 3 },
+    newsfeed: { primaryColor: '#10b981', showReplies: true, maxPosts: 5 },
+    signup: { primaryColor: '#8b5cf6', buttonText: 'Join Our Community', placeholder: 'Enter your email' },
+    featured: { primaryColor: '#f59e0b', showImage: true },
+    stats: { primaryColor: '#ef4444', showGrowth: true },
+    poll: { primaryColor: '#06b6d4', question: 'What\'s your favorite feature?' },
+    activity: { primaryColor: '#84cc16', showTimestamps: true }
+  });
+  const [copiedWidget, setCopiedWidget] = useState('');
+
+  // Widget definitions
+  const widgets = [
+    {
+      id: 'blog',
+      name: 'Blog Widget',
+      description: 'Display recent blog posts with images and excerpts',
+      icon: FileText,
+      category: 'Content'
+    },
+    {
+      id: 'newsfeed',
+      name: 'News Feed Widget',
+      description: 'Live community posts with engagement features',
+      icon: MessageSquare,
+      category: 'Community'
+    },
+    {
+      id: 'signup',
+      name: 'Signup Widget',
+      description: 'Email capture form for growing your community',
+      icon: Mail,
+      category: 'Growth'
+    },
+    {
+      id: 'featured',
+      name: 'Featured Post Widget',
+      description: 'Highlight your most important content',
+      icon: Star,
+      category: 'Content'
+    },
+    {
+      id: 'stats',
+      name: 'Stats Widget',
+      description: 'Show community metrics and social proof',
+      icon: TrendingUp,
+      category: 'Social Proof'
+    },
+    {
+      id: 'poll',
+      name: 'Quick Poll Widget',
+      description: 'Engage visitors with interactive surveys',
+      icon: Vote,
+      category: 'Engagement'
+    },
+    {
+      id: 'activity',
+      name: 'Recent Activity Widget',
+      description: 'Display latest community activity',
+      icon: Activity,
+      category: 'Community'
+    }
+  ];
+
+  const widgetCategories = ['All', 'Content', 'Community', 'Growth', 'Social Proof', 'Engagement'];
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const filteredWidgets = selectedCategory === 'All' 
+    ? widgets 
+    : widgets.filter(widget => widget.category === selectedCategory);
+
+  const generateEmbedCode = (widgetType, settings) => {
+    const baseUrl = window.location.origin;
+    const settingsParam = encodeURIComponent(JSON.stringify(settings));
+    return `<iframe src="${baseUrl}/widget/${widgetType}?settings=${settingsParam}" width="420" height="600" frameborder="0" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`;
+  };
+
+  const copyEmbedCode = (widgetType) => {
+    const embedCode = generateEmbedCode(widgetType, widgetSettings[widgetType]);
+    navigator.clipboard.writeText(embedCode);
+    setCopiedWidget(widgetType);
+    setTimeout(() => setCopiedWidget(''), 2000);
+  };
+
+  // Blog Widget Preview Component
+  const BlogWidgetPreview = ({ settings }) => {
+    const displayPosts = posts.filter(post => post.published).slice(0, settings.maxPosts);
+    
+    return (
+      <div style={{ 
+        fontFamily: 'Arial, sans-serif',
+        backgroundColor: 'transparent',
+        border: `2px solid ${settings.primaryColor}`,
+        borderRadius: '12px',
+        overflow: 'hidden',
+        maxWidth: '400px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{
+          backgroundColor: settings.primaryColor,
+          color: 'white',
+          padding: '16px',
+          fontWeight: 'bold',
+          fontSize: '18px'
+        }}>
+          Latest Blog Posts
+        </div>
+        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          {displayPosts.map((post, index) => (
+            <div key={post.id} style={{
+              padding: '20px',
+              borderBottom: index < displayPosts.length - 1 ? '1px solid #e5e7eb' : 'none',
+              minHeight: '400px',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <h3 style={{
+                margin: '0 0 12px 0',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                lineHeight: '1.3'
+              }}>
+                {post.title}
+              </h3>
+              <div style={{
+                color: '#6b7280',
+                fontSize: '14px',
+                marginBottom: '12px'
+              }}>
+                {post.date}
+              </div>
+              <div style={{
+                color: '#374151',
+                fontSize: '16px',
+                lineHeight: '1.6',
+                flex: 1,
+                marginBottom: '16px'
+              }}>
+                {post.content.length > 200 ? (
+                  <>
+                    {post.content.substring(0, 200)}...
+                    <button style={{
+                      background: 'none',
+                      border: 'none',
+                      color: settings.primaryColor,
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      marginLeft: '8px'
+                    }}>
+                      Read More
+                    </button>
+                  </>
+                ) : (
+                  post.content
+                )}
+              </div>
+              {post.featured && (
+                <div style={{
+                  display: 'inline-block',
+                  backgroundColor: '#fbbf24',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  alignSelf: 'flex-start'
+                }}>
+                  FEATURED
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Settings Component with Widget Gallery
   const Settings = () => (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Settings</h2>
-      <p className="text-gray-600">Settings panel coming soon...</p>
+    <div className="space-y-8">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold mb-6">Settings & Widgets</h2>
+        
+        {/* Widget Gallery Section */}
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">Widget Gallery</h3>
+          <p className="text-gray-600 mb-6">Embed these widgets on your website to extend your community reach</p>
+
+          {/* Category Filter */}
+          <div className="mb-6">
+            <div className="flex gap-2 flex-wrap">
+              {widgetCategories.map(category => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                    selectedCategory === category
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Widget Grid */}
+          <div className="grid gap-8">
+            {filteredWidgets.map(widget => (
+              <div key={widget.id} className="border rounded-lg overflow-hidden bg-white shadow-sm">
+                {/* Widget Header */}
+                <div className="p-6 border-b bg-gray-50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <widget.icon size={24} className="text-blue-600" />
+                    <h4 className="text-lg font-semibold">{widget.name}</h4>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                      {widget.category}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-sm">{widget.description}</p>
+                </div>
+
+                {/* Widget Content */}
+                <div className="p-6 flex gap-8">
+                  {/* Preview */}
+                  <div className="flex-1">
+                    <h5 className="font-medium mb-4 text-gray-700">Live Preview</h5>
+                    <div className="flex justify-center">
+                      {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
+                      {widget.id !== 'blog' && (
+                        <div className="w-80 h-96 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+                          Preview for {widget.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Customization */}
+                  <div className="flex-1">
+                    <h5 className="font-medium mb-4 text-gray-700">Customization</h5>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Primary Color
+                        </label>
+                        <input
+                          type="color"
+                          value={widgetSettings[widget.id].primaryColor}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            [widget.id]: { ...prev[widget.id], primaryColor: e.target.value }
+                          }))}
+                          className="w-full h-10 border rounded cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Widget-specific settings */}
+                      {widget.id === 'blog' && (
+                        <>
+                          <div>
+                            <label className="flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={widgetSettings[widget.id].showImages}
+                                onChange={(e) => setWidgetSettings(prev => ({
+                                  ...prev,
+                                  [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
+                                }))}
+                              />
+                              Show Images
+                            </label>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Max Posts
+                            </label>
+                            <select
+                              value={widgetSettings[widget.id].maxPosts}
+                              onChange={(e) => setWidgetSettings(prev => ({
+                                ...prev,
+                                [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
+                              }))}
+                              className="w-full p-2 border rounded"
+                            >
+                              <option value={1}>1</option>
+                              <option value={2}>2</option>
+                              <option value={3}>3</option>
+                              <option value={5}>5</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Embed Code */}
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Embed Code
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            readOnly
+                            value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
+                            className="w-full h-20 p-3 border rounded bg-gray-50 text-xs font-mono resize-none"
+                          />
+                          <button
+                            onClick={() => copyEmbedCode(widget.id)}
+                            className={`absolute top-2 right-2 px-3 py-1 text-xs font-medium rounded transition ${
+                              copiedWidget === widget.id
+                                ? 'bg-green-600 text-white'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                          >
+                            {copiedWidget === widget.id ? (
+                              <>
+                                <Check size={12} className="inline mr-1" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={12} className="inline mr-1" />
+                                Copy
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Other Settings */}
+        <div className="border-t pt-8">
+          <h3 className="text-xl font-semibold mb-4">General Settings</h3>
+          <p className="text-gray-600">Account preferences and platform settings coming soon...</p>
+        </div>
+      </div>
     </div>
   );
 
@@ -787,18 +1150,67 @@ const App = () => {
             {activeSection === 'newsfeed' && <NewsFeed />}
             {activeSection === 'settings' && <Settings />}
             {activeSection === 'posts' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Blog Posts</h2>
-                  <button
-                    onClick={() => { setContentType('post'); setIsCreating(true); }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-                  >
-                    <Plus size={20} /> New Post
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {posts.map(post => <PostCard key={post.id} post={post} />)}
+              <div className="space-y-6">
+                {/* Drafts Section */}
+                {drafts.length > 0 && (
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-xl font-semibold mb-4 text-yellow-600">📝 Drafts ({drafts.length})</h3>
+                    <div className="space-y-3">
+                      {drafts.map(draft => (
+                        <div key={draft.id} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full font-medium">
+                                  DRAFT
+                                </span>
+                              </div>
+                              <h4 className="font-semibold text-lg">{draft.title}</h4>
+                              <p className="text-sm text-gray-500 mb-2">{draft.date}</p>
+                              <p className="text-gray-700">{draft.content.length > 100 ? `${draft.content.substring(0, 100)}...` : draft.content}</p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                <Edit size={16} />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  // Publish draft
+                                  const publishedPost = { ...draft, published: true };
+                                  setPosts(prev => [...prev, publishedPost]);
+                                  setDrafts(prev => prev.filter(d => d.id !== draft.id));
+                                  alert('Draft published successfully!');
+                                }}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded"
+                                title="Publish Draft"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Published Posts Section */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">Published Posts ({posts.filter(p => p.published).length})</h2>
+                    <button
+                      onClick={() => { setContentType('post'); setIsCreating(true); }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <Plus size={20} /> New Post
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
+                  </div>
                 </div>
               </div>
             )}
