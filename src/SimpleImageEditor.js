@@ -889,13 +889,12 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
             </span>
           </div>
 
-          <div
+          <textarea
             ref={contentRef}
             className="simple-content-editor"
-            contentEditable
-            suppressContentEditableWarning
-            onInput={(e) => setContent(e.target.innerHTML)}
-            dangerouslySetInnerHTML={{ __html: content || '<p>Start writing your content... Click here and start typing.</p>' }}
+            value={content.replace(/<[^>]*>/g, '')}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Start writing your content... Click here and start typing."
           />
         </div>
 
