@@ -22,7 +22,7 @@ const App = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   // API Configuration
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || '';
+  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || process.env.REACT_APP_XANO_API_URL || '';
   const XANO_API_KEY = process.env.REACT_APP_XANO_API_KEY || '';
   const CLOUDINARY_CLOUD = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || '';
   const CLOUDINARY_PRESET = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || '';

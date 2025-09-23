@@ -29,7 +29,11 @@ const ProfessionalRichEditor = ({
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // Disable default heading and link from StarterKit to avoid duplicates
+        heading: false,
+        link: false,
+      }),
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -192,6 +196,8 @@ const ProfessionalRichEditor = ({
       let mediaUrl;
       
       if (CLOUDINARY_CLOUD && CLOUDINARY_PRESET) {
+        console.log('Uploading to Cloudinary:', CLOUDINARY_CLOUD, CLOUDINARY_PRESET);
+        
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', CLOUDINARY_PRESET);
@@ -205,16 +211,27 @@ const ProfessionalRichEditor = ({
           }
         );
 
-        const data = await response.json();
+        console.log('Cloudinary response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Cloudinary error response:', errorText);
+          throw new Error(`Cloudinary upload failed: ${response.status} ${response.statusText}`);
+        }
 
-        if (response.ok && data.secure_url) {
+        const data = await response.json();
+        console.log('Cloudinary response data:', data);
+
+        if (data.secure_url) {
           mediaUrl = data.secure_url;
         } else {
-          throw new Error(data.error?.message || 'Upload failed');
+          throw new Error(data.error?.message || 'No secure URL returned from Cloudinary');
         }
       } else {
         // Demo mode - use local URL
+        console.log('Using demo mode - creating local URL');
         mediaUrl = URL.createObjectURL(file);
+        setStatus('Demo mode: File loaded locally (not uploaded to cloud)');
       }
 
       if (file.type.startsWith('image')) {
@@ -231,13 +248,16 @@ const ProfessionalRichEditor = ({
       }
       
       setCaption('');
-      setStatus('File uploaded successfully!');
+      
+      if (CLOUDINARY_CLOUD && CLOUDINARY_PRESET) {
+        setStatus('File uploaded to Cloudinary successfully!');
+      }
     } catch (error) {
       console.error('Upload error:', error);
       setStatus(`Upload failed: ${error.message}`);
     }
 
-    setTimeout(() => setStatus(''), 3000);
+    setTimeout(() => setStatus(''), 5000);
     event.target.value = '';
   };
 
