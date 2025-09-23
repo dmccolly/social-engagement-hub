@@ -55,34 +55,45 @@ const ProfessionalRichEditor = ({
     // Size styles
     switch(imageSize) {
       case 'small':
-        styles.push('max-width: 200px');
+        styles.push('max-width: 200px !important');
         break;
       case 'medium':
-        styles.push('max-width: 400px');
+        styles.push('max-width: 400px !important');
         break;
       case 'large':
-        styles.push('max-width: 600px');
+        styles.push('max-width: 600px !important');
         break;
       case 'full':
-        styles.push('width: 100%');
+        styles.push('width: 100% !important', 'max-width: 100% !important');
         break;
     }
     
     // Position styles
     switch(imagePosition) {
       case 'left':
-        styles.push('float: left', 'margin: 0 16px 16px 0');
+        styles.push('float: left !important', 'margin: 0 16px 16px 0 !important', 'clear: left');
         break;
       case 'right':
-        styles.push('float: right', 'margin: 0 0 16px 16px');
+        styles.push('float: right !important', 'margin: 0 0 16px 16px !important', 'clear: right');
         break;
       case 'center':
-        styles.push('display: block', 'margin: 16px auto');
+        styles.push('display: block !important', 'margin: 16px auto !important', 'float: none !important');
         break;
     }
     
-    styles.push('height: auto', 'border-radius: 8px');
+    styles.push('height: auto !important', 'border-radius: 8px', 'cursor: pointer');
     return styles.join('; ');
+  };
+
+  // Function to insert image at cursor position
+  const insertImageAtCursor = (imageUrl, altText = 'Image') => {
+    const imageStyle = getImageStyle();
+    const sizeClass = getImageSizeClass();
+    const positionClass = getImagePositionClass();
+    
+    const imageHtml = `<img src="${imageUrl}" alt="${altText}" class="pre-uploaded-image ${sizeClass} ${positionClass}" style="${imageStyle}" onclick="selectImage(this)" />`;
+    
+    editor.chain().focus().insertContent(imageHtml).run();
   };
 
   const editor = useEditor({
@@ -293,16 +304,8 @@ const ProfessionalRichEditor = ({
       }
 
       if (file.type.startsWith('image')) {
-        // Get current image size and position settings
-        const sizeClass = getImageSizeClass();
-        const positionClass = getImagePositionClass();
-        
-        editor.chain().focus().setImage({ 
-          src: mediaUrl, 
-          alt: caption || 'Uploaded image',
-          class: `pre-uploaded-image ${sizeClass} ${positionClass}`,
-          style: getImageStyle()
-        }).run();
+        // Insert image at cursor position with current size/position settings
+        insertImageAtCursor(mediaUrl, caption || 'Uploaded image');
       } else if (file.type.startsWith('video')) {
         const videoHtml = `<video src="${mediaUrl}" controls style="max-width: 100%; height: auto;"></video>`;
         editor.chain().focus().insertContent(videoHtml).run();
@@ -915,6 +918,17 @@ const ProfessionalRichEditor = ({
             color: #6b7280;
           }
           
+          .pre-help-text {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+            margin: 4px 0;
+          }
+          
           @media (max-width: 768px) {
             .pre-layout {
               grid-template-columns: 1fr;
@@ -1170,6 +1184,13 @@ const ProfessionalRichEditor = ({
                 >
                   Upload Image
                 </button>
+              </div>
+              
+              <div className="pre-toolbar-row">
+                <div className="pre-help-text">
+                  💡 Tip: Click in the text where you want the image, then upload. 
+                  Set size and position before uploading for best results.
+                </div>
               </div>
             </div>
 
