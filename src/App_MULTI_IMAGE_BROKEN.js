@@ -59,13 +59,12 @@ const App = () => {
     }
   ]);
 
-  // Rich Blog Editor Component with FIXED multi-image handling
+  // Rich Blog Editor Component with ALL formatting tools and fixes
   const RichBlogEditor = ({ onSave, onCancel, initialPost = null }) => {
     const [title, setTitle] = useState(initialPost?.title || '');
     const [content, setContent] = useState(initialPost?.htmlContent || '');
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [imageCounter, setImageCounter] = useState(0);
     const contentRef = useRef(null);
     const fileInputRef = useRef(null);
 
@@ -77,55 +76,29 @@ const App = () => {
       }
     }, [initialPost]);
 
-    // IMPROVED cleanup function for multiple images
-    const cleanupImageSelection = () => {
-      console.log('Cleaning up image selection...');
-      
-      // Remove ALL floating toolbars
-      const toolbars = document.querySelectorAll('.image-toolbar');
-      toolbars.forEach(toolbar => {
-        console.log('Removing toolbar:', toolbar);
-        toolbar.remove();
-      });
-      
-      // Remove ALL resize handles
-      const handles = document.querySelectorAll('.resize-handle');
-      handles.forEach(handle => {
-        console.log('Removing handle:', handle);
-        handle.remove();
-      });
-      
-      // Remove selection styling from ALL images
-      const selectedImages = document.querySelectorAll('.selected-image');
-      selectedImages.forEach(img => {
-        console.log('Deselecting image:', img.id);
-        img.classList.remove('selected-image');
-        img.style.border = '2px solid transparent';
-        img.style.boxShadow = 'none';
-      });
-      
-      // Clear selected image state
-      setSelectedImageId(null);
-      console.log('Cleanup complete');
-    };
-
-    // Clean up when component unmounts or section changes
+    // Clean up floating toolbars when component unmounts or changes
     useEffect(() => {
       return () => {
-        console.log('Component unmounting, cleaning up...');
         cleanupImageSelection();
       };
     }, []);
 
-    // Clean up when switching sections
-    useEffect(() => {
-      if (!isCreating) {
-        console.log('Not creating, cleaning up...');
-        cleanupImageSelection();
-      }
-    }, [isCreating, activeSection]);
+    const cleanupImageSelection = () => {
+      // Remove all floating toolbars and handles
+      document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+      document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+      
+      // Remove selection styling
+      document.querySelectorAll('.selected-image').forEach(el => {
+        el.classList.remove('selected-image');
+        el.style.border = '2px solid transparent';
+        el.style.boxShadow = 'none';
+      });
+      
+      setSelectedImageId(null);
+    };
 
-    // Text formatting functions (unchanged)
+    // Text formatting functions
     const applyFormat = (command) => {
       document.execCommand(command, false, null);
       if (contentRef.current) {
@@ -200,7 +173,7 @@ const App = () => {
       }
     };
 
-    // IMPROVED image handling for multiple images
+    // Image handling functions
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -208,17 +181,13 @@ const App = () => {
       setIsUploading(true);
       
       try {
-        // Create unique image ID using counter
-        const imageId = `${Date.now()}_${imageCounter}`;
-        setImageCounter(prev => prev + 1);
-        
         // Create local URL for immediate display
         const localUrl = URL.createObjectURL(file);
+        const imageId = Date.now().toString();
         
         const img = document.createElement('img');
         img.src = localUrl;
         img.id = `img-${imageId}`;
-        img.className = 'editor-image';
         img.style.maxWidth = '400px';
         img.style.height = 'auto';
         img.style.border = '2px solid transparent';
@@ -228,13 +197,8 @@ const App = () => {
         img.style.display = 'block';
         img.style.margin = '15px auto';
         
-        // IMPROVED click handler with better event handling
-        img.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Image clicked:', imageId);
-          selectImage(imageId);
-        });
+        // Add click handler for selection
+        img.onclick = () => selectImage(imageId);
         
         // Insert into editor
         const editor = contentRef.current;
@@ -243,21 +207,17 @@ const App = () => {
           setContent(editor.innerHTML);
         }
         
-        console.log('Image inserted successfully with ID:', imageId);
+        console.log('Image inserted successfully');
       } catch (error) {
         console.error('Upload failed:', error);
       } finally {
         setIsUploading(false);
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
       }
     };
 
-    // IMPROVED image selection with better multi-image support
+    // Image selection and manipulation - FIXED to clean up properly
     const selectImage = (imageId) => {
-      console.log('Selecting image:', imageId);
+      console.log('Image selected:', imageId);
       
       // Clean up any existing selections first
       cleanupImageSelection();
@@ -266,89 +226,52 @@ const App = () => {
       
       // Find and select the image
       const img = document.getElementById(`img-${imageId}`);
-      if (!img) {
-        console.error('Image not found:', `img-${imageId}`);
-        return;
-      }
-      
-      console.log('Found image:', img);
+      if (!img) return;
       
       // Add selection styling
       img.classList.add('selected-image');
       img.style.border = '2px solid #4285f4';
       img.style.boxShadow = '0 0 0 2px rgba(66, 133, 244, 0.25)';
       
-      // Create floating toolbar with unique class
+      // Create floating toolbar
       const rect = img.getBoundingClientRect();
       const toolbar = document.createElement('div');
-      toolbar.className = `image-toolbar toolbar-${imageId}`;
+      toolbar.className = 'image-toolbar';
       toolbar.style.position = 'fixed';
-      toolbar.style.top = Math.max(10, rect.top - 50) + 'px';
-      toolbar.style.left = Math.max(10, rect.left) + 'px';
+      toolbar.style.top = (rect.top - 50) + 'px';
+      toolbar.style.left = rect.left + 'px';
       toolbar.style.background = '#333';
       toolbar.style.padding = '8px';
       toolbar.style.borderRadius = '6px';
-      toolbar.style.zIndex = '10000';
+      toolbar.style.zIndex = '1000';
       toolbar.style.display = 'flex';
       toolbar.style.gap = '4px';
-      toolbar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
       
-      // Create buttons with direct event listeners instead of onclick
-      const createButton = (text, action, bgColor = '#555') => {
-        const btn = document.createElement('button');
-        btn.textContent = text;
-        btn.style.cssText = `
-          background: ${bgColor}; 
-          color: white; 
-          border: none; 
-          padding: 4px 8px; 
-          border-radius: 3px; 
-          cursor: pointer; 
-          font-size: 11px;
-          font-family: inherit;
-        `;
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          action();
-        });
-        return btn;
-      };
-      
-      // Add resize buttons
-      toolbar.appendChild(createButton('Small', () => resizeImageTo(imageId, 'small')));
-      toolbar.appendChild(createButton('Medium', () => resizeImageTo(imageId, 'medium')));
-      toolbar.appendChild(createButton('Large', () => resizeImageTo(imageId, 'large')));
-      toolbar.appendChild(createButton('Full', () => resizeImageTo(imageId, 'full')));
-      
-      // Add separator
-      const separator = document.createElement('div');
-      separator.style.cssText = 'width: 1px; background: #666; margin: 0 4px;';
-      toolbar.appendChild(separator);
-      
-      // Add position buttons
-      toolbar.appendChild(createButton('Left', () => positionImageTo(imageId, 'left')));
-      toolbar.appendChild(createButton('Center', () => positionImageTo(imageId, 'center')));
-      toolbar.appendChild(createButton('Right', () => positionImageTo(imageId, 'right')));
-      
-      // Add close button
-      toolbar.appendChild(createButton('✕', () => cleanupImageSelection(), '#d32f2f'));
+      toolbar.innerHTML = `
+        <button onclick="window.resizeImageTo('${imageId}', 'small')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Small</button>
+        <button onclick="window.resizeImageTo('${imageId}', 'medium')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Medium</button>
+        <button onclick="window.resizeImageTo('${imageId}', 'large')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Large</button>
+        <button onclick="window.resizeImageTo('${imageId}', 'full')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Full</button>
+        <div style="width: 1px; background: #666; margin: 0 4px;"></div>
+        <button onclick="window.positionImageTo('${imageId}', 'left')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Left</button>
+        <button onclick="window.positionImageTo('${imageId}', 'center')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Center</button>
+        <button onclick="window.positionImageTo('${imageId}', 'right')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Right</button>
+        <button onclick="window.closeImageToolbar()" style="background: #d32f2f; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">✕</button>
+      `;
       
       document.body.appendChild(toolbar);
-      console.log('Toolbar created and added');
       
       // Add corner handles
       addCornerHandles(img, imageId);
     };
 
-    // IMPROVED corner handles with unique classes
     const addCornerHandles = (img, imageId) => {
       const rect = img.getBoundingClientRect();
       const handles = ['nw', 'ne', 'sw', 'se'];
       
       handles.forEach(handle => {
         const handleEl = document.createElement('div');
-        handleEl.className = `resize-handle resize-${handle} handle-${imageId}`;
+        handleEl.className = `resize-handle resize-${handle}`;
         handleEl.style.position = 'fixed';
         handleEl.style.width = '12px';
         handleEl.style.height = '12px';
@@ -356,8 +279,7 @@ const App = () => {
         handleEl.style.border = '2px solid white';
         handleEl.style.borderRadius = '50%';
         handleEl.style.cursor = `${handle}-resize`;
-        handleEl.style.zIndex = '10001';
-        handleEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        handleEl.style.zIndex = '1001';
         
         // Position handles
         if (handle.includes('n')) handleEl.style.top = (rect.top - 6) + 'px';
@@ -366,75 +288,51 @@ const App = () => {
         if (handle.includes('e')) handleEl.style.left = (rect.right - 6) + 'px';
         
         document.body.appendChild(handleEl);
-        console.log('Handle added:', handle);
       });
     };
 
-    // Image manipulation functions
-    const resizeImageTo = (imageId, size) => {
-      console.log('Resizing image:', imageId, 'to', size);
-      const img = document.getElementById(`img-${imageId}`);
-      if (!img) {
-        console.error('Image not found for resize:', imageId);
-        return;
-      }
-      
-      const sizes = {
-        small: '200px',
-        medium: '400px', 
-        large: '600px',
-        full: '100%'
+    // Global functions for toolbar buttons
+    useEffect(() => {
+      window.resizeImageTo = (imageId, size) => {
+        const img = document.getElementById(`img-${imageId}`);
+        if (!img) return;
+        
+        const sizes = {
+          small: '200px',
+          medium: '400px', 
+          large: '600px',
+          full: '100%'
+        };
+        
+        img.style.width = sizes[size];
+        img.style.maxWidth = sizes[size];
+        setContent(contentRef.current.innerHTML);
       };
-      
-      img.style.width = sizes[size];
-      img.style.maxWidth = sizes[size];
-      
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
-      
-      // Update handles position after resize
-      setTimeout(() => {
-        if (selectedImageId === imageId) {
-          cleanupImageSelection();
-          selectImage(imageId);
-        }
-      }, 100);
-    };
 
-    const positionImageTo = (imageId, position) => {
-      console.log('Positioning image:', imageId, 'to', position);
-      const img = document.getElementById(`img-${imageId}`);
-      if (!img) {
-        console.error('Image not found for position:', imageId);
-        return;
-      }
-      
-      // Reset positioning
-      img.style.float = 'none';
-      img.style.display = 'block';
-      img.style.margin = '15px auto';
-      
-      if (position === 'left') {
-        img.style.float = 'left';
-        img.style.margin = '0 15px 15px 0';
-      } else if (position === 'right') {
-        img.style.float = 'right';
-        img.style.margin = '0 0 15px 15px';
-      }
-      
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
-      
-      // Update handles position after positioning
-      setTimeout(() => {
-        if (selectedImageId === imageId) {
-          cleanupImageSelection();
-          selectImage(imageId);
+      window.positionImageTo = (imageId, position) => {
+        const img = document.getElementById(`img-${imageId}`);
+        if (!img) return;
+        
+        // Reset positioning
+        img.style.float = 'none';
+        img.style.display = 'block';
+        img.style.margin = '15px auto';
+        
+        if (position === 'left') {
+          img.style.float = 'left';
+          img.style.margin = '0 15px 15px 0';
+        } else if (position === 'right') {
+          img.style.float = 'right';
+          img.style.margin = '0 0 15px 15px';
         }
-      }, 100);
-    };
+        
+        setContent(contentRef.current.innerHTML);
+      };
+
+      window.closeImageToolbar = () => {
+        cleanupImageSelection();
+      };
+    }, []);
 
     // Handle content changes with cursor position fix
     const handleContentChange = () => {
@@ -459,25 +357,17 @@ const App = () => {
       }
     };
 
-    // IMPROVED click outside handler
+    // Click outside to deselect images
     useEffect(() => {
       const handleClickOutside = (event) => {
-        // Don't deselect if clicking on toolbar or handles
-        if (event.target.closest('.image-toolbar') || 
-            event.target.closest('.resize-handle') ||
-            event.target.classList.contains('editor-image')) {
-          return;
-        }
-        
-        // Only deselect if clicking outside the editor area
-        if (!event.target.closest('[contenteditable]')) {
+        if (!event.target.closest('.image-toolbar') && !event.target.closest('img')) {
           cleanupImageSelection();
         }
       };
 
-      document.addEventListener('click', handleClickOutside, true);
+      document.addEventListener('click', handleClickOutside);
       return () => {
-        document.removeEventListener('click', handleClickOutside, true);
+        document.removeEventListener('click', handleClickOutside);
         cleanupImageSelection();
       };
     }, []);
@@ -490,7 +380,6 @@ const App = () => {
     };
 
     const handleSaveDraft = () => {
-      cleanupImageSelection(); // Clean up before saving
       const post = {
         id: initialPost?.id || Date.now(),
         title,
@@ -503,7 +392,6 @@ const App = () => {
     };
 
     const handlePublishPost = () => {
-      cleanupImageSelection(); // Clean up before saving
       const post = {
         id: initialPost?.id || Date.now(),
         title,
@@ -515,11 +403,6 @@ const App = () => {
       onSave(post, 'published');
     };
 
-    const handleCancel = () => {
-      cleanupImageSelection(); // Clean up before canceling
-      onCancel();
-    };
-
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex justify-between items-center mb-6">
@@ -527,7 +410,7 @@ const App = () => {
             {initialPost ? 'Edit Post' : 'Create Blog Post'}
           </h2>
           <div className="flex gap-2">
-            <button onClick={handleCancel} className="px-4 py-2 border rounded hover:bg-gray-50">
+            <button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50">
               Cancel
             </button>
             <button 
@@ -635,7 +518,7 @@ const App = () => {
             </select>
           </div>
 
-          {/* Links */}
+          {/* Links - FIXED */}
           <div className="flex flex-wrap gap-2">
             <button onClick={addLink} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
               Add Link
@@ -665,7 +548,7 @@ const App = () => {
             {isUploading ? 'Uploading...' : 'Upload Image'}
           </button>
           <p className="text-sm text-gray-600 mt-2">
-            <strong>Multiple Images Supported:</strong> Upload images one at a time. Click any image to resize and position it. Each image can be controlled independently.
+            Upload an image, then click on it to resize and position it. Click the ✕ to close the toolbar.
           </p>
         </div>
 
@@ -959,7 +842,7 @@ const App = () => {
     );
   };
 
-  // Post Component - renders HTML properly
+  // Post Component - FIXED to render HTML properly
   const PostCard = ({ post }) => (
     <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
       <div className="flex justify-between items-start">
@@ -990,7 +873,7 @@ const App = () => {
     </div>
   );
 
-  // Settings Component
+  // Settings Component (unchanged)
   const Settings = () => (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-6">Settings</h2>
