@@ -993,275 +993,189 @@ const App = () => {
     );
   };
 
-  // Settings Component - TRANSPARENT BACKGROUNDS
+  // Settings Component - CLEAN WHITE BACKGROUNDS
   const Settings = () => (
-    <div style={{ backgroundColor: 'transparent', padding: '24px' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>Widget Gallery</h1>
-        <p style={{ color: '#6b7280' }}>Embed these widgets on your website to extend your community reach</p>
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+        <p className="text-gray-600">Manage your widgets and platform settings</p>
       </div>
 
-      {/* Category Filter */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {widgetCategories.map(category => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              style={{
-                padding: '8px 24px',
-                borderRadius: '9999px',
-                fontWeight: '500',
-                border: selectedCategory === category ? 'none' : '1px solid #d1d5db',
-                backgroundColor: selectedCategory === category ? '#2563eb' : 'transparent',
-                color: selectedCategory === category ? 'white' : '#374151',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {category}
-            </button>
-          ))}
+      {/* Widget Gallery Section */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Widget Gallery</h2>
+        <p className="text-gray-600 mb-6">Embed these widgets on your website to extend your community reach</p>
+
+        {/* Category Filter */}
+        <div className="mb-6">
+          <div className="flex gap-3 flex-wrap">
+            {widgetCategories.map(category => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                  selectedCategory === category
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Widget Grid */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-        {filteredWidgets.map(widget => (
-          <div key={widget.id} style={{ 
-            backgroundColor: 'transparent', 
-            border: '1px solid #e5e7eb', 
-            borderRadius: '12px', 
-            overflow: 'hidden' 
-          }}>
-            {/* Widget Header */}
-            <div style={{ 
-              backgroundColor: 'transparent', 
-              padding: '24px', 
-              borderBottom: '1px solid #e5e7eb' 
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ 
-                  padding: '12px', 
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                  borderRadius: '8px' 
-                }}>
-                  <widget.icon size={28} style={{ color: '#2563eb' }} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', margin: 0 }}>{widget.name}</h3>
-                  <p style={{ color: '#6b7280', marginTop: '4px', margin: 0 }}>{widget.description}</p>
-                  <span style={{
-                    display: 'inline-block',
-                    marginTop: '8px',
-                    padding: '4px 12px',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    color: '#1e40af',
-                    fontSize: '12px',
-                    borderRadius: '9999px',
-                    fontWeight: '500'
-                  }}>
+        {/* Widget Grid */}
+        <div className="space-y-6">
+          {filteredWidgets.map(widget => (
+            <div key={widget.id} className="border border-gray-200 rounded-lg overflow-hidden">
+              {/* Widget Header */}
+              <div className="bg-gray-50 p-4 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded">
+                    <widget.icon size={20} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{widget.name}</h3>
+                    <p className="text-sm text-gray-600">{widget.description}</p>
+                  </div>
+                  <span className="ml-auto px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
                     {widget.category}
                   </span>
                 </div>
               </div>
-            </div>
 
-            {/* Widget Content */}
-            <div style={{ padding: '24px', backgroundColor: 'transparent' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-                {/* Live Preview */}
-                <div>
-                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>🔴 Live Preview</h4>
-                  <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    padding: '16px', 
-                    backgroundColor: 'transparent', 
-                    borderRadius: '8px' 
-                  }}>
-                    {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
-                    {widget.id !== 'blog' && (
-                      <div style={{
-                        width: '320px',
-                        height: '384px',
-                        backgroundColor: 'transparent',
-                        border: '2px dashed #d1d5db',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#6b7280'
-                      }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <widget.icon size={48} style={{ color: '#9ca3af', marginBottom: '8px' }} />
-                          <p>Preview for {widget.name}</p>
+              {/* Widget Content */}
+              <div className="p-6 bg-white">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Live Preview */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">Live Preview</h4>
+                    <div className="flex justify-center p-4 bg-gray-50 rounded">
+                      {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
+                      {widget.id !== 'blog' && (
+                        <div className="w-80 h-96 bg-white border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500">
+                          <div className="text-center">
+                            <widget.icon size={32} className="mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm">Preview for {widget.name}</p>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Settings & Embed */}
-                <div>
-                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '16px' }}>⚙️ Customize & Embed</h4>
-                  
-                  {/* Settings */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <label style={{ 
-                        display: 'block', 
-                        fontSize: '14px', 
-                        fontWeight: '500', 
-                        color: '#374151', 
-                        marginBottom: '8px' 
-                      }}>
-                        Primary Color
-                      </label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <input
-                          type="color"
-                          value={widgetSettings[widget.id].primaryColor}
-                          onChange={(e) => setWidgetSettings(prev => ({
-                            ...prev,
-                            [widget.id]: { ...prev[widget.id], primaryColor: e.target.value }
-                          }))}
-                          style={{
-                            width: '48px',
-                            height: '48px',
-                            border: '2px solid #d1d5db',
-                            borderRadius: '8px',
-                            cursor: 'pointer'
-                          }}
-                        />
-                        <span style={{ fontSize: '14px', color: '#6b7280' }}>{widgetSettings[widget.id].primaryColor}</span>
-                      </div>
+                      )}
                     </div>
+                  </div>
 
-                    {/* Widget-specific settings */}
-                    {widget.id === 'blog' && (
-                      <>
-                        <div style={{ marginBottom: '16px' }}>
-                          <label style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '12px', 
-                            fontSize: '14px', 
-                            color: '#374151' 
-                          }}>
-                            <input
-                              type="checkbox"
-                              checked={widgetSettings[widget.id].showImages}
-                              onChange={(e) => setWidgetSettings(prev => ({
-                                ...prev,
-                                [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
-                              }))}
-                              style={{ width: '16px', height: '16px' }}
-                            />
-                            Show Images
-                          </label>
-                        </div>
-                        <div style={{ marginBottom: '16px' }}>
-                          <label style={{ 
-                            display: 'block', 
-                            fontSize: '14px', 
-                            fontWeight: '500', 
-                            color: '#374151', 
-                            marginBottom: '8px' 
-                          }}>
-                            Max Posts to Display
-                          </label>
-                          <select
-                            value={widgetSettings[widget.id].maxPosts}
+                  {/* Settings & Embed */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">Customize & Embed</h4>
+                    
+                    {/* Settings */}
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Primary Color
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={widgetSettings[widget.id].primaryColor}
                             onChange={(e) => setWidgetSettings(prev => ({
                               ...prev,
-                              [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
+                              [widget.id]: { ...prev[widget.id], primaryColor: e.target.value }
                             }))}
-                            style={{
-                              width: '100%',
-                              padding: '12px',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '8px',
-                              backgroundColor: 'transparent'
-                            }}
-                          >
-                            <option value={1}>1 Post</option>
-                            <option value={2}>2 Posts</option>
-                            <option value={3}>3 Posts</option>
-                            <option value={5}>5 Posts</option>
-                          </select>
+                            className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
+                          />
+                          <span className="text-sm text-gray-600">{widgetSettings[widget.id].primaryColor}</span>
                         </div>
-                      </>
-                    )}
-                  </div>
+                      </div>
 
-                  {/* Embed Code */}
-                  <div>
-                    <label style={{ 
-                      display: 'block', 
-                      fontSize: '14px', 
-                      fontWeight: '500', 
-                      color: '#374151', 
-                      marginBottom: '8px' 
-                    }}>
-                      📋 Embed Code (Copy & Paste)
-                    </label>
-                    <div style={{ position: 'relative' }}>
-                      <textarea
-                        readOnly
-                        value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
-                        style={{
-                          width: '100%',
-                          height: '96px',
-                          padding: '12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '8px',
-                          backgroundColor: 'transparent',
-                          fontSize: '12px',
-                          fontFamily: 'monospace',
-                          resize: 'none'
-                        }}
-                        onClick={(e) => e.target.select()}
-                      />
-                      <button
-                        onClick={() => copyEmbedCode(widget.id)}
-                        style={{
-                          position: 'absolute',
-                          top: '8px',
-                          right: '8px',
-                          padding: '8px 16px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          borderRadius: '8px',
-                          border: 'none',
-                          backgroundColor: copiedWidget === widget.id ? '#16a34a' : '#2563eb',
-                          color: 'white',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {copiedWidget === widget.id ? (
-                          <>
-                            <Check size={16} style={{ display: 'inline', marginRight: '8px' }} />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={16} style={{ display: 'inline', marginRight: '8px' }} />
-                            Copy Code
-                          </>
-                        )}
-                      </button>
+                      {/* Widget-specific settings */}
+                      {widget.id === 'blog' && (
+                        <>
+                          <div>
+                            <label className="flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={widgetSettings[widget.id].showImages}
+                                onChange={(e) => setWidgetSettings(prev => ({
+                                  ...prev,
+                                  [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
+                                }))}
+                                className="rounded"
+                              />
+                              Show Images
+                            </label>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Max Posts to Display
+                            </label>
+                            <select
+                              value={widgetSettings[widget.id].maxPosts}
+                              onChange={(e) => setWidgetSettings(prev => ({
+                                ...prev,
+                                [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
+                              }))}
+                              className="w-full p-2 border border-gray-300 rounded"
+                            >
+                              <option value={1}>1 Post</option>
+                              <option value={2}>2 Posts</option>
+                              <option value={3}>3 Posts</option>
+                              <option value={5}>5 Posts</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
-                      Paste this code into your website's HTML where you want the widget to appear.
-                    </p>
+
+                    {/* Embed Code */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Embed Code
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          readOnly
+                          value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
+                          className="w-full h-20 p-3 border border-gray-300 rounded bg-gray-50 text-xs font-mono resize-none"
+                          onClick={(e) => e.target.select()}
+                        />
+                        <button
+                          onClick={() => copyEmbedCode(widget.id)}
+                          className={`absolute top-2 right-2 px-3 py-1 text-xs font-medium rounded transition ${
+                            copiedWidget === widget.id
+                              ? 'bg-green-600 text-white'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {copiedWidget === widget.id ? (
+                            <>
+                              <Check size={12} className="inline mr-1" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={12} className="inline mr-1" />
+                              Copy
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Paste this code into your website's HTML where you want the widget to appear.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      {/* Other Settings */}
+      <div className="border-t pt-6">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">General Settings</h2>
+        <p className="text-gray-600">Account preferences and platform settings coming soon...</p>
       </div>
     </div>
   );
