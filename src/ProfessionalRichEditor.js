@@ -25,7 +25,65 @@ const ProfessionalRichEditor = ({
   const [showPreview, setShowPreview] = useState(true);
   const [fontSize, setFontSize] = useState('16');
   const [fontFamily, setFontFamily] = useState('Arial');
+  const [imageSize, setImageSize] = useState('medium');
+  const [imagePosition, setImagePosition] = useState('center');
   const fileInputRef = useRef(null);
+
+  // Helper functions for image styling
+  const getImageSizeClass = () => {
+    switch(imageSize) {
+      case 'small': return 'pre-img-small';
+      case 'medium': return 'pre-img-medium';
+      case 'large': return 'pre-img-large';
+      case 'full': return 'pre-img-full';
+      default: return 'pre-img-medium';
+    }
+  };
+
+  const getImagePositionClass = () => {
+    switch(imagePosition) {
+      case 'left': return 'pre-img-left';
+      case 'center': return 'pre-img-center';
+      case 'right': return 'pre-img-right';
+      default: return 'pre-img-center';
+    }
+  };
+
+  const getImageStyle = () => {
+    const styles = [];
+    
+    // Size styles
+    switch(imageSize) {
+      case 'small':
+        styles.push('max-width: 200px');
+        break;
+      case 'medium':
+        styles.push('max-width: 400px');
+        break;
+      case 'large':
+        styles.push('max-width: 600px');
+        break;
+      case 'full':
+        styles.push('width: 100%');
+        break;
+    }
+    
+    // Position styles
+    switch(imagePosition) {
+      case 'left':
+        styles.push('float: left', 'margin: 0 16px 16px 0');
+        break;
+      case 'right':
+        styles.push('float: right', 'margin: 0 0 16px 16px');
+        break;
+      case 'center':
+        styles.push('display: block', 'margin: 16px auto');
+        break;
+    }
+    
+    styles.push('height: auto', 'border-radius: 8px');
+    return styles.join('; ');
+  };
 
   const editor = useEditor({
     extensions: [
@@ -235,9 +293,15 @@ const ProfessionalRichEditor = ({
       }
 
       if (file.type.startsWith('image')) {
+        // Get current image size and position settings
+        const sizeClass = getImageSizeClass();
+        const positionClass = getImagePositionClass();
+        
         editor.chain().focus().setImage({ 
           src: mediaUrl, 
-          alt: caption || 'Uploaded image'
+          alt: caption || 'Uploaded image',
+          class: `pre-uploaded-image ${sizeClass} ${positionClass}`,
+          style: getImageStyle()
         }).run();
       } else if (file.type.startsWith('video')) {
         const videoHtml = `<video src="${mediaUrl}" controls style="max-width: 100%; height: auto;"></video>`;
@@ -592,6 +656,72 @@ const ProfessionalRichEditor = ({
             margin: 1em 0;
           }
           
+          /* Image Size Classes */
+          .pre-uploaded-image.pre-img-small {
+            max-width: 200px !important;
+          }
+          
+          .pre-uploaded-image.pre-img-medium {
+            max-width: 400px !important;
+          }
+          
+          .pre-uploaded-image.pre-img-large {
+            max-width: 600px !important;
+          }
+          
+          .pre-uploaded-image.pre-img-full {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          
+          /* Image Position Classes */
+          .pre-uploaded-image.pre-img-left {
+            float: left !important;
+            margin: 0 16px 16px 0 !important;
+            clear: left;
+          }
+          
+          .pre-uploaded-image.pre-img-right {
+            float: right !important;
+            margin: 0 0 16px 16px !important;
+            clear: right;
+          }
+          
+          .pre-uploaded-image.pre-img-center {
+            display: block !important;
+            margin: 16px auto !important;
+            float: none !important;
+          }
+          
+          /* Responsive breakpoints for Webflow compatibility */
+          @media (max-width: 768px) {
+            .pre-uploaded-image.pre-img-small {
+              max-width: 150px !important;
+            }
+            
+            .pre-uploaded-image.pre-img-medium {
+              max-width: 280px !important;
+            }
+            
+            .pre-uploaded-image.pre-img-large {
+              max-width: 100% !important;
+            }
+            
+            .pre-uploaded-image.pre-img-left,
+            .pre-uploaded-image.pre-img-right {
+              float: none !important;
+              display: block !important;
+              margin: 16px auto !important;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            .pre-uploaded-image.pre-img-small,
+            .pre-uploaded-image.pre-img-medium {
+              max-width: 100% !important;
+            }
+          }
+          
           .pre-editor-content iframe {
             max-width: 100%;
             border-radius: 8px;
@@ -697,6 +827,42 @@ const ProfessionalRichEditor = ({
             height: auto;
             border-radius: 8px;
             margin: 1em 0;
+          }
+          
+          /* Apply same image classes to preview */
+          .pre-preview-content .pre-uploaded-image.pre-img-small {
+            max-width: 200px !important;
+          }
+          
+          .pre-preview-content .pre-uploaded-image.pre-img-medium {
+            max-width: 400px !important;
+          }
+          
+          .pre-preview-content .pre-uploaded-image.pre-img-large {
+            max-width: 600px !important;
+          }
+          
+          .pre-preview-content .pre-uploaded-image.pre-img-full {
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          
+          .pre-preview-content .pre-uploaded-image.pre-img-left {
+            float: left !important;
+            margin: 0 16px 16px 0 !important;
+            clear: left;
+          }
+          
+          .pre-preview-content .pre-uploaded-image.pre-img-right {
+            float: right !important;
+            margin: 0 0 16px 16px !important;
+            clear: right;
+          }
+          
+          .pre-preview-content .pre-uploaded-image.pre-img-center {
+            display: block !important;
+            margin: 16px auto !important;
+            float: none !important;
           }
           
           .pre-preview-content iframe {
@@ -959,6 +1125,31 @@ const ProfessionalRichEditor = ({
               </div>
 
               <div className="pre-toolbar-row">
+                <select
+                  value={imageSize}
+                  onChange={(e) => setImageSize(e.target.value)}
+                  className="pre-select"
+                  title="Image size for uploads"
+                >
+                  <option value="small">Small (200px)</option>
+                  <option value="medium">Medium (400px)</option>
+                  <option value="large">Large (600px)</option>
+                  <option value="full">Full Width</option>
+                </select>
+                
+                <select
+                  value={imagePosition}
+                  onChange={(e) => setImagePosition(e.target.value)}
+                  className="pre-select"
+                  title="Image position for uploads"
+                >
+                  <option value="left">Float Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Float Right</option>
+                </select>
+              </div>
+
+              <div className="pre-toolbar-row">
                 <input
                   type="text"
                   placeholder="Image caption (optional)"
@@ -977,7 +1168,7 @@ const ProfessionalRichEditor = ({
                   onClick={() => fileInputRef.current?.click()}
                   className="pre-btn pre-btn-primary"
                 >
-                  Upload File
+                  Upload Image
                 </button>
               </div>
             </div>
