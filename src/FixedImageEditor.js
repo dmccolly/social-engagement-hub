@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
-const SimpleImageEditor = ({ onSave, onCancel }) => {
+const FixedImageEditor = ({ onSave, onCancel }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [images, setImages] = useState([]);
@@ -9,9 +9,37 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
   const fileInputRef = useRef(null);
   const contentRef = useRef(null);
 
-  // Handle content change for contentEditable
+  // Handle content change - FIXED to prevent backwards typing
   const handleContentChange = (e) => {
+    // Store cursor position before updating state
+    const selection = window.getSelection();
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const startOffset = range ? range.startOffset : 0;
+    const endOffset = range ? range.endOffset : 0;
+    const startContainer = range ? range.startContainer : null;
+    
+    // Update content state
     setContent(e.target.innerHTML);
+    
+    // Restore cursor position after React re-render
+    setTimeout(() => {
+      if (startContainer && contentRef.current && contentRef.current.contains(startContainer)) {
+        try {
+          const newRange = document.createRange();
+          newRange.setStart(startContainer, Math.min(startOffset, startContainer.textContent?.length || 0));
+          newRange.setEnd(startContainer, Math.min(endOffset, startContainer.textContent?.length || 0));
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (e) {
+          // Fallback: place cursor at end
+          const newRange = document.createRange();
+          newRange.selectNodeContents(contentRef.current);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
+    }, 0);
   };
 
   // Handle file upload
@@ -142,15 +170,15 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
       const toolbar = document.createElement('div');
       toolbar.className = 'floating-toolbar';
       toolbar.innerHTML = `
-        <button onclick="resizeImage('${imageId}', 'small')" class="toolbar-btn">Small</button>
-        <button onclick="resizeImage('${imageId}', 'medium')" class="toolbar-btn">Medium</button>
-        <button onclick="resizeImage('${imageId}', 'large')" class="toolbar-btn">Large</button>
-        <button onclick="resizeImage('${imageId}', 'full')" class="toolbar-btn">Full</button>
+        <button onclick="window.resizeImage('${imageId}', 'small')" class="toolbar-btn">Small</button>
+        <button onclick="window.resizeImage('${imageId}', 'medium')" class="toolbar-btn">Medium</button>
+        <button onclick="window.resizeImage('${imageId}', 'large')" class="toolbar-btn">Large</button>
+        <button onclick="window.resizeImage('${imageId}', 'full')" class="toolbar-btn">Full</button>
         <span class="toolbar-separator">|</span>
-        <button onclick="positionImage('${imageId}', 'left')" class="toolbar-btn">← Left</button>
-        <button onclick="positionImage('${imageId}', 'center')" class="toolbar-btn">Center</button>
-        <button onclick="positionImage('${imageId}', 'right')" class="toolbar-btn">Right →</button>
-        <button onclick="setSelectedImageId(null)" class="toolbar-btn close-btn">×</button>
+        <button onclick="window.positionImage('${imageId}', 'left')" class="toolbar-btn">← Left</button>
+        <button onclick="window.positionImage('${imageId}', 'center')" class="toolbar-btn">Center</button>
+        <button onclick="window.positionImage('${imageId}', 'right')" class="toolbar-btn">Right →</button>
+        <button onclick="window.setSelectedImageId(null)" class="toolbar-btn close-btn">×</button>
       `;
       
       // Position toolbar above the image
@@ -164,6 +192,33 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
       
       // Add resize handles
       addResizeHandles(img, imageId);
+    }
+  };
+
+  // Add resize handles function
+  const addResizeHandles = (img, imageId) => {
+    const handles = ['nw', 'ne', 'sw', 'se'];
+    handles.forEach(handle => {
+      const handleEl = document.createElement('div');
+      handleEl.className = `resize-handle resize-${handle}`;
+      handleEl.style.position = 'fixed';
+      handleEl.style.width = '12px';
+      handleEl.style.height = '12px';
+      handleEl.style.backgroundColor = '#4285f4';
+      handleEl.style.border = '2px solid white';
+      handleEl.style.borderRadius = '50%';
+      handleEl.style.cursor = `${handle}-resize`;
+      handleEl.style.zIndex = '1001';
+      
+      // Position the handle
+      const rect = img.getBoundingClientRect();
+      if (handle.includes('n')) handleEl.style.top = (rect.top - 6) + 'px';
+      if (handle.includes('s')) handleEl.style.top = (rect.bottom - 6) + 'px';
+      if (handle.includes('w')) handleEl.style.left = (rect.left - 6) + 'px';
+      if (handle.includes('e')) handleEl.style.left = (rect.right - 6) + 'px';
+      
+      document.body.appendChild(handleEl);
+    });
   };
 
   // Resize image function
@@ -181,6 +236,11 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
       if (contentRef.current) {
         setContent(contentRef.current.innerHTML);
       }
+      
+      // Refresh handles
+      setTimeout(() => {
+        selectImage(imageId);
+      }, 10);
     }
   };
 
@@ -199,43 +259,13 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
       if (contentRef.current) {
         setContent(contentRef.current.innerHTML);
       }
+      
+      // Refresh handles
+      setTimeout(() => {
+        selectImage(imageId);
+      }, 10);
     }
   };
-
-  // Add resize handles function
-  const addResizeHandles = (img, imageId) => {
-    const handles = ['nw', 'ne', 'sw', 'se'];
-    handles.forEach(handle => {
-      const handleEl = document.createElement('div');
-      handleEl.className = `resize-handle resize-${handle}`;
-      handleEl.style.position = 'absolute';
-      handleEl.style.width = '10px';
-      handleEl.style.height = '10px';
-      handleEl.style.backgroundColor = '#4285f4';
-      handleEl.style.border = '2px solid white';
-      handleEl.style.borderRadius = '50%';
-      handleEl.style.cursor = `${handle}-resize`;
-      handleEl.style.zIndex = '1001';
-      
-      // Position the handle
-      const rect = img.getBoundingClientRect();
-      if (handle.includes('n')) handleEl.style.top = (rect.top - 5) + 'px';
-      if (handle.includes('s')) handleEl.style.top = (rect.bottom - 5) + 'px';
-      if (handle.includes('w')) handleEl.style.left = (rect.left - 5) + 'px';
-      if (handle.includes('e')) handleEl.style.left = (rect.right - 5) + 'px';
-      
-      document.body.appendChild(handleEl);
-    });
-  };
-
-  // Make functions globally available
-  React.useEffect(() => {
-    window.selectImage = selectImage;
-    window.resizeImage = resizeImage;
-    window.positionImage = positionImage;
-    window.setSelectedImageId = setSelectedImageId;
-  }, []);
-
 
   // Text formatting functions
   const applyFormat = (command) => {
@@ -307,6 +337,20 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
     }
   };
 
+  // Make functions globally available
+  useEffect(() => {
+    window.selectImage = selectImage;
+    window.resizeImage = resizeImage;
+    window.positionImage = positionImage;
+    window.setSelectedImageId = setSelectedImageId;
+    
+    // Cleanup function
+    return () => {
+      document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
+      document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+    };
+  }, []);
+
   const handleSave = () => {
     onSave?.({
       title,
@@ -316,16 +360,16 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
   };
 
   return (
-    <div className="simple-image-editor">
+    <div className="fixed-image-editor">
       <style>{`
-        .simple-image-editor {
+        .fixed-image-editor {
           max-width: 1200px;
           margin: 0 auto;
           padding: 20px;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
-        .simple-header {
+        .editor-header {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           padding: 20px;
@@ -334,39 +378,39 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           margin-bottom: 20px;
         }
         
-        .simple-title {
+        .editor-title {
           font-size: 24px;
           font-weight: bold;
           margin-bottom: 8px;
         }
         
-        .simple-subtitle {
+        .editor-subtitle {
           opacity: 0.9;
           font-size: 14px;
         }
         
-        .simple-main {
+        .editor-main {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 20px;
           margin-bottom: 20px;
         }
         
-        .simple-editor-panel {
+        .editor-panel {
           background: white;
           border: 1px solid #e1e5e9;
           border-radius: 12px;
           padding: 20px;
         }
         
-        .simple-preview-panel {
+        .preview-panel {
           background: #f8f9fa;
           border: 1px solid #e1e5e9;
           border-radius: 12px;
           padding: 20px;
         }
         
-        .simple-title-input {
+        .title-input {
           width: 100%;
           padding: 12px;
           border: 1px solid #ddd;
@@ -375,7 +419,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           margin-bottom: 20px;
         }
         
-        .simple-content-editor {
+        .content-editor {
           width: 100%;
           min-height: 300px;
           padding: 15px;
@@ -391,67 +435,68 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           writing-mode: horizontal-tb !important;
         }
         
-        .simple-content-editor * {
+        .content-editor * {
           direction: ltr !important;
           unicode-bidi: normal !important;
         }
         
-        .simple-content-editor img {
+        .content-editor img {
           max-width: 100%;
           height: auto;
           border: 2px solid transparent;
-          border-radius: 4px;
+          border-radius: 8px;
           cursor: pointer;
-          transition: border-color 0.2s;
+          transition: all 0.2s ease;
         }
         
-        .simple-content-editor img:hover {
+        .content-editor img:hover {
           border-color: #667eea;
         }
         
-        .simple-content-editor img.selected-image {
-          border-color: #667eea;
-          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        .content-editor img.selected-image {
+          border-color: #667eea !important;
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25) !important;
         }
         
-        .simple-content-editor img.size-small {
+        .content-editor img.size-small {
           width: 200px;
         }
         
-        .simple-content-editor img.size-medium {
+        .content-editor img.size-medium {
           width: 400px;
         }
         
-        .simple-content-editor img.size-large {
+        .content-editor img.size-large {
           width: 600px;
         }
         
-        .simple-content-editor img.size-full {
+        .content-editor img.size-full {
           width: 100%;
         }
         
-        .simple-content-editor img.position-left {
+        .content-editor img.position-left {
           float: left;
           margin: 0 15px 15px 0;
         }
         
-        .simple-content-editor img.position-right {
+        .content-editor img.position-right {
           float: right;
           margin: 0 0 15px 15px;
         }
         
-        .simple-content-editor img.position-center {
+        .content-editor img.position-center {
           display: block;
           margin: 15px auto;
+          float: none;
         }
         
-        .simple-content-editor:focus {
+        .content-editor:focus {
           outline: none;
           border-color: #667eea;
           box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
         
-        .simple-upload-section {
+        .upload-section {
           display: flex;
           gap: 10px;
           align-items: center;
@@ -462,7 +507,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           border: 1px solid #e1e5e9;
         }
         
-        .simple-upload-btn {
+        .upload-btn {
           padding: 10px 20px;
           background: #28a745;
           color: white;
@@ -472,23 +517,23 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           font-weight: 500;
         }
         
-        .simple-upload-btn:hover {
+        .upload-btn:hover {
           background: #218838;
         }
         
-        .simple-upload-btn:disabled {
+        .upload-btn:disabled {
           background: #6c757d;
           cursor: not-allowed;
         }
         
-        .simple-actions {
+        .actions {
           display: flex;
           gap: 10px;
           justify-content: center;
           margin-top: 20px;
         }
         
-        .simple-save-btn {
+        .save-btn {
           padding: 12px 24px;
           background: #28a745;
           color: white;
@@ -498,7 +543,11 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           font-weight: 500;
         }
         
-        .simple-cancel-btn {
+        .save-btn:hover {
+          background: #218838;
+        }
+        
+        .cancel-btn {
           padding: 12px 24px;
           background: #6c757d;
           color: white;
@@ -508,21 +557,11 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           font-weight: 500;
         }
         
-        .simple-help {
-          background: #e7f3ff;
-          border: 1px solid #b3d9ff;
-          border-radius: 8px;
-          padding: 15px;
-          margin-bottom: 15px;
-          font-size: 14px;
-          line-height: 1.5;
+        .cancel-btn:hover {
+          background: #5a6268;
         }
         
-        .simple-help strong {
-          color: #0066cc;
-        }
-        
-        .simple-section {
+        .section {
           margin-bottom: 20px;
           padding: 15px;
           border: 1px solid #e1e5e9;
@@ -530,7 +569,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           background: #f8f9fa;
         }
         
-        .simple-section-title {
+        .section-title {
           margin: 0 0 10px 0;
           font-size: 16px;
           font-weight: 600;
@@ -540,14 +579,14 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           gap: 8px;
         }
         
-        .simple-controls {
+        .controls {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
           align-items: center;
         }
         
-        .simple-select {
+        .select {
           padding: 8px 12px;
           border: 1px solid #ced4da;
           border-radius: 4px;
@@ -556,7 +595,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           min-width: 120px;
         }
         
-        .simple-btn {
+        .btn {
           padding: 8px 16px;
           border: 1px solid #ced4da;
           border-radius: 4px;
@@ -566,12 +605,12 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           transition: all 0.2s;
         }
         
-        .simple-btn:hover {
+        .btn:hover {
           background: #e9ecef;
           border-color: #adb5bd;
         }
         
-        .simple-input {
+        .input {
           padding: 8px 12px;
           border: 1px solid #ced4da;
           border-radius: 4px;
@@ -579,7 +618,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           min-width: 200px;
         }
         
-        .simple-color-picker {
+        .color-picker {
           width: 40px;
           height: 36px;
           border: 1px solid #ced4da;
@@ -587,63 +626,55 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           cursor: pointer;
         }
         
-        .selected-image {
-          border: 3px solid #667eea !important;
-          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25) !important;
-          position: relative;
+        .floating-toolbar {
+          position: fixed;
+          background: #333;
+          color: white;
+          padding: 8px 12px;
+          border-radius: 6px;
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          z-index: 1000;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         
-        .image-container {
-          position: relative;
-          display: inline-block;
+        .toolbar-btn {
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 3px;
+          font-size: 12px;
         }
         
-        .image-container.selected {
-          position: relative;
+        .toolbar-btn:hover {
+          background: rgba(255,255,255,0.2);
+        }
+        
+        .toolbar-separator {
+          color: #666;
+          margin: 0 4px;
+        }
+        
+        .close-btn {
+          font-weight: bold;
+          font-size: 14px;
         }
         
         .resize-handle {
-          position: absolute;
+          position: fixed;
           width: 12px;
           height: 12px;
-          background: #667eea;
+          background: #4285f4;
           border: 2px solid white;
           border-radius: 50%;
-          cursor: nw-resize;
           z-index: 1001;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
-        .resize-handle.top-left {
-          top: -6px;
-          left: -6px;
-          cursor: nw-resize;
-        }
-        
-        .resize-handle.top-right {
-          top: -6px;
-          right: -6px;
-          cursor: ne-resize;
-        }
-        
-        .resize-handle.bottom-left {
-          bottom: -6px;
-          left: -6px;
-          cursor: sw-resize;
-        }
-        
-        .resize-handle.bottom-right {
-          bottom: -6px;
-          right: -6px;
-          cursor: se-resize;
-        }
-        
-        .image-container img {
-          display: block;
-          max-width: 100%;
-          height: auto;
-        }
-        
-        .simple-preview-content {
+        .preview-content {
           min-height: 300px;
           padding: 15px;
           background: white;
@@ -652,41 +683,55 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           line-height: 1.6;
         }
         
-        .simple-preview-content img {
+        .preview-content img {
           border-radius: 8px;
           transition: all 0.2s ease;
         }
         
+        .help {
+          background: #e7f3ff;
+          border: 1px solid #b3d9ff;
+          border-radius: 8px;
+          padding: 15px;
+          margin-bottom: 15px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+        
+        .help strong {
+          color: #0066cc;
+        }
+        
         @media (max-width: 768px) {
-          .simple-main {
+          .editor-main {
             grid-template-columns: 1fr;
           }
         }
       `}</style>
 
-      <div className="simple-header">
-        <div className="simple-title">Simple Image Editor</div>
-        <div className="simple-subtitle">Upload images and click to resize/position them with floating toolbar</div>
+      <div className="editor-header">
+        <div className="editor-title">Fixed Rich Blog Editor</div>
+        <div className="editor-subtitle">Upload images and click to resize/position them with floating toolbar</div>
       </div>
 
-      <div className="simple-main">
-        <div className="simple-editor-panel">
+      <div className="editor-main">
+        <div className="editor-panel">
           <h3>📝 Editor</h3>
           
           <input
             type="text"
-            className="simple-title-input"
+            className="title-input"
             placeholder="Enter post title..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
 
           {/* Text Formatting Section */}
-          <div className="simple-section">
-            <h3 className="simple-section-title">📝 Text Formatting</h3>
-            <div className="simple-controls">
+          <div className="section">
+            <h3 className="section-title">📝 Text Formatting</h3>
+            <div className="controls">
               <select 
-                className="simple-select"
+                className="select"
                 onChange={(e) => applyFontFamily(e.target.value)}
                 defaultValue="Arial"
               >
@@ -699,7 +744,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
               </select>
               
               <select 
-                className="simple-select"
+                className="select"
                 onChange={(e) => applyFontSize(e.target.value)}
                 defaultValue="16px"
               >
@@ -713,19 +758,19 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
                 <option value="32px">32px</option>
               </select>
               
-              <button className="simple-btn" onClick={() => applyFormat('bold')}>
-                <strong>Bold Text</strong>
+              <button className="btn" onClick={() => applyFormat('bold')}>
+                <strong>Bold</strong>
               </button>
-              <button className="simple-btn" onClick={() => applyFormat('italic')}>
-                <em>Italic Text</em>
+              <button className="btn" onClick={() => applyFormat('italic')}>
+                <em>Italic</em>
               </button>
-              <button className="simple-btn" onClick={() => applyFormat('underline')}>
-                <u>Underline Text</u>
+              <button className="btn" onClick={() => applyFormat('underline')}>
+                <u>Underline</u>
               </button>
               
               <input 
                 type="color" 
-                className="simple-color-picker"
+                className="color-picker"
                 onChange={(e) => applyTextColor(e.target.value)}
                 title="Text Color"
               />
@@ -733,11 +778,11 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           </div>
 
           {/* Headings & Structure Section */}
-          <div className="simple-section">
-            <h3 className="simple-section-title">📋 Headings & Structure</h3>
-            <div className="simple-controls">
+          <div className="section">
+            <h3 className="section-title">📋 Headings & Structure</h3>
+            <div className="controls">
               <select 
-                className="simple-select"
+                className="select"
                 onChange={(e) => applyHeading(e.target.value)}
                 defaultValue="normal"
               >
@@ -750,56 +795,55 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           </div>
 
           {/* Text Alignment Section */}
-          <div className="simple-section">
-            <h3 className="simple-section-title">↔️ Text Alignment</h3>
-            <div className="simple-controls">
-              <button className="simple-btn" onClick={() => applyAlignment('left')}>
+          <div className="section">
+            <h3 className="section-title">↔️ Text Alignment</h3>
+            <div className="controls">
+              <button className="btn" onClick={() => applyAlignment('left')}>
                 ← Left
               </button>
-              <button className="simple-btn" onClick={() => applyAlignment('center')}>
+              <button className="btn" onClick={() => applyAlignment('center')}>
                 Center
               </button>
-              <button className="simple-btn" onClick={() => applyAlignment('right')}>
+              <button className="btn" onClick={() => applyAlignment('right')}>
                 Right →
               </button>
             </div>
           </div>
 
           {/* Links Section */}
-          <div className="simple-section">
-            <h3 className="simple-section-title">🔗 Links</h3>
-            <div className="simple-controls">
+          <div className="section">
+            <h3 className="section-title">🔗 Links</h3>
+            <div className="controls">
               <input 
                 type="url" 
                 placeholder="https://example.com"
-                className="simple-input"
+                className="input"
                 id="linkUrl"
               />
-              <button className="simple-btn" onClick={addLink}>
+              <button className="btn" onClick={addLink}>
                 Add Link
               </button>
-              <button className="simple-btn" onClick={removeLink}>
+              <button className="btn" onClick={removeLink}>
                 Remove Link
               </button>
             </div>
           </div>
 
           {/* Image Controls Section */}
-          <div className="simple-section">
-            <h3 className="simple-section-title">🖼️ Image Controls</h3>
-            <div className="simple-help">
+          <div className="section">
+            <h3 className="section-title">🖼️ Image Controls</h3>
+            <div className="help">
               <strong>🎯 How to use:</strong><br/>
               1. Upload an image below<br/>
               2. Click on any image in the content to select it<br/>
               3. Use the floating toolbar to resize (Small/Medium/Large/Full)<br/>
               4. Use the floating toolbar to position (Left/Center/Right)<br/>
               5. <strong>Drag corner handles</strong> to resize manually<br/>
-              6. <strong>Drag images</strong> to move them around in content<br/>
-              7. Images show blue border and corner handles when selected
+              6. Images show blue border and corner handles when selected
             </div>
           </div>
 
-          <div className="simple-upload-section">
+          <div className="upload-section">
             <input
               type="file"
               ref={fileInputRef}
@@ -809,7 +853,7 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
             />
             
             <button 
-              className="simple-upload-btn"
+              className="upload-btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
@@ -817,40 +861,34 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
             </button>
             
             <span style={{ fontSize: '14px', color: '#666' }}>
-              Click in the content area first, then upload to insert at cursor position
+              Click in content area first, then upload to insert at cursor position
             </span>
           </div>
 
           <div
             ref={contentRef}
-            className="simple-content-editor"
+            className="content-editor"
             contentEditable
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
             dangerouslySetInnerHTML={{ __html: content || '<p>Start writing your content... Click here and start typing.</p>' }}
-            style={{
-              direction: 'ltr',
-              textAlign: 'left',
-              unicodeBidi: 'normal',
-              writingMode: 'horizontal-tb'
-            }}
           />
         </div>
 
-        <div className="simple-preview-panel">
+        <div className="preview-panel">
           <h3>👁️ Live Preview</h3>
-          <div className="simple-preview-content">
+          <div className="preview-content">
             <h2>{title || 'Your Post Title'}</h2>
             <div dangerouslySetInnerHTML={{ __html: content || '<p>Your content will appear here...</p>' }} />
           </div>
         </div>
       </div>
 
-      <div className="simple-actions">
-        <button className="simple-save-btn" onClick={handleSave}>
+      <div className="actions">
+        <button className="save-btn" onClick={handleSave}>
           Save Post
         </button>
-        <button className="simple-cancel-btn" onClick={onCancel}>
+        <button className="cancel-btn" onClick={onCancel}>
           Cancel
         </button>
       </div>
@@ -858,4 +896,4 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
   );
 };
 
-export default SimpleImageEditor;
+export default FixedImageEditor;
