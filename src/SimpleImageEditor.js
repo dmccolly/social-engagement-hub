@@ -359,6 +359,60 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
     e.dataTransfer.effectAllowed = 'move';
   };
 
+  // Text formatting functions
+  const applyFormat = (command) => {
+    document.execCommand(command, false, null);
+    setContent(contentRef.current.innerHTML);
+  };
+
+  const applyFontFamily = (fontFamily) => {
+    document.execCommand('fontName', false, fontFamily);
+    setContent(contentRef.current.innerHTML);
+  };
+
+  const applyFontSize = (fontSize) => {
+    document.execCommand('fontSize', false, '7');
+    const fontElements = document.querySelectorAll('font[size="7"]');
+    fontElements.forEach(el => {
+      el.removeAttribute('size');
+      el.style.fontSize = fontSize;
+    });
+    setContent(contentRef.current.innerHTML);
+  };
+
+  const applyTextColor = (color) => {
+    document.execCommand('foreColor', false, color);
+    setContent(contentRef.current.innerHTML);
+  };
+
+  const applyHeading = (heading) => {
+    if (heading === 'normal') {
+      document.execCommand('formatBlock', false, 'div');
+    } else {
+      document.execCommand('formatBlock', false, heading);
+    }
+    setContent(contentRef.current.innerHTML);
+  };
+
+  const applyAlignment = (alignment) => {
+    document.execCommand('justify' + alignment.charAt(0).toUpperCase() + alignment.slice(1), false, null);
+    setContent(contentRef.current.innerHTML);
+  };
+
+  const addLink = () => {
+    const url = document.getElementById('linkUrl').value;
+    if (url) {
+      document.execCommand('createLink', false, url);
+      setContent(contentRef.current.innerHTML);
+      document.getElementById('linkUrl').value = '';
+    }
+  };
+
+  const removeLink = () => {
+    document.execCommand('unlink', false, null);
+    setContent(contentRef.current.innerHTML);
+  };
+
   // Make functions globally available
   React.useEffect(() => {
     window.selectImage = selectImage;
@@ -530,6 +584,71 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           color: #0066cc;
         }
         
+        .simple-section {
+          margin-bottom: 20px;
+          padding: 15px;
+          border: 1px solid #e1e5e9;
+          border-radius: 8px;
+          background: #f8f9fa;
+        }
+        
+        .simple-section-title {
+          margin: 0 0 10px 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #495057;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .simple-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: center;
+        }
+        
+        .simple-select {
+          padding: 8px 12px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          background: white;
+          font-size: 14px;
+          min-width: 120px;
+        }
+        
+        .simple-btn {
+          padding: 8px 16px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          background: white;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+        
+        .simple-btn:hover {
+          background: #e9ecef;
+          border-color: #adb5bd;
+        }
+        
+        .simple-input {
+          padding: 8px 12px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          font-size: 14px;
+          min-width: 200px;
+        }
+        
+        .simple-color-picker {
+          width: 40px;
+          height: 36px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
         .selected-image {
           border: 3px solid #667eea !important;
           box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25) !important;
@@ -624,15 +743,122 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          <div className="simple-help">
-            <strong>🎯 How to use:</strong><br/>
-            1. Upload an image below<br/>
-            2. Click on any image in the content to select it<br/>
-            3. Use the floating toolbar to resize (Small/Medium/Large/Full)<br/>
-            4. Use the floating toolbar to position (Left/Center/Right)<br/>
-            5. <strong>Drag corner handles</strong> to resize manually<br/>
-            6. <strong>Drag images</strong> to move them around in content<br/>
-            7. Images show blue border and corner handles when selected
+          {/* Text Formatting Section */}
+          <div className="simple-section">
+            <h3 className="simple-section-title">📝 Text Formatting</h3>
+            <div className="simple-controls">
+              <select 
+                className="simple-select"
+                onChange={(e) => applyFontFamily(e.target.value)}
+                defaultValue="Arial"
+              >
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Courier New">Courier New</option>
+              </select>
+              
+              <select 
+                className="simple-select"
+                onChange={(e) => applyFontSize(e.target.value)}
+                defaultValue="16px"
+              >
+                <option value="12px">12px</option>
+                <option value="14px">14px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
+                <option value="20px">20px</option>
+                <option value="24px">24px</option>
+                <option value="28px">28px</option>
+                <option value="32px">32px</option>
+              </select>
+              
+              <button className="simple-btn" onClick={() => applyFormat('bold')}>
+                <strong>Bold Text</strong>
+              </button>
+              <button className="simple-btn" onClick={() => applyFormat('italic')}>
+                <em>Italic Text</em>
+              </button>
+              <button className="simple-btn" onClick={() => applyFormat('underline')}>
+                <u>Underline Text</u>
+              </button>
+              
+              <input 
+                type="color" 
+                className="simple-color-picker"
+                onChange={(e) => applyTextColor(e.target.value)}
+                title="Text Color"
+              />
+            </div>
+          </div>
+
+          {/* Headings & Structure Section */}
+          <div className="simple-section">
+            <h3 className="simple-section-title">📋 Headings & Structure</h3>
+            <div className="simple-controls">
+              <select 
+                className="simple-select"
+                onChange={(e) => applyHeading(e.target.value)}
+                defaultValue="normal"
+              >
+                <option value="normal">Normal Text</option>
+                <option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option>
+                <option value="h3">Heading 3</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Text Alignment Section */}
+          <div className="simple-section">
+            <h3 className="simple-section-title">↔️ Text Alignment</h3>
+            <div className="simple-controls">
+              <button className="simple-btn" onClick={() => applyAlignment('left')}>
+                ← Left
+              </button>
+              <button className="simple-btn" onClick={() => applyAlignment('center')}>
+                Center
+              </button>
+              <button className="simple-btn" onClick={() => applyAlignment('right')}>
+                Right →
+              </button>
+            </div>
+          </div>
+
+          {/* Links Section */}
+          <div className="simple-section">
+            <h3 className="simple-section-title">🔗 Links</h3>
+            <div className="simple-controls">
+              <input 
+                type="url" 
+                placeholder="https://example.com"
+                className="simple-input"
+                id="linkUrl"
+              />
+              <button className="simple-btn" onClick={addLink}>
+                Add Link
+              </button>
+              <button className="simple-btn" onClick={removeLink}>
+                Remove Link
+              </button>
+            </div>
+          </div>
+
+          {/* Image Controls Section */}
+          <div className="simple-section">
+            <h3 className="simple-section-title">🖼️ Image Controls</h3>
+            <div className="simple-help">
+              <strong>🎯 How to use:</strong><br/>
+              1. Upload an image below<br/>
+              2. Click on any image in the content to select it<br/>
+              3. Use the floating toolbar to resize (Small/Medium/Large/Full)<br/>
+              4. Use the floating toolbar to position (Left/Center/Right)<br/>
+              5. <strong>Drag corner handles</strong> to resize manually<br/>
+              6. <strong>Drag images</strong> to move them around in content<br/>
+              7. Images show blue border and corner handles when selected
+            </div>
           </div>
 
           <div className="simple-upload-section">
