@@ -29,13 +29,13 @@ const StandaloneBlogWidget = () => {
   return (
     <div style={{ 
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      backgroundColor: 'white',
-      border: `3px solid ${settings.primaryColor}`,
-      borderRadius: '12px',
-      overflow: 'hidden',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '0',
+      overflow: 'visible',
       width: '100%',
       height: '100vh',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      boxShadow: 'none',
       position: 'relative'
     }}>
       {/* Widget Header */}
@@ -46,7 +46,8 @@ const StandaloneBlogWidget = () => {
         fontWeight: '700',
         fontSize: '18px',
         textAlign: 'center',
-        letterSpacing: '0.5px'
+        letterSpacing: '0.5px',
+        borderRadius: '8px 8px 0 0'
       }}>
         📝 Latest Blog Posts
       </div>
@@ -55,14 +56,14 @@ const StandaloneBlogWidget = () => {
       <div style={{ 
         height: 'calc(100vh - 120px)', 
         overflowY: 'auto',
-        backgroundColor: 'white',
+        backgroundColor: 'transparent',
         padding: '0'
       }}>
         {displayPosts.length > 0 ? displayPosts.map((post, index) => (
           <article key={post.id} style={{
             padding: '20px',
             borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-            backgroundColor: 'white'
+            backgroundColor: 'transparent'
           }}>
             {/* Post Title */}
             <h3 style={{
@@ -133,7 +134,8 @@ const StandaloneBlogWidget = () => {
             padding: '60px 20px',
             textAlign: 'center',
             color: '#999',
-            fontSize: '16px'
+            fontSize: '16px',
+            backgroundColor: 'transparent'
           }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
             <div>No blog posts yet</div>
@@ -153,7 +155,8 @@ const StandaloneBlogWidget = () => {
         padding: '8px',
         textAlign: 'center',
         fontSize: '12px',
-        fontWeight: '600'
+        fontWeight: '600',
+        borderRadius: '0 0 8px 8px'
       }}>
         Powered by Social Hub
       </div>
@@ -1067,13 +1070,13 @@ const MainApp = () => {
     return (
       <div style={{ 
         fontFamily: 'system-ui, -apple-system, sans-serif',
-        backgroundColor: 'white',
-        border: `3px solid ${settings.primaryColor}`,
-        borderRadius: '12px',
-        overflow: 'hidden',
+        backgroundColor: 'transparent',
+        border: 'none',
+        borderRadius: '0',
+        overflow: 'visible',
         width: '320px',
         height: '480px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        boxShadow: 'none',
         position: 'relative'
       }}>
         {/* Widget Header */}
@@ -1084,7 +1087,8 @@ const MainApp = () => {
           fontWeight: '700',
           fontSize: '18px',
           textAlign: 'center',
-          letterSpacing: '0.5px'
+          letterSpacing: '0.5px',
+          borderRadius: '8px 8px 0 0'
         }}>
           📝 Latest Blog Posts
         </div>
@@ -1093,14 +1097,14 @@ const MainApp = () => {
         <div style={{ 
           height: '416px', 
           overflowY: 'auto',
-          backgroundColor: 'white',
+          backgroundColor: 'transparent',
           padding: '0'
         }}>
           {displayPosts.length > 0 ? displayPosts.map((post, index) => (
             <article key={post.id} style={{
               padding: '20px',
               borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-              backgroundColor: 'white'
+              backgroundColor: 'transparent'
             }}>
               {/* Post Title */}
               <h3 style={{
@@ -1171,7 +1175,8 @@ const MainApp = () => {
               padding: '60px 20px',
               textAlign: 'center',
               color: '#999',
-              fontSize: '16px'
+              fontSize: '16px',
+              backgroundColor: 'transparent'
             }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
               <div>No blog posts yet</div>
@@ -1182,16 +1187,13 @@ const MainApp = () => {
         
         {/* Widget Footer */}
         <div style={{
-          position: 'absolute',
-          bottom: '0',
-          left: '0',
-          right: '0',
           backgroundColor: settings.primaryColor,
           color: 'white',
           padding: '8px',
           textAlign: 'center',
           fontSize: '12px',
-          fontWeight: '600'
+          fontWeight: '600',
+          borderRadius: '0 0 8px 8px'
         }}>
           Powered by Social Hub
         </div>
