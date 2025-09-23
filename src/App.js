@@ -7,7 +7,7 @@ import {
   Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
   Star, Sparkles, Crown
 } from 'lucide-react';
-import AdvancedRichBlogEditor from './AdvancedRichBlogEditor';
+import ProfessionalRichEditor from './ProfessionalRichEditor';
 
 const App = () => {
   // State Management
@@ -174,7 +174,7 @@ const App = () => {
         )}
 
         {/* Rich Blog Editor */}
-        <AdvancedRichBlogEditor
+        <ProfessionalRichEditor
           initialHTML="<p>Start writing your content...</p>"
           folder="social-hub"
           onSave={handleSave}
