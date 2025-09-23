@@ -7,6 +7,196 @@ import {
   Eye, Copy, Check, Star, TrendingUp, Activity, Vote
 } from 'lucide-react';
 
+// Standalone News Feed Widget Component
+const StandaloneNewsFeedWidget = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const settingsParam = urlParams.get('settings');
+  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
+    primaryColor: '#10b981',
+    showReplies: true,
+    maxPosts: 5
+  };
+
+  // Sample news feed posts for the widget
+  const newsFeedPosts = [
+    {
+      id: 1,
+      author: 'Admin',
+      content: 'Welcome to our community! Feel free to share your thoughts and engage with other members.',
+      timestamp: '2 hours ago',
+      likes: 5,
+      comments: [
+        { author: 'User1', content: 'Thanks for the warm welcome!', timestamp: '1 hour ago' }
+      ]
+    },
+    {
+      id: 2,
+      author: 'Community Manager',
+      content: 'What features would you like to see added to our platform? Let us know in the comments!',
+      timestamp: '4 hours ago',
+      likes: 12,
+      comments: [
+        { author: 'User2', content: 'More customization options would be great!', timestamp: '3 hours ago' },
+        { author: 'User3', content: 'I agree with User2!', timestamp: '2 hours ago' }
+      ]
+    }
+  ];
+
+  const displayPosts = newsFeedPosts.slice(0, settings.maxPosts);
+  
+  return (
+    <div style={{ 
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '0',
+      overflow: 'visible',
+      width: '100%',
+      height: '100vh',
+      boxShadow: 'none',
+      position: 'relative'
+    }}>
+      {/* Widget Header */}
+      <div style={{
+        backgroundColor: settings.primaryColor,
+        color: 'white',
+        padding: '16px',
+        fontWeight: '700',
+        fontSize: '18px',
+        textAlign: 'center',
+        letterSpacing: '0.5px',
+        borderRadius: '8px 8px 0 0'
+      }}>
+        💬 Community Feed
+      </div>
+      
+      {/* News Feed Content */}
+      <div style={{ 
+        height: 'calc(100vh - 120px)', 
+        overflowY: 'auto',
+        backgroundColor: 'transparent',
+        padding: '0'
+      }}>
+        {displayPosts.map((post, index) => (
+          <article key={post.id} style={{
+            padding: '20px',
+            borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
+            backgroundColor: 'transparent'
+          }}>
+            {/* Post Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '12px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: settings.primaryColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                marginRight: '12px'
+              }}>
+                {post.author[0]}
+              </div>
+              <div>
+                <div style={{ fontWeight: '600', color: '#1a1a1a' }}>{post.author}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>{post.timestamp}</div>
+              </div>
+            </div>
+            
+            {/* Post Content */}
+            <div style={{
+              color: '#333',
+              fontSize: '15px',
+              lineHeight: '1.6',
+              marginBottom: '12px'
+            }}>
+              {post.content}
+            </div>
+            
+            {/* Post Actions */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              marginBottom: '12px'
+            }}>
+              <button style={{
+                background: 'none',
+                border: 'none',
+                color: settings.primaryColor,
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                ❤️ {post.likes}
+              </button>
+              <button style={{
+                background: 'none',
+                border: 'none',
+                color: settings.primaryColor,
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                💬 {post.comments.length}
+              </button>
+            </div>
+            
+            {/* Comments */}
+            {settings.showReplies && post.comments.length > 0 && (
+              <div style={{
+                marginLeft: '20px',
+                paddingLeft: '16px',
+                borderLeft: `2px solid ${settings.primaryColor}30`
+              }}>
+                {post.comments.slice(0, 2).map((comment, idx) => (
+                  <div key={idx} style={{
+                    marginBottom: '8px',
+                    fontSize: '14px'
+                  }}>
+                    <span style={{ fontWeight: '600', color: '#1a1a1a' }}>{comment.author}</span>
+                    <span style={{ color: '#333', marginLeft: '8px' }}>{comment.content}</span>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{comment.timestamp}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+      
+      {/* Widget Footer */}
+      <div style={{
+        position: 'absolute',
+        bottom: '0',
+        left: '0',
+        right: '0',
+        backgroundColor: settings.primaryColor,
+        color: 'white',
+        padding: '8px',
+        textAlign: 'center',
+        fontSize: '12px',
+        fontWeight: '600',
+        borderRadius: '0 0 8px 8px'
+      }}>
+        Powered by Social Hub
+      </div>
+    </div>
+  );
+};
+
 // Standalone Blog Widget Component
 const StandaloneBlogWidget = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -1543,8 +1733,75 @@ const MainApp = () => {
             )}
             {activeSection === 'calendar' && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-2xl font-bold mb-6">Calendar</h2>
-                <p className="text-gray-600">Calendar functionality coming soon...</p>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">📅 Calendar</h2>
+                  <button
+                    onClick={() => { setContentType('scheduled'); setIsCreating(true); }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Clock size={20} /> Schedule Content
+                  </button>
+                </div>
+                
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-2 mb-6">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="p-3 text-center font-semibold text-gray-600 bg-gray-50 rounded">
+                      {day}
+                    </div>
+                  ))}
+                  {Array.from({ length: 35 }, (_, i) => {
+                    const date = i - 6; // Start from previous month
+                    const isCurrentMonth = date > 0 && date <= 30;
+                    const isToday = date === 23; // Today is 23rd
+                    return (
+                      <div
+                        key={i}
+                        className={`p-3 text-center border rounded cursor-pointer hover:bg-blue-50 ${
+                          isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400'
+                        } ${isToday ? 'bg-blue-600 text-white font-bold' : ''}`}
+                      >
+                        {date > 0 ? date : date + 31}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Upcoming Events */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">📋 Upcoming Scheduled Content</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <div>
+                        <div className="font-medium">Weekly Newsletter</div>
+                        <div className="text-sm text-gray-600">📧 Email Campaign • Tomorrow at 9:00 AM</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                          <Edit size={16} />
+                        </button>
+                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div>
+                        <div className="font-medium">Product Update Post</div>
+                        <div className="text-sm text-gray-600">📝 Blog Post • Friday at 2:00 PM</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                          <Edit size={16} />
+                        </button>
+                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             {activeSection === 'analytics' && (
@@ -1708,8 +1965,75 @@ const MainApp = () => {
             )}
             {activeSection === 'calendar' && (
               <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-2xl font-bold mb-6">Calendar</h2>
-                <p className="text-gray-600">Calendar functionality coming soon...</p>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold">📅 Calendar</h2>
+                  <button
+                    onClick={() => { setContentType('scheduled'); setIsCreating(true); }}
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-2"
+                  >
+                    <Clock size={20} /> Schedule Content
+                  </button>
+                </div>
+                
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-2 mb-6">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="p-3 text-center font-semibold text-gray-600 bg-gray-50 rounded">
+                      {day}
+                    </div>
+                  ))}
+                  {Array.from({ length: 35 }, (_, i) => {
+                    const date = i - 6; // Start from previous month
+                    const isCurrentMonth = date > 0 && date <= 30;
+                    const isToday = date === 23; // Today is 23rd
+                    return (
+                      <div
+                        key={i}
+                        className={`p-3 text-center border rounded cursor-pointer hover:bg-blue-50 ${
+                          isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400'
+                        } ${isToday ? 'bg-blue-600 text-white font-bold' : ''}`}
+                      >
+                        {date > 0 ? date : date + 31}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Upcoming Events */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">📋 Upcoming Scheduled Content</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <div>
+                        <div className="font-medium">Weekly Newsletter</div>
+                        <div className="text-sm text-gray-600">📧 Email Campaign • Tomorrow at 9:00 AM</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                          <Edit size={16} />
+                        </button>
+                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div>
+                        <div className="font-medium">Product Update Post</div>
+                        <div className="text-sm text-gray-600">📝 Blog Post • Friday at 2:00 PM</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                          <Edit size={16} />
+                        </button>
+                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             {activeSection === 'analytics' && (
@@ -1734,6 +2058,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/widget/blog" element={<StandaloneBlogWidget />} />
+        <Route path="/widget/newsfeed" element={<StandaloneNewsFeedWidget />} />
         <Route path="/*" element={<MainApp />} />
       </Routes>
     </Router>
