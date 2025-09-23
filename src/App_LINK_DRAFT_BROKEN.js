@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Home, MessageSquare, FileText, Mail, Users, Calendar, BarChart3, Settings,
   Plus, Send, Clock, Edit, Trash2, Heart, MessageCircle, Bookmark,
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload, Save, Eye, X
+  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload, Save, Eye
 } from 'lucide-react';
 
 const App = () => {
@@ -59,95 +59,13 @@ const App = () => {
     }
   ]);
 
-  // Link Dialog Component
-  const LinkDialog = ({ isOpen, onClose, onInsert, selectedText = '' }) => {
-    const [displayText, setDisplayText] = useState(selectedText);
-    const [url, setUrl] = useState('');
-
-    useEffect(() => {
-      if (isOpen) {
-        setDisplayText(selectedText);
-        setUrl('');
-      }
-    }, [isOpen, selectedText]);
-
-    const handleInsert = () => {
-      if (displayText.trim() && url.trim()) {
-        onInsert(displayText.trim(), url.trim());
-        onClose();
-      }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Add Link</h3>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Text to Display
-              </label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter the text that will appear as a link"
-                value={displayText}
-                onChange={(e) => setDisplayText(e.target.value)}
-                autoFocus
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL
-              </label>
-              <input
-                type="url"
-                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-2 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleInsert}
-              disabled={!displayText.trim() || !url.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              Insert Link
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Rich Blog Editor Component with FIXED link dialog and draft logic
+  // Rich Blog Editor Component with FIXED multi-image handling
   const RichBlogEditor = ({ onSave, onCancel, initialPost = null }) => {
     const [title, setTitle] = useState(initialPost?.title || '');
     const [content, setContent] = useState(initialPost?.htmlContent || '');
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [imageCounter, setImageCounter] = useState(0);
-    const [showLinkDialog, setShowLinkDialog] = useState(false);
-    const [selectedText, setSelectedText] = useState('');
     const contentRef = useRef(null);
     const fileInputRef = useRef(null);
 
@@ -159,39 +77,55 @@ const App = () => {
       }
     }, [initialPost]);
 
-    // Cleanup function for images (unchanged)
+    // IMPROVED cleanup function for multiple images
     const cleanupImageSelection = () => {
       console.log('Cleaning up image selection...');
       
+      // Remove ALL floating toolbars
       const toolbars = document.querySelectorAll('.image-toolbar');
-      toolbars.forEach(toolbar => toolbar.remove());
+      toolbars.forEach(toolbar => {
+        console.log('Removing toolbar:', toolbar);
+        toolbar.remove();
+      });
       
+      // Remove ALL resize handles
       const handles = document.querySelectorAll('.resize-handle');
-      handles.forEach(handle => handle.remove());
+      handles.forEach(handle => {
+        console.log('Removing handle:', handle);
+        handle.remove();
+      });
       
+      // Remove selection styling from ALL images
       const selectedImages = document.querySelectorAll('.selected-image');
       selectedImages.forEach(img => {
+        console.log('Deselecting image:', img.id);
         img.classList.remove('selected-image');
         img.style.border = '2px solid transparent';
         img.style.boxShadow = 'none';
       });
       
+      // Clear selected image state
       setSelectedImageId(null);
+      console.log('Cleanup complete');
     };
 
+    // Clean up when component unmounts or section changes
     useEffect(() => {
       return () => {
+        console.log('Component unmounting, cleaning up...');
         cleanupImageSelection();
       };
     }, []);
 
+    // Clean up when switching sections
     useEffect(() => {
       if (!isCreating) {
+        console.log('Not creating, cleaning up...');
         cleanupImageSelection();
       }
     }, [isCreating, activeSection]);
 
-    // Text formatting functions
+    // Text formatting functions (unchanged)
     const applyFormat = (command) => {
       document.execCommand(command, false, null);
       if (contentRef.current) {
@@ -243,65 +177,17 @@ const App = () => {
       }
     };
 
-    // IMPROVED link functions with proper dialog
     const addLink = () => {
       const selection = window.getSelection();
-      const selectedText = selection.toString().trim();
-      
-      if (selectedText) {
-        setSelectedText(selectedText);
-      } else {
-        setSelectedText('');
+      if (selection.rangeCount === 0) {
+        alert('Please select some text first, then add a link.');
+        return;
       }
       
-      setShowLinkDialog(true);
-    };
-
-    const insertLink = (displayText, url) => {
-      const selection = window.getSelection();
-      
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        
-        // Create the link element
-        const link = document.createElement('a');
-        link.href = url;
-        link.textContent = displayText;
-        link.target = '_blank'; // Open in new tab
-        link.style.color = '#2563eb';
-        link.style.textDecoration = 'underline';
-        
-        // If there's selected text, replace it
-        if (selection.toString().trim()) {
-          range.deleteContents();
-        }
-        
-        // Insert the link
-        range.insertNode(link);
-        
-        // Move cursor after the link
-        range.setStartAfter(link);
-        range.setEndAfter(link);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Update content
+      const url = prompt('Enter the URL:');
+      if (url) {
+        document.execCommand('createLink', false, url);
         if (contentRef.current) {
-          setContent(contentRef.current.innerHTML);
-        }
-      } else {
-        // No selection, insert at cursor position or end
-        const link = document.createElement('a');
-        link.href = url;
-        link.textContent = displayText;
-        link.target = '_blank';
-        link.style.color = '#2563eb';
-        link.style.textDecoration = 'underline';
-        
-        if (contentRef.current) {
-          contentRef.current.appendChild(document.createTextNode(' '));
-          contentRef.current.appendChild(link);
-          contentRef.current.appendChild(document.createTextNode(' '));
           setContent(contentRef.current.innerHTML);
         }
       }
@@ -314,7 +200,7 @@ const App = () => {
       }
     };
 
-    // Image handling (unchanged from previous version)
+    // IMPROVED image handling for multiple images
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -322,9 +208,11 @@ const App = () => {
       setIsUploading(true);
       
       try {
+        // Create unique image ID using counter
         const imageId = `${Date.now()}_${imageCounter}`;
         setImageCounter(prev => prev + 1);
         
+        // Create local URL for immediate display
         const localUrl = URL.createObjectURL(file);
         
         const img = document.createElement('img');
@@ -340,39 +228,57 @@ const App = () => {
         img.style.display = 'block';
         img.style.margin = '15px auto';
         
+        // IMPROVED click handler with better event handling
         img.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
+          console.log('Image clicked:', imageId);
           selectImage(imageId);
         });
         
+        // Insert into editor
         const editor = contentRef.current;
         if (editor) {
           editor.appendChild(img);
           setContent(editor.innerHTML);
         }
         
+        console.log('Image inserted successfully with ID:', imageId);
       } catch (error) {
         console.error('Upload failed:', error);
       } finally {
         setIsUploading(false);
+        // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
       }
     };
 
+    // IMPROVED image selection with better multi-image support
     const selectImage = (imageId) => {
+      console.log('Selecting image:', imageId);
+      
+      // Clean up any existing selections first
       cleanupImageSelection();
+      
       setSelectedImageId(imageId);
       
+      // Find and select the image
       const img = document.getElementById(`img-${imageId}`);
-      if (!img) return;
+      if (!img) {
+        console.error('Image not found:', `img-${imageId}`);
+        return;
+      }
       
+      console.log('Found image:', img);
+      
+      // Add selection styling
       img.classList.add('selected-image');
       img.style.border = '2px solid #4285f4';
       img.style.boxShadow = '0 0 0 2px rgba(66, 133, 244, 0.25)';
       
+      // Create floating toolbar with unique class
       const rect = img.getBoundingClientRect();
       const toolbar = document.createElement('div');
       toolbar.className = `image-toolbar toolbar-${imageId}`;
@@ -387,6 +293,7 @@ const App = () => {
       toolbar.style.gap = '4px';
       toolbar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
       
+      // Create buttons with direct event listeners instead of onclick
       const createButton = (text, action, bgColor = '#555') => {
         const btn = document.createElement('button');
         btn.textContent = text;
@@ -408,24 +315,33 @@ const App = () => {
         return btn;
       };
       
+      // Add resize buttons
       toolbar.appendChild(createButton('Small', () => resizeImageTo(imageId, 'small')));
       toolbar.appendChild(createButton('Medium', () => resizeImageTo(imageId, 'medium')));
       toolbar.appendChild(createButton('Large', () => resizeImageTo(imageId, 'large')));
       toolbar.appendChild(createButton('Full', () => resizeImageTo(imageId, 'full')));
       
+      // Add separator
       const separator = document.createElement('div');
       separator.style.cssText = 'width: 1px; background: #666; margin: 0 4px;';
       toolbar.appendChild(separator);
       
+      // Add position buttons
       toolbar.appendChild(createButton('Left', () => positionImageTo(imageId, 'left')));
       toolbar.appendChild(createButton('Center', () => positionImageTo(imageId, 'center')));
       toolbar.appendChild(createButton('Right', () => positionImageTo(imageId, 'right')));
+      
+      // Add close button
       toolbar.appendChild(createButton('✕', () => cleanupImageSelection(), '#d32f2f'));
       
       document.body.appendChild(toolbar);
+      console.log('Toolbar created and added');
+      
+      // Add corner handles
       addCornerHandles(img, imageId);
     };
 
+    // IMPROVED corner handles with unique classes
     const addCornerHandles = (img, imageId) => {
       const rect = img.getBoundingClientRect();
       const handles = ['nw', 'ne', 'sw', 'se'];
@@ -443,18 +359,25 @@ const App = () => {
         handleEl.style.zIndex = '10001';
         handleEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
         
+        // Position handles
         if (handle.includes('n')) handleEl.style.top = (rect.top - 6) + 'px';
         if (handle.includes('s')) handleEl.style.top = (rect.bottom - 6) + 'px';
         if (handle.includes('w')) handleEl.style.left = (rect.left - 6) + 'px';
         if (handle.includes('e')) handleEl.style.left = (rect.right - 6) + 'px';
         
         document.body.appendChild(handleEl);
+        console.log('Handle added:', handle);
       });
     };
 
+    // Image manipulation functions
     const resizeImageTo = (imageId, size) => {
+      console.log('Resizing image:', imageId, 'to', size);
       const img = document.getElementById(`img-${imageId}`);
-      if (!img) return;
+      if (!img) {
+        console.error('Image not found for resize:', imageId);
+        return;
+      }
       
       const sizes = {
         small: '200px',
@@ -470,6 +393,7 @@ const App = () => {
         setContent(contentRef.current.innerHTML);
       }
       
+      // Update handles position after resize
       setTimeout(() => {
         if (selectedImageId === imageId) {
           cleanupImageSelection();
@@ -479,9 +403,14 @@ const App = () => {
     };
 
     const positionImageTo = (imageId, position) => {
+      console.log('Positioning image:', imageId, 'to', position);
       const img = document.getElementById(`img-${imageId}`);
-      if (!img) return;
+      if (!img) {
+        console.error('Image not found for position:', imageId);
+        return;
+      }
       
+      // Reset positioning
       img.style.float = 'none';
       img.style.display = 'block';
       img.style.margin = '15px auto';
@@ -498,6 +427,7 @@ const App = () => {
         setContent(contentRef.current.innerHTML);
       }
       
+      // Update handles position after positioning
       setTimeout(() => {
         if (selectedImageId === imageId) {
           cleanupImageSelection();
@@ -506,13 +436,16 @@ const App = () => {
       }, 100);
     };
 
+    // Handle content changes with cursor position fix
     const handleContentChange = () => {
       if (contentRef.current) {
+        // Save cursor position
         const selection = window.getSelection();
         const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
         
         setContent(contentRef.current.innerHTML);
         
+        // Restore cursor position
         if (range) {
           setTimeout(() => {
             try {
@@ -526,14 +459,17 @@ const App = () => {
       }
     };
 
+    // IMPROVED click outside handler
     useEffect(() => {
       const handleClickOutside = (event) => {
+        // Don't deselect if clicking on toolbar or handles
         if (event.target.closest('.image-toolbar') || 
             event.target.closest('.resize-handle') ||
             event.target.classList.contains('editor-image')) {
           return;
         }
         
+        // Only deselect if clicking outside the editor area
         if (!event.target.closest('[contenteditable]')) {
           cleanupImageSelection();
         }
@@ -546,15 +482,15 @@ const App = () => {
       };
     }, []);
 
+    // Convert HTML content to plain text for display
     const getPlainTextContent = (htmlContent) => {
       const div = document.createElement('div');
       div.innerHTML = htmlContent;
       return div.textContent || div.innerText || '';
     };
 
-    // FIXED save functions with proper draft/published logic
     const handleSaveDraft = () => {
-      cleanupImageSelection();
+      cleanupImageSelection(); // Clean up before saving
       const post = {
         id: initialPost?.id || Date.now(),
         title,
@@ -563,13 +499,11 @@ const App = () => {
         date: new Date().toLocaleDateString(),
         status: 'draft'
       };
-      
-      console.log('Saving draft:', post);
       onSave(post, 'draft');
     };
 
     const handlePublishPost = () => {
-      cleanupImageSelection();
+      cleanupImageSelection(); // Clean up before saving
       const post = {
         id: initialPost?.id || Date.now(),
         title,
@@ -578,197 +512,185 @@ const App = () => {
         date: new Date().toLocaleDateString(),
         status: 'published'
       };
-      
-      console.log('Publishing post:', post);
       onSave(post, 'published');
     };
 
     const handleCancel = () => {
-      cleanupImageSelection();
+      cleanupImageSelection(); // Clean up before canceling
       onCancel();
     };
 
     return (
-      <>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">
-              {initialPost ? 'Edit Post' : 'Create Blog Post'}
-            </h2>
-            <div className="flex gap-2">
-              <button onClick={handleCancel} className="px-4 py-2 border rounded hover:bg-gray-50">
-                Cancel
-              </button>
-              <button 
-                onClick={handleSaveDraft}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
-              >
-                <Save size={16} />
-                Save Draft
-              </button>
-              <button 
-                onClick={handlePublishPost}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-              >
-                <Eye size={16} />
-                Publish Post
-              </button>
-            </div>
-          </div>
-
-          {/* Title Input */}
-          <input
-            type="text"
-            className="w-full p-3 border rounded-lg mb-4"
-            placeholder="Enter post title..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-
-          {/* Complete Formatting Toolbar */}
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-            {/* Font Controls */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <select 
-                className="px-3 py-1 border rounded"
-                onChange={(e) => applyFontFamily(e.target.value)}
-                defaultValue="Arial"
-              >
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Helvetica">Helvetica</option>
-                <option value="Verdana">Verdana</option>
-                <option value="Courier New">Courier New</option>
-              </select>
-              
-              <select 
-                className="px-3 py-1 border rounded"
-                onChange={(e) => applyFontSize(e.target.value)}
-                defaultValue="16px"
-              >
-                <option value="12px">12px</option>
-                <option value="14px">14px</option>
-                <option value="16px">16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
-                <option value="24px">24px</option>
-                <option value="28px">28px</option>
-                <option value="32px">32px</option>
-              </select>
-
-              <input 
-                type="color" 
-                className="w-10 h-8 border rounded cursor-pointer"
-                onChange={(e) => applyTextColor(e.target.value)}
-                title="Text Color"
-              />
-            </div>
-
-            {/* Text Formatting */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
-                <Bold size={16} />
-              </button>
-              <button onClick={() => applyFormat('italic')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
-                <Italic size={16} />
-              </button>
-              <button onClick={() => applyFormat('underline')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
-                <Underline size={16} />
-              </button>
-              
-              <div className="border-l mx-2"></div>
-              
-              <button onClick={() => applyAlignment('left')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
-                <AlignLeft size={16} />
-              </button>
-              <button onClick={() => applyAlignment('center')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
-                <AlignCenter size={16} />
-              </button>
-              <button onClick={() => applyAlignment('right')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
-                <AlignRight size={16} />
-              </button>
-            </div>
-
-            {/* Headings */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <select 
-                className="px-3 py-1 border rounded"
-                onChange={(e) => applyHeading(e.target.value)}
-                defaultValue="normal"
-              >
-                <option value="normal">Normal Text</option>
-                <option value="h1">Heading 1</option>
-                <option value="h2">Heading 2</option>
-                <option value="h3">Heading 3</option>
-              </select>
-            </div>
-
-            {/* IMPROVED Links with proper dialog */}
-            <div className="flex flex-wrap gap-2">
-              <button onClick={addLink} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                Add Link
-              </button>
-              <button onClick={removeLink} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-                Remove Link
-              </button>
-              <span className="text-sm text-gray-600 px-2 py-1">Click Add Link to open dialog with Text and URL fields</span>
-            </div>
-          </div>
-
-          {/* Image Upload */}
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/*"
-              style={{ display: 'none' }}
-            />
-            <button 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Upload size={16} />
-              {isUploading ? 'Uploading...' : 'Upload Image'}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">
+            {initialPost ? 'Edit Post' : 'Create Blog Post'}
+          </h2>
+          <div className="flex gap-2">
+            <button onClick={handleCancel} className="px-4 py-2 border rounded hover:bg-gray-50">
+              Cancel
             </button>
-            <p className="text-sm text-gray-600 mt-2">
-              <strong>Multiple Images Supported:</strong> Upload images one at a time. Click any image to resize and position it.
-            </p>
-          </div>
-
-          {/* Content Editor */}
-          <div
-            ref={contentRef}
-            contentEditable
-            className="min-h-96 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style={{ lineHeight: '1.6' }}
-            onInput={handleContentChange}
-            suppressContentEditableWarning={true}
-          />
-
-          {/* Live Preview */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">Live Preview</h3>
-            <div className="p-4 bg-gray-50 rounded-lg border">
-              <h4 className="text-xl font-bold mb-3">{title || 'Post Title'}</h4>
-              <div 
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: content || 'Start typing to see preview...' }}
-              />
-            </div>
+            <button 
+              onClick={handleSaveDraft}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
+            >
+              <Save size={16} />
+              Save Draft
+            </button>
+            <button 
+              onClick={handlePublishPost}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+            >
+              <Eye size={16} />
+              Publish Post
+            </button>
           </div>
         </div>
 
-        {/* Link Dialog */}
-        <LinkDialog
-          isOpen={showLinkDialog}
-          onClose={() => setShowLinkDialog(false)}
-          onInsert={insertLink}
-          selectedText={selectedText}
+        {/* Title Input */}
+        <input
+          type="text"
+          className="w-full p-3 border rounded-lg mb-4"
+          placeholder="Enter post title..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
-      </>
+
+        {/* Complete Formatting Toolbar */}
+        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+          {/* Font Controls */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <select 
+              className="px-3 py-1 border rounded"
+              onChange={(e) => applyFontFamily(e.target.value)}
+              defaultValue="Arial"
+            >
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Courier New">Courier New</option>
+            </select>
+            
+            <select 
+              className="px-3 py-1 border rounded"
+              onChange={(e) => applyFontSize(e.target.value)}
+              defaultValue="16px"
+            >
+              <option value="12px">12px</option>
+              <option value="14px">14px</option>
+              <option value="16px">16px</option>
+              <option value="18px">18px</option>
+              <option value="20px">20px</option>
+              <option value="24px">24px</option>
+              <option value="28px">28px</option>
+              <option value="32px">32px</option>
+            </select>
+
+            <input 
+              type="color" 
+              className="w-10 h-8 border rounded cursor-pointer"
+              onChange={(e) => applyTextColor(e.target.value)}
+              title="Text Color"
+            />
+          </div>
+
+          {/* Text Formatting */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+              <Bold size={16} />
+            </button>
+            <button onClick={() => applyFormat('italic')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+              <Italic size={16} />
+            </button>
+            <button onClick={() => applyFormat('underline')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+              <Underline size={16} />
+            </button>
+            
+            <div className="border-l mx-2"></div>
+            
+            <button onClick={() => applyAlignment('left')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+              <AlignLeft size={16} />
+            </button>
+            <button onClick={() => applyAlignment('center')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+              <AlignCenter size={16} />
+            </button>
+            <button onClick={() => applyAlignment('right')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+              <AlignRight size={16} />
+            </button>
+          </div>
+
+          {/* Headings */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <select 
+              className="px-3 py-1 border rounded"
+              onChange={(e) => applyHeading(e.target.value)}
+              defaultValue="normal"
+            >
+              <option value="normal">Normal Text</option>
+              <option value="h1">Heading 1</option>
+              <option value="h2">Heading 2</option>
+              <option value="h3">Heading 3</option>
+            </select>
+          </div>
+
+          {/* Links */}
+          <div className="flex flex-wrap gap-2">
+            <button onClick={addLink} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+              Add Link
+            </button>
+            <button onClick={removeLink} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
+              Remove Link
+            </button>
+            <span className="text-sm text-gray-600 px-2 py-1">Select text first, then click Add Link</span>
+          </div>
+        </div>
+
+        {/* Image Upload */}
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/*"
+            style={{ display: 'none' }}
+          />
+          <button 
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            <Upload size={16} />
+            {isUploading ? 'Uploading...' : 'Upload Image'}
+          </button>
+          <p className="text-sm text-gray-600 mt-2">
+            <strong>Multiple Images Supported:</strong> Upload images one at a time. Click any image to resize and position it. Each image can be controlled independently.
+          </p>
+        </div>
+
+        {/* Content Editor */}
+        <div
+          ref={contentRef}
+          contentEditable
+          className="min-h-96 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{ lineHeight: '1.6' }}
+          onInput={handleContentChange}
+          suppressContentEditableWarning={true}
+        />
+
+        {/* Live Preview */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-3">Live Preview</h3>
+          <div className="p-4 bg-gray-50 rounded-lg border">
+            <h4 className="text-xl font-bold mb-3">{title || 'Post Title'}</h4>
+            <div 
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: content || 'Start typing to see preview...' }}
+            />
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -992,49 +914,27 @@ const App = () => {
     </div>
   );
 
-  // Content Editor Router with FIXED save logic
+  // Content Editor Router
   const ContentEditor = () => {
     if (contentType === 'post') {
       return (
         <RichBlogEditor
           initialPost={editingPost}
           onSave={(post, status) => {
-            console.log('ContentEditor onSave called:', { post, status, editingPost });
-            
             if (status === 'draft') {
-              // Saving as draft
               if (editingPost) {
-                // Editing existing post/draft
-                if (editingPost.status === 'draft') {
-                  // Update existing draft
-                  setDrafts(prev => prev.map(d => d.id === post.id ? post : d));
-                } else {
-                  // Converting published post to draft (unusual but possible)
-                  setPosts(prev => prev.filter(p => p.id !== post.id));
-                  setDrafts(prev => [post, ...prev]);
-                }
+                setDrafts(prev => prev.map(d => d.id === post.id ? post : d));
               } else {
-                // Creating new draft
                 setDrafts(prev => [post, ...prev]);
               }
             } else {
-              // Publishing post
               if (editingPost) {
-                // Editing existing post/draft
-                if (editingPost.status === 'draft') {
-                  // Publishing draft - remove from drafts, add to posts
-                  setDrafts(prev => prev.filter(d => d.id !== post.id));
-                  setPosts(prev => [post, ...prev]);
-                } else {
-                  // Updating published post
-                  setPosts(prev => prev.map(p => p.id === post.id ? post : p));
-                }
+                setPosts(prev => prev.map(p => p.id === post.id ? post : p));
+                setDrafts(prev => prev.filter(d => d.id !== post.id));
               } else {
-                // Creating new published post
                 setPosts(prev => [post, ...prev]);
               }
             }
-            
             setIsCreating(false);
             setEditingPost(null);
           }}
