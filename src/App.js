@@ -7,7 +7,7 @@ import {
   Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
   Star, Sparkles, Crown
 } from 'lucide-react';
-import ProfessionalRichEditor from './ProfessionalRichEditor';
+import SimpleImageEditor from './SimpleImageEditor';
 
 const App = () => {
   // State Management
@@ -174,12 +174,9 @@ const App = () => {
         )}
 
         {/* Rich Blog Editor */}
-        <ProfessionalRichEditor
-          initialHTML="<p>Start writing your content...</p>"
-          folder="social-hub"
+        <SimpleImageEditor
           onSave={handleSave}
-          CLOUDINARY_CLOUD={CLOUDINARY_CLOUD}
-          CLOUDINARY_PRESET={CLOUDINARY_PRESET}
+          onCancel={() => setIsCreating(false)}
         />
       </div>
     );
