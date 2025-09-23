@@ -63,15 +63,19 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
 
   // Insert image into content
   const insertImageIntoContent = (image) => {
-    const imageHtml = `<img 
-      id="img-${image.id}" 
-      src="${image.src}" 
-      alt="${image.alt}"
-      data-size="${image.size}"
-      data-position="${image.position}"
-      style="width: ${image.width}px; height: auto; cursor: pointer; border-radius: 8px; margin: 10px;"
-      onclick="selectImage(${image.id})"
-    />`;
+    const imageHtml = `<div class="image-container" id="container-${image.id}">
+      <img 
+        id="img-${image.id}" 
+        src="${image.src}" 
+        alt="${image.alt}"
+        data-size="${image.size}"
+        data-position="${image.position}"
+        style="width: ${image.width}px; height: auto; cursor: pointer; border-radius: 8px; margin: 10px;"
+        onclick="selectImage(${image.id})"
+        draggable="true"
+        ondragstart="handleImageDragStart(event, ${image.id})"
+      />
+    </div>`;
     
     if (contentRef.current) {
       const selection = window.getSelection();
@@ -92,17 +96,100 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
   const selectImage = (imageId) => {
     setSelectedImageId(imageId);
     
-    // Remove previous selections
+    // Remove previous selections and handles
     document.querySelectorAll('.selected-image').forEach(el => {
       el.classList.remove('selected-image');
+    });
+    document.querySelectorAll('.image-container.selected').forEach(el => {
+      el.classList.remove('selected');
+    });
+    document.querySelectorAll('.resize-handle').forEach(el => {
+      el.remove();
     });
     
     // Add selection to clicked image
     const imgElement = document.getElementById(`img-${imageId}`);
-    if (imgElement) {
+    const containerElement = document.getElementById(`container-${imageId}`);
+    
+    if (imgElement && containerElement) {
       imgElement.classList.add('selected-image');
+      containerElement.classList.add('selected');
+      
+      // Add resize handles
+      addResizeHandles(containerElement, imageId);
+      
+      // Show floating toolbar
       showImageToolbar(imgElement, imageId);
     }
+  };
+
+  // Add resize handles to selected image
+  const addResizeHandles = (container, imageId) => {
+    const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+    
+    positions.forEach(position => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle ${position}`;
+      handle.addEventListener('mousedown', (e) => startResize(e, imageId, position));
+      container.appendChild(handle);
+    });
+  };
+
+  // Start resize operation
+  const startResize = (e, imageId, position) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const imgElement = document.getElementById(`img-${imageId}`);
+    if (!imgElement) return;
+    
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = imgElement.offsetWidth;
+    const startHeight = imgElement.offsetHeight;
+    
+    const handleMouseMove = (e) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+      
+      // Calculate new dimensions based on handle position
+      if (position.includes('right')) {
+        newWidth = startWidth + deltaX;
+      } else if (position.includes('left')) {
+        newWidth = startWidth - deltaX;
+      }
+      
+      // Maintain aspect ratio
+      const aspectRatio = startWidth / startHeight;
+      newHeight = newWidth / aspectRatio;
+      
+      // Apply minimum size constraints
+      if (newWidth < 100) newWidth = 100;
+      if (newHeight < 50) newHeight = 50;
+      
+      // Apply new size
+      imgElement.style.width = newWidth + 'px';
+      imgElement.style.height = newHeight + 'px';
+      
+      // Update images state
+      setImages(prev => prev.map(img => 
+        img.id === imageId ? { ...img, width: newWidth } : img
+      ));
+    };
+    
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Update content
+      setContent(contentRef.current.innerHTML);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
 
   // Show floating toolbar
@@ -266,11 +353,20 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
     }
   };
 
-  // Make selectImage globally available
+  // Handle image drag start
+  const handleImageDragStart = (e, imageId) => {
+    e.dataTransfer.setData('text/plain', imageId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  // Make functions globally available
   React.useEffect(() => {
     window.selectImage = selectImage;
+    window.handleImageDragStart = handleImageDragStart;
+    
     return () => {
       delete window.selectImage;
+      delete window.handleImageDragStart;
     };
   }, []);
 
@@ -352,6 +448,9 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
           line-height: 1.6;
           font-size: 16px;
           resize: vertical;
+          direction: ltr;
+          text-align: left;
+          unicode-bidi: normal;
         }
         
         .simple-content-editor:focus {
@@ -434,6 +533,57 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
         .selected-image {
           border: 3px solid #667eea !important;
           box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25) !important;
+          position: relative;
+        }
+        
+        .image-container {
+          position: relative;
+          display: inline-block;
+        }
+        
+        .image-container.selected {
+          position: relative;
+        }
+        
+        .resize-handle {
+          position: absolute;
+          width: 12px;
+          height: 12px;
+          background: #667eea;
+          border: 2px solid white;
+          border-radius: 50%;
+          cursor: nw-resize;
+          z-index: 1001;
+        }
+        
+        .resize-handle.top-left {
+          top: -6px;
+          left: -6px;
+          cursor: nw-resize;
+        }
+        
+        .resize-handle.top-right {
+          top: -6px;
+          right: -6px;
+          cursor: ne-resize;
+        }
+        
+        .resize-handle.bottom-left {
+          bottom: -6px;
+          left: -6px;
+          cursor: sw-resize;
+        }
+        
+        .resize-handle.bottom-right {
+          bottom: -6px;
+          right: -6px;
+          cursor: se-resize;
+        }
+        
+        .image-container img {
+          display: block;
+          max-width: 100%;
+          height: auto;
         }
         
         .simple-preview-content {
@@ -480,7 +630,9 @@ const SimpleImageEditor = ({ onSave, onCancel }) => {
             2. Click on any image in the content to select it<br/>
             3. Use the floating toolbar to resize (Small/Medium/Large/Full)<br/>
             4. Use the floating toolbar to position (Left/Center/Right)<br/>
-            5. Images will show blue selection border when selected
+            5. <strong>Drag corner handles</strong> to resize manually<br/>
+            6. <strong>Drag images</strong> to move them around in content<br/>
+            7. Images show blue border and corner handles when selected
           </div>
 
           <div className="simple-upload-section">
