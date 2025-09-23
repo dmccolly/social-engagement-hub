@@ -902,92 +902,142 @@ const App = () => {
     setTimeout(() => setCopiedWidget(''), 2000);
   };
 
-  // Blog Widget Preview Component - CLEAN VERSION
+  // Blog Widget Preview Component - ONLY BLOG POSTS
   const BlogWidgetPreview = ({ settings }) => {
-    const displayPosts = posts.filter(post => post.published).slice(0, settings.maxPosts);
+    // Get only published blog posts
+    const blogPosts = posts.filter(post => post.published === true);
+    const displayPosts = blogPosts.slice(0, settings.maxPosts);
     
     return (
       <div style={{ 
         fontFamily: 'system-ui, -apple-system, sans-serif',
         backgroundColor: 'white',
-        border: `2px solid ${settings.primaryColor}`,
-        borderRadius: '8px',
+        border: `3px solid ${settings.primaryColor}`,
+        borderRadius: '12px',
         overflow: 'hidden',
-        width: '350px',
-        height: '500px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        width: '320px',
+        height: '480px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        position: 'relative'
       }}>
-        {/* Header */}
+        {/* Widget Header */}
         <div style={{
           backgroundColor: settings.primaryColor,
           color: 'white',
-          padding: '12px 16px',
-          fontWeight: '600',
-          fontSize: '16px',
-          textAlign: 'center'
+          padding: '16px',
+          fontWeight: '700',
+          fontSize: '18px',
+          textAlign: 'center',
+          letterSpacing: '0.5px'
         }}>
-          Latest Blog Posts
+          📝 Latest Blog Posts
         </div>
         
-        {/* Posts */}
+        {/* Blog Posts Content */}
         <div style={{ 
-          height: '440px', 
+          height: '416px', 
           overflowY: 'auto',
-          backgroundColor: 'white'
+          backgroundColor: 'white',
+          padding: '0'
         }}>
           {displayPosts.length > 0 ? displayPosts.map((post, index) => (
-            <div key={post.id} style={{
-              padding: '16px',
-              borderBottom: index < displayPosts.length - 1 ? '1px solid #e5e7eb' : 'none'
+            <article key={post.id} style={{
+              padding: '20px',
+              borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
+              backgroundColor: 'white'
             }}>
-              <h4 style={{
-                margin: '0 0 8px 0',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#111827',
-                lineHeight: '1.4'
+              {/* Post Title */}
+              <h3 style={{
+                margin: '0 0 10px 0',
+                fontSize: '18px',
+                fontWeight: '700',
+                color: '#1a1a1a',
+                lineHeight: '1.3',
+                cursor: 'pointer'
               }}>
                 {post.title}
-              </h4>
+              </h3>
+              
+              {/* Post Date */}
               <div style={{
-                color: '#6b7280',
-                fontSize: '12px',
-                marginBottom: '8px'
+                color: '#666',
+                fontSize: '13px',
+                marginBottom: '12px',
+                fontWeight: '500'
               }}>
-                {post.date}
+                📅 {post.date}
               </div>
+              
+              {/* Post Content */}
               <div style={{
-                color: '#374151',
-                fontSize: '14px',
-                lineHeight: '1.5'
+                color: '#333',
+                fontSize: '15px',
+                lineHeight: '1.6',
+                marginBottom: '12px'
               }}>
-                {post.content.length > 120 ? `${post.content.substring(0, 120)}...` : post.content}
+                {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
               </div>
+              
+              {/* Featured Badge */}
               {post.featured && (
                 <div style={{
                   display: 'inline-block',
-                  backgroundColor: '#f59e0b',
+                  backgroundColor: '#ff6b35',
                   color: 'white',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '10px',
-                  fontWeight: '600',
-                  marginTop: '8px'
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
                 }}>
-                  FEATURED
+                  ⭐ Featured
                 </div>
               )}
-            </div>
+              
+              {/* Read More Link */}
+              <div style={{
+                marginTop: '12px'
+              }}>
+                <a href="#" style={{
+                  color: settings.primaryColor,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  textDecoration: 'none',
+                  borderBottom: `2px solid ${settings.primaryColor}40`
+                }}>
+                  Read More →
+                </a>
+              </div>
+            </article>
           )) : (
             <div style={{
-              padding: '32px 16px',
+              padding: '60px 20px',
               textAlign: 'center',
-              color: '#6b7280',
-              fontSize: '14px'
+              color: '#999',
+              fontSize: '16px'
             }}>
-              No blog posts yet
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+              <div>No blog posts yet</div>
+              <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
             </div>
           )}
+        </div>
+        
+        {/* Widget Footer */}
+        <div style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          backgroundColor: settings.primaryColor,
+          color: 'white',
+          padding: '8px',
+          textAlign: 'center',
+          fontSize: '12px',
+          fontWeight: '600'
+        }}>
+          Powered by Social Hub
         </div>
       </div>
     );
