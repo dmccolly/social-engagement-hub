@@ -788,7 +788,13 @@ const StandaloneWidget = ({ type, settings, posts, newsFeed }) => {
       margin: 0, 
       padding: '20px', 
       backgroundColor: 'transparent',
-      fontFamily: 'Arial, sans-serif'
+      fontFamily: 'Arial, sans-serif',
+      height: '100vh',
+      overflow: 'hidden',
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'center',
+      boxSizing: 'border-box'
     }}>
       {renderStandaloneWidget()}
     </div>
