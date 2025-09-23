@@ -86,59 +86,36 @@ const ProfessionalRichEditor = ({
   };
 
   // State for image management
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImageNode, setSelectedImageNode] = useState(null);
   const [showImageToolbar, setShowImageToolbar] = useState(false);
   const [imageToolbarPosition, setImageToolbarPosition] = useState({ x: 0, y: 0 });
 
   // Function to insert image at cursor position
   const insertImageAtCursor = (imageUrl, altText = 'Image') => {
     const imageStyle = getImageStyle();
-    const sizeClass = getImageSizeClass();
-    const positionClass = getImagePositionClass();
-    const imageId = `img-${Date.now()}`;
     
-    const imageHtml = `<img id="${imageId}" src="${imageUrl}" alt="${altText}" class="pre-uploaded-image ${sizeClass} ${positionClass} draggable-image" style="${imageStyle}" draggable="true" />`;
-    
-    editor.chain().focus().insertContent(imageHtml).run();
-    
-    // Add event listeners after a short delay to ensure the image is in the DOM
-    setTimeout(() => {
-      const imageElement = document.getElementById(imageId);
-      if (imageElement) {
-        setupImageInteractions(imageElement);
-      }
-    }, 100);
+    // Insert image using TipTap's image extension
+    editor.chain().focus().setImage({ 
+      src: imageUrl, 
+      alt: altText,
+      title: altText,
+      style: imageStyle,
+      class: 'pre-uploaded-image editable-image'
+    }).run();
   };
 
-  // Setup image interactions (click, drag, resize)
-  const setupImageInteractions = (imageElement) => {
-    // Click to select
-    imageElement.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      selectImage(imageElement);
-    });
-
-    // Drag and drop
-    imageElement.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/html', imageElement.outerHTML);
-      e.dataTransfer.effectAllowed = 'move';
-      imageElement.style.opacity = '0.5';
-    });
-
-    imageElement.addEventListener('dragend', (e) => {
-      imageElement.style.opacity = '1';
-    });
-
-    // Right-click context menu
-    imageElement.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      showImageContextMenu(e, imageElement);
-    });
+  // Handle image click for selection
+  const handleImageClick = (event) => {
+    const img = event.target;
+    if (img.tagName === 'IMG' && img.classList.contains('pre-uploaded-image')) {
+      event.preventDefault();
+      event.stopPropagation();
+      selectImageElement(img);
+    }
   };
 
   // Select image and show toolbar
-  const selectImage = (imageElement) => {
+  const selectImageElement = (imageElement) => {
     // Remove previous selection
     document.querySelectorAll('.pre-uploaded-image').forEach(img => {
       img.classList.remove('selected-image');
@@ -146,65 +123,61 @@ const ProfessionalRichEditor = ({
 
     // Select current image
     imageElement.classList.add('selected-image');
-    setSelectedImage(imageElement);
+    setSelectedImageNode(imageElement);
 
     // Position and show floating toolbar
     const rect = imageElement.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
     setImageToolbarPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.top - 50
+      x: rect.left + scrollLeft + rect.width / 2,
+      y: rect.top + scrollTop - 60
     });
     setShowImageToolbar(true);
   };
 
   // Resize selected image
   const resizeSelectedImage = (newSize) => {
-    if (!selectedImage) return;
+    if (!selectedImageNode) return;
 
     const sizeStyles = {
-      small: 'max-width: 200px !important',
-      medium: 'max-width: 400px !important', 
-      large: 'max-width: 600px !important',
-      full: 'width: 100% !important; max-width: 100% !important'
+      small: 'max-width: 200px !important; height: auto !important;',
+      medium: 'max-width: 400px !important; height: auto !important;', 
+      large: 'max-width: 600px !important; height: auto !important;',
+      full: 'width: 100% !important; max-width: 100% !important; height: auto !important;'
     };
 
-    const currentStyle = selectedImage.style.cssText;
-    const newStyle = currentStyle.replace(/max-width:[^;]+;?/g, '').replace(/width:[^;]+;?/g, '') + '; ' + sizeStyles[newSize];
-    selectedImage.style.cssText = newStyle;
-
-    // Update class
-    selectedImage.className = selectedImage.className.replace(/pre-img-(small|medium|large|full)/g, `pre-img-${newSize}`);
+    // Apply new size style
+    selectedImageNode.style.cssText = selectedImageNode.style.cssText.replace(/max-width:[^;]*;?/g, '').replace(/width:[^;]*;?/g, '') + sizeStyles[newSize];
+    
+    // Update the editor content
+    editor.commands.focus();
   };
 
   // Change position of selected image
   const repositionSelectedImage = (newPosition) => {
-    if (!selectedImage) return;
+    if (!selectedImageNode) return;
 
     const positionStyles = {
-      left: 'float: left !important; margin: 0 16px 16px 0 !important; clear: left',
-      right: 'float: right !important; margin: 0 0 16px 16px !important; clear: right',
-      center: 'display: block !important; margin: 16px auto !important; float: none !important'
+      left: 'float: left !important; margin: 0 16px 16px 0 !important; clear: left !important;',
+      right: 'float: right !important; margin: 0 0 16px 16px !important; clear: right !important;',
+      center: 'display: block !important; margin: 16px auto !important; float: none !important; clear: both !important;'
     };
 
-    const currentStyle = selectedImage.style.cssText;
-    const newStyle = currentStyle.replace(/float:[^;]+;?/g, '').replace(/margin:[^;]+;?/g, '').replace(/display:[^;]+;?/g, '').replace(/clear:[^;]+;?/g, '') + '; ' + positionStyles[newPosition];
-    selectedImage.style.cssText = newStyle;
-
-    // Update class
-    selectedImage.className = selectedImage.className.replace(/pre-img-(left|center|right)/g, `pre-img-${newPosition}`);
-  };
-
-  // Show context menu for image
-  const showImageContextMenu = (e, imageElement) => {
-    selectImage(imageElement);
-    // Context menu would be implemented here
-    console.log('Right-clicked image:', imageElement);
+    // Remove existing position styles and add new ones
+    const currentStyle = selectedImageNode.style.cssText;
+    const cleanStyle = currentStyle.replace(/float:[^;]*;?/g, '').replace(/margin:[^;]*;?/g, '').replace(/display:[^;]*;?/g, '').replace(/clear:[^;]*;?/g, '');
+    selectedImageNode.style.cssText = cleanStyle + positionStyles[newPosition];
+    
+    // Update the editor content
+    editor.commands.focus();
   };
 
   // Close image toolbar
   const closeImageToolbar = () => {
     setShowImageToolbar(false);
-    setSelectedImage(null);
+    setSelectedImageNode(null);
     document.querySelectorAll('.pre-uploaded-image').forEach(img => {
       img.classList.remove('selected-image');
     });
@@ -230,8 +203,11 @@ const ProfessionalRichEditor = ({
         levels: [1, 2, 3, 4, 5, 6],
       }),
       Image.configure({
+        inline: true,
+        allowBase64: true,
         HTMLAttributes: {
-          class: 'pre-image',
+          class: 'pre-uploaded-image editable-image',
+          style: 'cursor: pointer; transition: all 0.2s ease;',
         },
       }),
       Youtube.configure({
@@ -258,13 +234,6 @@ const ProfessionalRichEditor = ({
     },
   });
 
-  // Initialize preview content
-  useEffect(() => {
-    if (editor) {
-      setPreviewContent(editor.getHTML());
-    }
-  }, [editor]);
-
   // Update editor font styles
   useEffect(() => {
     if (editor) {
@@ -272,6 +241,18 @@ const ProfessionalRichEditor = ({
       editor.view.dom.style.fontSize = fontSize + 'px';
     }
   }, [editor, fontFamily, fontSize]);
+
+  // Add click listener to editor for image selection
+  useEffect(() => {
+    if (editor) {
+      const editorElement = editor.view.dom;
+      editorElement.addEventListener('click', handleImageClick);
+      
+      return () => {
+        editorElement.removeEventListener('click', handleImageClick);
+      };
+    }
+  }, [editor]);
 
   if (!editor) {
     return <div className="pre-loading">Loading Professional Editor...</div>;
@@ -1044,12 +1025,13 @@ const ProfessionalRichEditor = ({
           }
           
           /* Image Management Styles */
-          .draggable-image {
-            cursor: move;
+          .pre-uploaded-image {
+            cursor: pointer;
             transition: all 0.2s ease;
+            border-radius: 8px;
           }
           
-          .draggable-image:hover {
+          .pre-uploaded-image:hover {
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transform: scale(1.02);
           }
@@ -1061,16 +1043,21 @@ const ProfessionalRichEditor = ({
           }
           
           .selected-image::after {
-            content: '';
+            content: '✓';
             position: absolute;
             top: -8px;
             right: -8px;
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             background: #007bff;
             border-radius: 50%;
             border: 2px solid white;
-            cursor: pointer;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
           }
           
           .image-floating-toolbar {
@@ -1466,38 +1453,6 @@ const ProfessionalRichEditor = ({
           {/* Editor */}
           <div 
             className="pre-editor"
-            onDragOver={(e) => {
-              e.preventDefault();
-              e.currentTarget.classList.add('drag-over');
-            }}
-            onDragLeave={(e) => {
-              e.currentTarget.classList.remove('drag-over');
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.currentTarget.classList.remove('drag-over');
-              
-              const html = e.dataTransfer.getData('text/html');
-              if (html && html.includes('img')) {
-                // Handle image drop - insert at drop position
-                const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-                if (range) {
-                  const selection = window.getSelection();
-                  selection.removeAllRanges();
-                  selection.addRange(range);
-                  editor.chain().focus().insertContent(html).run();
-                  
-                  // Setup interactions for the dropped image
-                  setTimeout(() => {
-                    const images = document.querySelectorAll('.pre-uploaded-image:not([data-setup])');
-                    images.forEach(img => {
-                      img.setAttribute('data-setup', 'true');
-                      setupImageInteractions(img);
-                    });
-                  }, 100);
-                }
-              }
-            }}
             onClick={closeImageToolbar}
           >
             <EditorContent editor={editor} />
