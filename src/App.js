@@ -475,6 +475,96 @@ const MainApp = () => {
     }
   ]);
 
+  // Email Management Functions
+  const handleSendEmail = () => {
+    if (!emailComposer.subject.trim() || !emailComposer.content.trim()) {
+      alert('Please fill in subject and content.');
+      return;
+    }
+
+    let recipients = [];
+    if (emailComposer.recipientType === 'all') {
+      recipients = members.filter(m => m.status === 'active').map(m => m.email);
+    } else if (emailComposer.recipientType === 'role') {
+      recipients = members.filter(m => m.role === emailComposer.selectedRole && m.status === 'active').map(m => m.email);
+    } else {
+      recipients = emailComposer.recipients;
+    }
+
+    const newEmail = {
+      id: Date.now(),
+      subject: emailComposer.subject,
+      content: emailComposer.content,
+      recipients: recipients,
+      status: 'sent',
+      sentDate: new Date().toLocaleDateString(),
+      openRate: '0%',
+      clickRate: '0%'
+    };
+
+    setEmails(prev => [newEmail, ...prev]);
+    alert(`Email "${emailComposer.subject}" sent successfully to ${recipients.length} recipients!`);
+    resetEmailComposer();
+  };
+
+  const handleSaveEmailDraft = () => {
+    if (!emailComposer.subject.trim()) {
+      alert('Please enter a subject for the draft.');
+      return;
+    }
+
+    let recipients = [];
+    if (emailComposer.recipientType === 'all') {
+      recipients = ['all_members'];
+    } else if (emailComposer.recipientType === 'role') {
+      recipients = [`role_${emailComposer.selectedRole}`];
+    } else {
+      recipients = emailComposer.recipients;
+    }
+
+    const newDraft = {
+      id: Date.now(),
+      subject: emailComposer.subject,
+      content: emailComposer.content,
+      recipients: recipients,
+      status: 'draft',
+      createdDate: new Date().toLocaleDateString(),
+      scheduledDate: null
+    };
+
+    setEmails(prev => [newDraft, ...prev]);
+    alert(`Draft "${emailComposer.subject}" saved successfully!`);
+    resetEmailComposer();
+  };
+
+  const resetEmailComposer = () => {
+    setEmailComposer({
+      isOpen: false,
+      subject: '',
+      content: '',
+      recipients: [],
+      recipientType: 'specific',
+      selectedRole: 'member',
+      template: 'blank'
+    });
+  };
+
+  const addRecipient = (email) => {
+    if (email && !emailComposer.recipients.includes(email)) {
+      setEmailComposer(prev => ({
+        ...prev,
+        recipients: [...prev.recipients, email]
+      }));
+    }
+  };
+
+  const removeRecipient = (email) => {
+    setEmailComposer(prev => ({
+      ...prev,
+      recipients: prev.recipients.filter(r => r !== email)
+    }));
+  };
+
   // Invite Member Functions
   const handleInviteMember = () => {
     if (!inviteForm.name.trim() || !inviteForm.email.trim()) {
@@ -2051,6 +2141,195 @@ const MainApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Email Composer Modal */}
+                {emailComposer.isOpen && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+                      <div className="flex justify-between items-center p-6 border-b">
+                        <h3 className="text-xl font-bold">📧 Compose Email</h3>
+                        <button 
+                          onClick={resetEmailComposer}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <div className="p-6">
+                        {/* Email Subject */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Subject *
+                          </label>
+                          <input
+                            type="text"
+                            value={emailComposer.subject}
+                            onChange={(e) => setEmailComposer(prev => ({ ...prev, subject: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            placeholder="Enter email subject"
+                            required
+                          />
+                        </div>
+
+                        {/* Recipient Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Recipients
+                          </label>
+                          <div className="flex gap-4 mb-3">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="recipientType"
+                                value="all"
+                                checked={emailComposer.recipientType === 'all'}
+                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
+                                className="mr-2"
+                              />
+                              All Members ({members.filter(m => m.status === 'active').length})
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="recipientType"
+                                value="role"
+                                checked={emailComposer.recipientType === 'role'}
+                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
+                                className="mr-2"
+                              />
+                              By Role
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="recipientType"
+                                value="specific"
+                                checked={emailComposer.recipientType === 'specific'}
+                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
+                                className="mr-2"
+                              />
+                              Specific Members
+                            </label>
+                          </div>
+
+                          {/* Role Selection */}
+                          {emailComposer.recipientType === 'role' && (
+                            <select
+                              value={emailComposer.selectedRole}
+                              onChange={(e) => setEmailComposer(prev => ({ ...prev, selectedRole: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-2"
+                            >
+                              <option value="admin">Administrators ({members.filter(m => m.role === 'admin' && m.status === 'active').length})</option>
+                              <option value="moderator">Moderators ({members.filter(m => m.role === 'moderator' && m.status === 'active').length})</option>
+                              <option value="member">Members ({members.filter(m => m.role === 'member' && m.status === 'active').length})</option>
+                            </select>
+                          )}
+
+                          {/* Specific Member Selection */}
+                          {emailComposer.recipientType === 'specific' && (
+                            <div>
+                              <div className="flex gap-2 mb-2">
+                                <select
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      addRecipient(e.target.value);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                >
+                                  <option value="">Select a member to add...</option>
+                                  {members.filter(m => m.status === 'active' && !emailComposer.recipients.includes(m.email)).map(member => (
+                                    <option key={member.id} value={member.email}>
+                                      {member.name} ({member.email}) - {member.role}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              
+                              {/* Selected Recipients */}
+                              {emailComposer.recipients.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {emailComposer.recipients.map(email => (
+                                    <span key={email} className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                                      {email}
+                                      <button
+                                        onClick={() => removeRecipient(email)}
+                                        className="ml-2 text-green-600 hover:text-green-800"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Email Content */}
+                        <div className="mb-6">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Content *
+                          </label>
+                          <textarea
+                            value={emailComposer.content}
+                            onChange={(e) => setEmailComposer(prev => ({ ...prev, content: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            rows="12"
+                            placeholder="Write your email content here..."
+                            required
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Rich text editor and templates coming soon. For now, use plain text.
+                          </p>
+                        </div>
+
+                        {/* Preview Section */}
+                        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                          <h4 className="font-medium mb-2">📋 Email Preview</h4>
+                          <div className="text-sm text-gray-600">
+                            <p><strong>Subject:</strong> {emailComposer.subject || 'No subject'}</p>
+                            <p><strong>Recipients:</strong> {
+                              emailComposer.recipientType === 'all' 
+                                ? `All ${members.filter(m => m.status === 'active').length} active members`
+                                : emailComposer.recipientType === 'role'
+                                ? `${members.filter(m => m.role === emailComposer.selectedRole && m.status === 'active').length} ${emailComposer.selectedRole}s`
+                                : `${emailComposer.recipients.length} specific members`
+                            }</p>
+                            <p><strong>Content:</strong> {emailComposer.content ? `${emailComposer.content.substring(0, 100)}...` : 'No content'}</p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetEmailComposer}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEmailDraft}
+                            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                          >
+                            Save Draft
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSendEmail}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            Send Email
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'members' && (
@@ -2895,6 +3174,195 @@ const MainApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Email Composer Modal */}
+                {emailComposer.isOpen && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+                      <div className="flex justify-between items-center p-6 border-b">
+                        <h3 className="text-xl font-bold">📧 Compose Email</h3>
+                        <button 
+                          onClick={resetEmailComposer}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <div className="p-6">
+                        {/* Email Subject */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Subject *
+                          </label>
+                          <input
+                            type="text"
+                            value={emailComposer.subject}
+                            onChange={(e) => setEmailComposer(prev => ({ ...prev, subject: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            placeholder="Enter email subject"
+                            required
+                          />
+                        </div>
+
+                        {/* Recipient Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Recipients
+                          </label>
+                          <div className="flex gap-4 mb-3">
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="recipientType"
+                                value="all"
+                                checked={emailComposer.recipientType === 'all'}
+                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
+                                className="mr-2"
+                              />
+                              All Members ({members.filter(m => m.status === 'active').length})
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="recipientType"
+                                value="role"
+                                checked={emailComposer.recipientType === 'role'}
+                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
+                                className="mr-2"
+                              />
+                              By Role
+                            </label>
+                            <label className="flex items-center">
+                              <input
+                                type="radio"
+                                name="recipientType"
+                                value="specific"
+                                checked={emailComposer.recipientType === 'specific'}
+                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
+                                className="mr-2"
+                              />
+                              Specific Members
+                            </label>
+                          </div>
+
+                          {/* Role Selection */}
+                          {emailComposer.recipientType === 'role' && (
+                            <select
+                              value={emailComposer.selectedRole}
+                              onChange={(e) => setEmailComposer(prev => ({ ...prev, selectedRole: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-2"
+                            >
+                              <option value="admin">Administrators ({members.filter(m => m.role === 'admin' && m.status === 'active').length})</option>
+                              <option value="moderator">Moderators ({members.filter(m => m.role === 'moderator' && m.status === 'active').length})</option>
+                              <option value="member">Members ({members.filter(m => m.role === 'member' && m.status === 'active').length})</option>
+                            </select>
+                          )}
+
+                          {/* Specific Member Selection */}
+                          {emailComposer.recipientType === 'specific' && (
+                            <div>
+                              <div className="flex gap-2 mb-2">
+                                <select
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      addRecipient(e.target.value);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                >
+                                  <option value="">Select a member to add...</option>
+                                  {members.filter(m => m.status === 'active' && !emailComposer.recipients.includes(m.email)).map(member => (
+                                    <option key={member.id} value={member.email}>
+                                      {member.name} ({member.email}) - {member.role}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              
+                              {/* Selected Recipients */}
+                              {emailComposer.recipients.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {emailComposer.recipients.map(email => (
+                                    <span key={email} className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                                      {email}
+                                      <button
+                                        onClick={() => removeRecipient(email)}
+                                        className="ml-2 text-green-600 hover:text-green-800"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Email Content */}
+                        <div className="mb-6">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Content *
+                          </label>
+                          <textarea
+                            value={emailComposer.content}
+                            onChange={(e) => setEmailComposer(prev => ({ ...prev, content: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            rows="12"
+                            placeholder="Write your email content here..."
+                            required
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Rich text editor and templates coming soon. For now, use plain text.
+                          </p>
+                        </div>
+
+                        {/* Preview Section */}
+                        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                          <h4 className="font-medium mb-2">📋 Email Preview</h4>
+                          <div className="text-sm text-gray-600">
+                            <p><strong>Subject:</strong> {emailComposer.subject || 'No subject'}</p>
+                            <p><strong>Recipients:</strong> {
+                              emailComposer.recipientType === 'all' 
+                                ? `All ${members.filter(m => m.status === 'active').length} active members`
+                                : emailComposer.recipientType === 'role'
+                                ? `${members.filter(m => m.role === emailComposer.selectedRole && m.status === 'active').length} ${emailComposer.selectedRole}s`
+                                : `${emailComposer.recipients.length} specific members`
+                            }</p>
+                            <p><strong>Content:</strong> {emailComposer.content ? `${emailComposer.content.substring(0, 100)}...` : 'No content'}</p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetEmailComposer}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEmailDraft}
+                            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                          >
+                            Save Draft
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSendEmail}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            Send Email
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'members' && (
