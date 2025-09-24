@@ -365,6 +365,36 @@ const MainApp = () => {
   ]);
   const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  const [emails, setEmails] = useState([
+    {
+      id: 1,
+      subject: 'Welcome to Our Platform',
+      recipients: ['john.smith@example.com', 'sarah.johnson@example.com'],
+      content: 'Welcome to our community! We\'re excited to have you on board.',
+      status: 'sent',
+      sentDate: '2025-09-20',
+      openRate: '85%',
+      clickRate: '12%'
+    },
+    {
+      id: 2,
+      subject: 'Weekly Platform Updates',
+      recipients: ['all_members'],
+      content: 'Here are this week\'s updates and new features...',
+      status: 'draft',
+      createdDate: '2025-09-23',
+      scheduledDate: null
+    }
+  ]);
+  const [emailComposer, setEmailComposer] = useState({
+    isOpen: false,
+    subject: '',
+    content: '',
+    recipients: [],
+    recipientType: 'specific', // 'specific', 'all', 'role'
+    selectedRole: 'member',
+    template: 'blank'
+  });
   const [memberFilter, setMemberFilter] = useState('all');
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteForm, setInviteForm] = useState({
@@ -1919,19 +1949,108 @@ const MainApp = () => {
               </div>
             )}
             {activeSection === 'campaigns' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Email Campaigns</h2>
-                  <button
-                    onClick={() => { setContentType('email'); setIsCreating(true); }}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-                  >
-                    <Send size={20} /> New Campaign
-                  </button>
+              <div className="space-y-6">
+                {/* Email Management Header */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">📧 Email Management</h2>
+                    <button
+                      onClick={() => setEmailComposer(prev => ({ ...prev, isOpen: true }))}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Send size={20} /> Compose Email
+                    </button>
+                  </div>
+
+                  {/* Email Statistics */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-2xl font-bold text-green-600">{emails.filter(e => e.status === 'sent').length}</div>
+                      <div className="text-sm text-green-700">Emails Sent</div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <div className="text-2xl font-bold text-yellow-600">{emails.filter(e => e.status === 'draft').length}</div>
+                      <div className="text-sm text-yellow-700">Draft Emails</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</div>
+                      <div className="text-sm text-blue-700">Active Recipients</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {emails.filter(e => e.openRate).length > 0 
+                          ? Math.round(emails.filter(e => e.openRate).reduce((acc, e) => acc + parseInt(e.openRate), 0) / emails.filter(e => e.openRate).length)
+                          : 0}%
+                      </div>
+                      <div className="text-sm text-purple-700">Avg Open Rate</div>
+                    </div>
+                  </div>
                 </div>
-                {campaigns.length === 0 && (
-                  <p className="text-gray-500">No campaigns yet. Create your first one!</p>
-                )}
+
+                {/* Email List */}
+                <div className="bg-white rounded-lg shadow">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Email History</h3>
+                    <div className="space-y-4">
+                      {emails.map((email) => (
+                        <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-gray-900">{email.subject}</h4>
+                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                email.status === 'sent' ? 'bg-green-100 text-green-800' :
+                                email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {email.status.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
+                              {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
+                              {email.openRate && <span>📊 {email.openRate} open rate</span>}
+                              {email.clickRate && <span>🖱️ {email.clickRate} click rate</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                              <Edit size={16} />
+                            </button>
+                            <button className="p-2 text-green-600 hover:bg-green-50 rounded">
+                              <Copy size={16} />
+                            </button>
+                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Member Database Integration */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold mb-4">👥 Recipient Management</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">All Members</h4>
+                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600">Active members</p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Administrators</h4>
+                      <p className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin' && m.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600">Admin users</p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Moderators</h4>
+                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator' && m.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600">Moderator users</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             {activeSection === 'members' && (
@@ -2674,19 +2793,108 @@ const MainApp = () => {
               </div>
             )}
             {activeSection === 'campaigns' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Email Campaigns</h2>
-                  <button
-                    onClick={() => { setContentType('email'); setIsCreating(true); }}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-                  >
-                    <Send size={20} /> New Campaign
-                  </button>
+              <div className="space-y-6">
+                {/* Email Management Header */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">📧 Email Management</h2>
+                    <button
+                      onClick={() => setEmailComposer(prev => ({ ...prev, isOpen: true }))}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Send size={20} /> Compose Email
+                    </button>
+                  </div>
+
+                  {/* Email Statistics */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-2xl font-bold text-green-600">{emails.filter(e => e.status === 'sent').length}</div>
+                      <div className="text-sm text-green-700">Emails Sent</div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <div className="text-2xl font-bold text-yellow-600">{emails.filter(e => e.status === 'draft').length}</div>
+                      <div className="text-sm text-yellow-700">Draft Emails</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</div>
+                      <div className="text-sm text-blue-700">Active Recipients</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {emails.filter(e => e.openRate).length > 0 
+                          ? Math.round(emails.filter(e => e.openRate).reduce((acc, e) => acc + parseInt(e.openRate), 0) / emails.filter(e => e.openRate).length)
+                          : 0}%
+                      </div>
+                      <div className="text-sm text-purple-700">Avg Open Rate</div>
+                    </div>
+                  </div>
                 </div>
-                {campaigns.length === 0 && (
-                  <p className="text-gray-500">No campaigns yet. Create your first one!</p>
-                )}
+
+                {/* Email List */}
+                <div className="bg-white rounded-lg shadow">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Email History</h3>
+                    <div className="space-y-4">
+                      {emails.map((email) => (
+                        <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-semibold text-gray-900">{email.subject}</h4>
+                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                email.status === 'sent' ? 'bg-green-100 text-green-800' :
+                                email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {email.status.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
+                              {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
+                              {email.openRate && <span>📊 {email.openRate} open rate</span>}
+                              {email.clickRate && <span>🖱️ {email.clickRate} click rate</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                              <Edit size={16} />
+                            </button>
+                            <button className="p-2 text-green-600 hover:bg-green-50 rounded">
+                              <Copy size={16} />
+                            </button>
+                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Member Database Integration */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold mb-4">👥 Recipient Management</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">All Members</h4>
+                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600">Active members</p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Administrators</h4>
+                      <p className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin' && m.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600">Admin users</p>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Moderators</h4>
+                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator' && m.status === 'active').length}</p>
+                      <p className="text-sm text-gray-600">Moderator users</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             {activeSection === 'members' && (
