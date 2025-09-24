@@ -308,7 +308,7 @@ const SocialEngagementHub = () => {
         imageElement.className = 'image-container';
         imageElement.style.cssText = `
           position: relative;
-          display: block;
+          display: inline-block;
           margin: 16px 0;
           max-width: 100%;
           text-align: ${image.position};
@@ -324,82 +324,8 @@ const SocialEngagementHub = () => {
               border-radius: 8px;
               cursor: pointer;
               width: ${image.width}px;
-              border: ${selectedImage === image.id ? '3px solid #3b82f6' : 'none'};
             "
           />
-          ${selectedImage === image.id ? `
-            <div class="image-controls" style="
-              position: absolute;
-              top: -40px;
-              left: 0;
-              background: white;
-              border: 1px solid #d1d5db;
-              border-radius: 6px;
-              padding: 8px;
-              display: flex;
-              gap: 8px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-              z-index: 100;
-            ">
-              <button onclick="resizeImage('${image.id}', 'small')" style="
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Small</button>
-              <button onclick="resizeImage('${image.id}', 'medium')" style="
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Medium</button>
-              <button onclick="resizeImage('${image.id}', 'large')" style="
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Large</button>
-              <button onclick="alignImage('${image.id}', 'left')" style="
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Left</button>
-              <button onclick="alignImage('${image.id}', 'center')" style="
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Center</button>
-              <button onclick="alignImage('${image.id}', 'right')" style="
-                padding: 4px 8px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Right</button>
-              <button onclick="removeImage('${image.id}')" style="
-                padding: 4px 8px;
-                border: 1px solid #ef4444;
-                background: #ef4444;
-                color: white;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 12px;
-              ">Remove</button>
-            </div>
-          ` : ''}
         `;
 
         range.insertNode(imageElement);
@@ -410,54 +336,11 @@ const SocialEngagementHub = () => {
 
         // Add click handler for image selection
         const img = imageElement.querySelector('img');
-        img.addEventListener('click', (e) => {
-          e.preventDefault();
-          setSelectedImage(selectedImage === image.id ? null : image.id);
+        img.addEventListener('click', () => {
+          setSelectedImage(image.id);
         });
       }
     };
-
-    // Image control functions
-    const resizeImage = (imageId, size) => {
-      const widths = { small: 200, medium: 400, large: 600 };
-      const img = document.querySelector(`img[data-image-id="${imageId}"]`);
-      if (img) {
-        img.style.width = `${widths[size]}px`;
-        // Update image in state
-        setImages(prev => prev.map(image => 
-          image.id === parseInt(imageId) 
-            ? { ...image, width: widths[size], size }
-            : image
-        ));
-      }
-    };
-
-    const alignImage = (imageId, alignment) => {
-      const container = document.querySelector(`img[data-image-id="${imageId}"]`)?.parentElement;
-      if (container) {
-        container.style.textAlign = alignment;
-        // Update image in state
-        setImages(prev => prev.map(image => 
-          image.id === parseInt(imageId) 
-            ? { ...image, position: alignment }
-            : image
-        ));
-      }
-    };
-
-    const removeImage = (imageId) => {
-      const container = document.querySelector(`img[data-image-id="${imageId}"]`)?.parentElement;
-      if (container) {
-        container.remove();
-        setImages(prev => prev.filter(image => image.id !== parseInt(imageId)));
-        setSelectedImage(null);
-      }
-    };
-
-    // Make functions globally available
-    window.resizeImage = resizeImage;
-    window.alignImage = alignImage;
-    window.removeImage = removeImage;
 
     // Format text functions
     const formatText = (command, value = null) => {
@@ -498,61 +381,39 @@ const SocialEngagementHub = () => {
         return;
       }
 
-      if (!editorContent.trim()) {
-        alert('Please enter some content for your post');
-        return;
-      }
-
-      const currentDate = new Date().toLocaleDateString();
       const newPost = {
         id: editingPost ? editingPost.id : Date.now(),
-        title: postTitle.trim(),
+        title: postTitle,
         content: editorContent,
-        date: editingPost ? editingPost.date : currentDate, // Keep original date for existing posts
-        featured: editingPost ? editingPost.featured : false, // Preserve featured status
+        date: new Date().toLocaleDateString(),
+        featured: false,
         published: !isDraft,
-        image: images.length > 0 ? images[0].src : (editingPost ? editingPost.image : null)
+        image: images.length > 0 ? images[0].src : null
       };
 
       if (isDraft) {
-        // Saving as draft
         if (editingPost) {
-          if (editingPost.published) {
-            // Converting published post back to draft
-            setPosts(prev => prev.filter(post => post.id !== editingPost.id));
-            setDrafts(prev => [...prev, { ...newPost, published: false }]);
-          } else {
-            // Updating existing draft
-            setDrafts(prev => prev.map(draft => 
-              draft.id === editingPost.id ? { ...newPost, published: false } : draft
-            ));
-          }
+          setDrafts(prev => prev.map(draft => 
+            draft.id === editingPost.id ? newPost : draft
+          ));
         } else {
-          // Creating new draft
-          setDrafts(prev => [...prev, { ...newPost, published: false }]);
+          setDrafts(prev => [...prev, newPost]);
         }
       } else {
-        // Publishing post
         if (editingPost) {
           if (editingPost.published) {
-            // Updating existing published post
             setPosts(prev => prev.map(post => 
-              post.id === editingPost.id ? { ...newPost, published: true } : post
+              post.id === editingPost.id ? newPost : post
             ));
           } else {
             // Moving from draft to published
             setDrafts(prev => prev.filter(draft => draft.id !== editingPost.id));
-            setPosts(prev => [...prev, { ...newPost, published: true }]);
+            setPosts(prev => [...prev, newPost]);
           }
         } else {
-          // Creating new published post
-          setPosts(prev => [...prev, { ...newPost, published: true }]);
+          setPosts(prev => [...prev, newPost]);
         }
       }
-
-      // Show success message
-      const action = isDraft ? 'saved as draft' : 'published';
-      alert(`Post ${action} successfully!`);
 
       // Reset editor
       setIsCreating(false);
@@ -563,65 +424,16 @@ const SocialEngagementHub = () => {
       setSelectedImage(null);
     };
 
-    // Delete draft function
-    const handleDeleteDraft = (draftId) => {
-      if (window.confirm('Are you sure you want to delete this draft?')) {
-        setDrafts(prev => prev.filter(draft => draft.id !== draftId));
-      }
-    };
-
-    // Toggle featured status
-    const handleToggleFeatured = (postId, isCurrentlyFeatured) => {
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? { ...post, featured: !isCurrentlyFeatured }
-          : post
-      ));
-    };
-
     return (
       <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-              <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: 0, color: '#1f2937' }}>
-                {editingPost ? 'Edit Post' : 'Create New Post'}
-              </h1>
-              {editingPost && (
-                <span style={{
-                  backgroundColor: editingPost.published ? '#10b981' : '#f59e0b',
-                  color: 'white',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
-                  {editingPost.published ? 'PUBLISHED' : 'DRAFT'}
-                </span>
-              )}
-              {editingPost && editingPost.featured && (
-                <span style={{
-                  backgroundColor: '#fbbf24',
-                  color: 'white',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  <Star size={12} />
-                  FEATURED
-                </span>
-              )}
-            </div>
+            <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>
+              {editingPost ? 'Edit Post' : 'Create New Post'}
+            </h1>
             <p style={{ color: '#6b7280', margin: 0 }}>
-              {editingPost 
-                ? `Editing ${editingPost.published ? 'published post' : 'draft'} from ${editingPost.date}`
-                : 'Write and format your blog post with rich text editing'
-              }
+              Write and format your blog post with rich text editing
             </p>
           </div>
           <button
@@ -822,12 +634,6 @@ const SocialEngagementHub = () => {
           ref={contentRef}
           contentEditable
           onInput={handleContentChange}
-          onClick={(e) => {
-            // Deselect image if clicking outside of images
-            if (!e.target.closest('img') && !e.target.closest('.image-controls')) {
-              setSelectedImage(null);
-            }
-          }}
           dangerouslySetInnerHTML={{ __html: editorContent }}
           style={{
             minHeight: '400px',
@@ -903,14 +709,13 @@ const SocialEngagementHub = () => {
               backgroundColor: 'white',
               padding: '32px',
               borderRadius: '12px',
-              width: '500px',
-              maxWidth: '90vw',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+              width: '400px',
+              maxWidth: '90vw'
             }}>
-              <h3 style={{ margin: '0 0 24px 0', fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
+              <h3 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: 'bold', color: '#1f2937' }}>
                 Insert Link
               </h3>
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#374151' }}>
                   Text to Display
                 </label>
@@ -918,24 +723,16 @@ const SocialEngagementHub = () => {
                   type="text"
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
-                  placeholder="Enter the text that will be displayed as the link..."
+                  placeholder="Enter link text..."
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: `2px solid ${linkText ? '#10b981' : '#e5e7eb'}`,
-                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '6px',
                     fontSize: '16px',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
+                    boxSizing: 'border-box'
                   }}
-                  autoFocus
                 />
-                {!linkText && (
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#ef4444' }}>
-                    Please enter text to display for the link
-                  </p>
-                )}
               </div>
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#374151' }}>
@@ -949,27 +746,14 @@ const SocialEngagementHub = () => {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: `2px solid ${linkUrl && linkUrl.startsWith('http') ? '#10b981' : '#e5e7eb'}`,
-                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '6px',
                     fontSize: '16px',
-                    boxSizing: 'border-box',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
+                    boxSizing: 'border-box'
                   }}
                 />
-                {linkUrl && !linkUrl.startsWith('http') && (
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#f59e0b' }}>
-                    URL should start with http:// or https://
-                  </p>
-                )}
               </div>
-              <div style={{ 
-                display: 'flex', 
-                gap: '12px', 
-                justifyContent: 'flex-end',
-                borderTop: '1px solid #e5e7eb',
-                paddingTop: '20px'
-              }}>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => {
                     setShowLinkDialog(false);
@@ -977,56 +761,31 @@ const SocialEngagementHub = () => {
                     setLinkUrl('');
                   }}
                   style={{
-                    backgroundColor: 'white',
-                    color: '#6b7280',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '8px',
+                    backgroundColor: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
                     padding: '12px 24px',
                     cursor: 'pointer',
                     fontSize: '16px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.backgroundColor = '#f3f4f6';
-                    e.target.style.borderColor = '#d1d5db';
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.backgroundColor = 'white';
-                    e.target.style.borderColor = '#e5e7eb';
+                    fontWeight: 'bold'
                   }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLinkInsert}
-                  disabled={!linkText.trim() || !linkUrl.trim()}
                   style={{
-                    backgroundColor: linkText.trim() && linkUrl.trim() ? '#3b82f6' : '#d1d5db',
+                    backgroundColor: '#3b82f6',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: '6px',
                     padding: '12px 24px',
-                    cursor: linkText.trim() && linkUrl.trim() ? 'pointer' : 'not-allowed',
+                    cursor: 'pointer',
                     fontSize: '16px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                  onMouseOver={(e) => {
-                    if (linkText.trim() && linkUrl.trim()) {
-                      e.target.style.backgroundColor = '#2563eb';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (linkText.trim() && linkUrl.trim()) {
-                      e.target.style.backgroundColor = '#3b82f6';
-                    }
+                    fontWeight: 'bold'
                   }}
                 >
-                  <Link size={16} />
                   Insert Link
                 </button>
               </div>
@@ -1605,37 +1364,13 @@ const SocialEngagementHub = () => {
                       padding: '8px',
                       cursor: 'pointer'
                     }}
-                    title="Edit draft"
                   >
                     <Eye size={16} />
                   </button>
                   <button 
                     onClick={() => {
-                      if (window.confirm('Publish this draft immediately?')) {
-                        const publishedPost = {
-                          ...post,
-                          published: true,
-                          date: new Date().toLocaleDateString()
-                        };
-                        setDrafts(prev => prev.filter(draft => draft.id !== post.id));
-                        setPosts(prev => [...prev, publishedPost]);
-                        alert('Draft published successfully!');
-                      }
+                      setDrafts(prev => prev.filter(d => d.id !== post.id));
                     }}
-                    style={{
-                      backgroundColor: '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '8px',
-                      cursor: 'pointer'
-                    }}
-                    title="Publish draft"
-                  >
-                    <Send size={16} />
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteDraft(post.id)}
                     style={{
                       backgroundColor: '#ef4444',
                       color: 'white',
@@ -1644,7 +1379,6 @@ const SocialEngagementHub = () => {
                       padding: '8px',
                       cursor: 'pointer'
                     }}
-                    title="Delete draft"
                   >
                     <X size={16} />
                   </button>
@@ -1711,7 +1445,11 @@ const SocialEngagementHub = () => {
                   <Eye size={16} />
                 </button>
                 <button 
-                  onClick={() => handleToggleFeatured(post.id, post.featured)}
+                  onClick={() => {
+                    setPosts(prev => prev.map(p => 
+                      p.id === post.id ? { ...p, featured: !p.featured } : p
+                    ));
+                  }}
                   style={{
                     backgroundColor: post.featured ? '#fbbf24' : '#6b7280',
                     color: 'white',
@@ -1720,7 +1458,6 @@ const SocialEngagementHub = () => {
                     padding: '8px',
                     cursor: 'pointer'
                   }}
-                  title={post.featured ? 'Remove from featured' : 'Mark as featured'}
                 >
                   <Star size={16} />
                 </button>
@@ -1765,98 +1502,73 @@ const SocialEngagementHub = () => {
         border: `2px solid ${settings.primaryColor}`,
         borderRadius: '12px',
         overflow: 'hidden',
-        width: '400px',
-        height: 'auto',
-        maxHeight: '800px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        display: 'flex',
-        flexDirection: 'column'
+        maxWidth: '400px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
       }}>
         <div style={{
           backgroundColor: settings.primaryColor,
           color: 'white',
           padding: '16px',
           fontWeight: 'bold',
-          fontSize: '18px',
-          flexShrink: 0
+          fontSize: '18px'
         }}>
           Latest Blog Posts
         </div>
-        <div style={{ 
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          backgroundColor: 'transparent'
-        }}>
+        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
           {displayPosts.map((post, index) => (
             <div key={post.id} style={{
               padding: '20px',
               borderBottom: index < displayPosts.length - 1 ? '1px solid #e5e7eb' : 'none',
-              height: 'auto',
-              minHeight: '380px',
+              minHeight: '400px',
               display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'transparent'
+              flexDirection: 'column'
             }}>
               {settings.showImages && post.image && (
-                <div style={{
-                  width: '100%',
-                  height: '180px',
-                  marginBottom: '16px',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  flexShrink: 0
-                }}>
-                  <img 
-                    src={post.image} 
-                    alt={post.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block'
-                    }}
-                  />
-                </div>
+                <img 
+                  src={post.image} 
+                  alt={post.title}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }}
+                />
               )}
               <h3 style={{
                 margin: '0 0 12px 0',
-                fontSize: '18px',
+                fontSize: '20px',
                 fontWeight: 'bold',
                 color: '#1f2937',
-                lineHeight: '1.3',
-                flexShrink: 0
+                lineHeight: '1.3'
               }}>
                 {post.title}
               </h3>
               <div style={{
                 color: '#6b7280',
-                fontSize: '13px',
-                marginBottom: '12px',
-                flexShrink: 0
+                fontSize: '14px',
+                marginBottom: '12px'
               }}>
                 {post.date}
               </div>
               <div style={{
                 color: '#374151',
-                fontSize: '15px',
-                lineHeight: '1.5',
+                fontSize: '16px',
+                lineHeight: '1.6',
                 flex: 1,
-                marginBottom: '16px',
-                overflow: 'hidden'
+                marginBottom: '16px'
               }}>
-                {post.content.length > 180 ? (
+                {post.content.length > 200 ? (
                   <>
-                    {post.content.substring(0, 180)}...
+                    {post.content.substring(0, 200)}...
                     <button style={{
                       background: 'none',
                       border: 'none',
                       color: settings.primaryColor,
                       cursor: 'pointer',
                       fontWeight: 'bold',
-                      marginLeft: '4px',
-                      padding: '0',
-                      fontSize: '15px'
+                      marginLeft: '8px'
                     }}>
                       Read More
                     </button>
@@ -1872,10 +1584,9 @@ const SocialEngagementHub = () => {
                   color: 'white',
                   padding: '4px 12px',
                   borderRadius: '20px',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 'bold',
-                  alignSelf: 'flex-start',
-                  flexShrink: 0
+                  alignSelf: 'flex-start'
                 }}>
                   FEATURED
                 </div>
@@ -1895,79 +1606,33 @@ const SocialEngagementHub = () => {
       border: `2px solid ${settings.primaryColor}`,
       borderRadius: '12px',
       overflow: 'hidden',
-      width: '400px',
-      height: 'auto',
-      maxHeight: '600px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-      display: 'flex',
-      flexDirection: 'column'
+      maxWidth: '400px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
     }}>
       <div style={{
         backgroundColor: settings.primaryColor,
         color: 'white',
         padding: '16px',
         fontWeight: 'bold',
-        fontSize: '18px',
-        flexShrink: 0
+        fontSize: '18px'
       }}>
         Community Feed
       </div>
-      <div style={{ 
-        flex: 1,
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        backgroundColor: 'transparent'
-      }}>
+      <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
         {newsFeed.slice(0, settings.maxPosts).map((post, index) => (
           <div key={post.id} style={{
             padding: '16px',
-            borderBottom: index < newsFeed.length - 1 ? '1px solid #e5e7eb' : 'none',
-            backgroundColor: 'transparent'
+            borderBottom: index < newsFeed.length - 1 ? '1px solid #e5e7eb' : 'none'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              marginBottom: '8px' 
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: settings.primaryColor,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                flexShrink: 0
-              }}>
-                {post.author.charAt(0)}
-              </div>
-              <div style={{ fontWeight: 'bold', color: '#1f2937', fontSize: '15px' }}>
-                {post.author}
-              </div>
+            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>
+              {post.author}
             </div>
-            <div style={{ 
-              marginBottom: '12px', 
-              color: '#374151', 
-              lineHeight: '1.5',
-              fontSize: '14px',
-              marginLeft: '40px'
-            }}>
+            <div style={{ marginBottom: '12px', color: '#374151', lineHeight: '1.5' }}>
               {post.content}
             </div>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              fontSize: '12px', 
-              color: '#6b7280',
-              marginLeft: '40px'
-            }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', color: '#6b7280' }}>
               <span>{post.timestamp}</span>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '16px' }}>
                 <span>❤️ {post.likes}</span>
                 <span>💬 {post.comments.length}</span>
               </div>
@@ -1975,21 +1640,15 @@ const SocialEngagementHub = () => {
           </div>
         ))}
       </div>
-      <div style={{ 
-        padding: '16px', 
-        backgroundColor: 'rgba(249, 250, 251, 0.8)', 
-        textAlign: 'center',
-        flexShrink: 0
-      }}>
+      <div style={{ padding: '16px', backgroundColor: '#f9fafb', textAlign: 'center' }}>
         <button style={{
           backgroundColor: settings.primaryColor,
           color: 'white',
           border: 'none',
-          padding: '10px 20px',
+          padding: '8px 16px',
           borderRadius: '6px',
           cursor: 'pointer',
-          fontWeight: 'bold',
-          fontSize: '14px'
+          fontWeight: 'bold'
         }}>
           Join the Conversation
         </button>
@@ -2652,89 +2311,66 @@ const StandaloneBlogWidget = ({ settings, posts }) => {
         border: `2px solid ${settings.primaryColor}`,
         borderRadius: '12px',
         overflow: 'hidden',
-        width: '400px',
-        height: 'auto',
-        maxHeight: '800px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-        display: 'flex',
-        flexDirection: 'column'
+        maxWidth: '400px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
       }}>
         <div style={{
           backgroundColor: settings.primaryColor,
           color: 'white',
           padding: '16px',
           fontWeight: 'bold',
-          fontSize: '18px',
-          flexShrink: 0
+          fontSize: '18px'
         }}>
           Latest Blog Posts
         </div>
-        <div style={{ 
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          backgroundColor: 'transparent'
-        }}>
+        <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
           {displayPosts.map((post, index) => (
             <div key={post.id} style={{
               padding: '20px',
               borderBottom: index < displayPosts.length - 1 ? '1px solid #e5e7eb' : 'none',
-              height: 'auto',
-              minHeight: '380px',
+              minHeight: '400px',
               display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'transparent'
+              flexDirection: 'column'
             }}>
               {settings.showImages && post.image && (
-                <div style={{
-                  width: '100%',
-                  height: '180px',
-                  marginBottom: '16px',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  flexShrink: 0
-                }}>
-                  <img 
-                    src={post.image} 
-                    alt={post.title}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block'
-                    }}
-                  />
-                </div>
+                <img 
+                  src={post.image} 
+                  alt={post.title}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }}
+                />
               )}
               <h3 style={{
                 margin: '0 0 12px 0',
-                fontSize: '18px',
+                fontSize: '20px',
                 fontWeight: 'bold',
                 color: '#1f2937',
-                lineHeight: '1.3',
-                flexShrink: 0
+                lineHeight: '1.3'
               }}>
                 {post.title}
               </h3>
               <div style={{
                 color: '#6b7280',
-                fontSize: '13px',
-                marginBottom: '12px',
-                flexShrink: 0
+                fontSize: '14px',
+                marginBottom: '12px'
               }}>
                 {post.date}
               </div>
               <div style={{
                 color: '#374151',
-                fontSize: '15px',
-                lineHeight: '1.5',
+                fontSize: '16px',
+                lineHeight: '1.6',
                 flex: 1,
-                marginBottom: '16px',
-                overflow: 'hidden'
+                marginBottom: '16px'
               }}>
-                {post.content.length > 180 ? (
+                {post.content.length > 200 ? (
                   <>
-                    {post.content.substring(0, 180)}...
+                    {post.content.substring(0, 200)}...
                     <button 
                       onClick={() => setSelectedPost(post)}
                       style={{
@@ -2743,9 +2379,7 @@ const StandaloneBlogWidget = ({ settings, posts }) => {
                         color: settings.primaryColor,
                         cursor: 'pointer',
                         fontWeight: 'bold',
-                        marginLeft: '4px',
-                        padding: '0',
-                        fontSize: '15px'
+                        marginLeft: '8px'
                       }}
                     >
                       Read More
@@ -2762,10 +2396,9 @@ const StandaloneBlogWidget = ({ settings, posts }) => {
                   color: 'white',
                   padding: '4px 12px',
                   borderRadius: '20px',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 'bold',
-                  alignSelf: 'flex-start',
-                  flexShrink: 0
+                  alignSelf: 'flex-start'
                 }}>
                   FEATURED
                 </div>
@@ -2869,79 +2502,33 @@ const StandaloneNewsFeedWidget = ({ settings, newsFeed }) => (
     border: `2px solid ${settings.primaryColor}`,
     borderRadius: '12px',
     overflow: 'hidden',
-    width: '400px',
-    height: 'auto',
-    maxHeight: '600px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column'
+    maxWidth: '400px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
   }}>
     <div style={{
       backgroundColor: settings.primaryColor,
       color: 'white',
       padding: '16px',
       fontWeight: 'bold',
-      fontSize: '18px',
-      flexShrink: 0
+      fontSize: '18px'
     }}>
       Community Feed
     </div>
-    <div style={{ 
-      flex: 1,
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      backgroundColor: 'transparent'
-    }}>
+    <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
       {newsFeed.slice(0, settings.maxPosts).map((post, index) => (
         <div key={post.id} style={{
           padding: '16px',
-          borderBottom: index < newsFeed.length - 1 ? '1px solid #e5e7eb' : 'none',
-          backgroundColor: 'transparent'
+          borderBottom: index < newsFeed.length - 1 ? '1px solid #e5e7eb' : 'none'
         }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px', 
-            marginBottom: '8px' 
-          }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: settings.primaryColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '14px',
-              flexShrink: 0
-            }}>
-              {post.author.charAt(0)}
-            </div>
-            <div style={{ fontWeight: 'bold', color: '#1f2937', fontSize: '15px' }}>
-              {post.author}
-            </div>
+          <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>
+            {post.author}
           </div>
-          <div style={{ 
-            marginBottom: '12px', 
-            color: '#374151', 
-            lineHeight: '1.5',
-            fontSize: '14px',
-            marginLeft: '40px'
-          }}>
+          <div style={{ marginBottom: '12px', color: '#374151', lineHeight: '1.5' }}>
             {post.content}
           </div>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            fontSize: '12px', 
-            color: '#6b7280',
-            marginLeft: '40px'
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', color: '#6b7280' }}>
             <span>{post.timestamp}</span>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '16px' }}>
               <span>❤️ {post.likes}</span>
               <span>💬 {post.comments.length}</span>
             </div>
@@ -2949,21 +2536,15 @@ const StandaloneNewsFeedWidget = ({ settings, newsFeed }) => (
         </div>
       ))}
     </div>
-    <div style={{ 
-      padding: '16px', 
-      backgroundColor: 'rgba(249, 250, 251, 0.8)', 
-      textAlign: 'center',
-      flexShrink: 0
-    }}>
+    <div style={{ padding: '16px', backgroundColor: '#f9fafb', textAlign: 'center' }}>
       <button style={{
         backgroundColor: settings.primaryColor,
         color: 'white',
         border: 'none',
-        padding: '10px 20px',
+        padding: '8px 16px',
         borderRadius: '6px',
         cursor: 'pointer',
-        fontWeight: 'bold',
-        fontSize: '14px'
+        fontWeight: 'bold'
       }}>
         Join the Conversation
       </button>
