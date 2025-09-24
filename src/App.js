@@ -374,7 +374,20 @@ const MainApp = () => {
       status: 'sent',
       sentDate: '2025-09-20',
       openRate: '85%',
-      clickRate: '12%'
+      clickRate: '12%',
+      analytics: {
+        totalSent: 2,
+        delivered: 2,
+        opened: 1,
+        clicked: 0,
+        bounced: 0,
+        unsubscribed: 0,
+        openTimes: [
+          { recipient: 'john.smith@example.com', timestamp: '2025-09-20 10:30:00', userAgent: 'Chrome/Safari' }
+        ],
+        clickTimes: [],
+        trackingId: 'email_1_tracking'
+      }
     },
     {
       id: 2,
@@ -383,7 +396,8 @@ const MainApp = () => {
       content: 'Here are this week\'s updates and new features...',
       status: 'draft',
       createdDate: '2025-09-23',
-      scheduledDate: null
+      scheduledDate: null,
+      analytics: null
     }
   ]);
   const [emailComposer, setEmailComposer] = useState({
@@ -491,6 +505,7 @@ const MainApp = () => {
       recipients = emailComposer.recipients;
     }
 
+    const trackingId = `email_${Date.now()}_tracking`;
     const newEmail = {
       id: Date.now(),
       subject: emailComposer.subject,
@@ -499,11 +514,24 @@ const MainApp = () => {
       status: 'sent',
       sentDate: new Date().toLocaleDateString(),
       openRate: '0%',
-      clickRate: '0%'
+      clickRate: '0%',
+      analytics: {
+        totalSent: recipients.length,
+        delivered: recipients.length, // Assume all delivered for demo
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+        unsubscribed: 0,
+        openTimes: [],
+        clickTimes: [],
+        trackingId: trackingId,
+        trackingPixelUrl: `https://gleaming-cendol-417bf3.netlify.app/track/open/${trackingId}`,
+        unsubscribeUrl: `https://gleaming-cendol-417bf3.netlify.app/unsubscribe/${trackingId}`
+      }
     };
 
     setEmails(prev => [newEmail, ...prev]);
-    alert(`Email "${emailComposer.subject}" sent successfully to ${recipients.length} recipients!`);
+    alert(`Email "${emailComposer.subject}" sent successfully to ${recipients.length} recipients!\n\nTracking enabled:\n• Open rate tracking\n• Click tracking\n• Unsubscribe tracking`);
     resetEmailComposer();
   };
 
@@ -2083,37 +2111,98 @@ const MainApp = () => {
                     <h3 className="text-lg font-semibold mb-4">Email History</h3>
                     <div className="space-y-4">
                       {emails.map((email) => (
-                        <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold text-gray-900">{email.subject}</h4>
-                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                email.status === 'sent' ? 'bg-green-100 text-green-800' :
-                                email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {email.status.toUpperCase()}
-                              </span>
+                        <div key={email.id} className="border rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center justify-between p-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="font-semibold text-gray-900">{email.subject}</h4>
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  email.status === 'sent' ? 'bg-green-100 text-green-800' :
+                                  email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {email.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
+                                {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
+                                {email.analytics && (
+                                  <>
+                                    <span>📊 {email.analytics.opened}/{email.analytics.totalSent} opened ({Math.round((email.analytics.opened/email.analytics.totalSent)*100)}%)</span>
+                                    <span>🖱️ {email.analytics.clicked}/{email.analytics.totalSent} clicked ({Math.round((email.analytics.clicked/email.analytics.totalSent)*100)}%)</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
-                              {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
-                              {email.openRate && <span>📊 {email.openRate} open rate</span>}
-                              {email.clickRate && <span>🖱️ {email.clickRate} click rate</span>}
+                            <div className="flex items-center gap-2">
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                <Edit size={16} />
+                              </button>
+                              <button className="p-2 text-green-600 hover:bg-green-50 rounded">
+                                <Copy size={16} />
+                              </button>
+                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                              <Edit size={16} />
-                            </button>
-                            <button className="p-2 text-green-600 hover:bg-green-50 rounded">
-                              <Copy size={16} />
-                            </button>
-                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          
+                          {/* Detailed Analytics (for sent emails) */}
+                          {email.status === 'sent' && email.analytics && (
+                            <div className="border-t bg-gray-50 p-4">
+                              <h5 className="font-medium mb-3">📈 Email Analytics</h5>
+                              <div className="grid grid-cols-6 gap-4 mb-4">
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-blue-600">{email.analytics.totalSent}</div>
+                                  <div className="text-xs text-gray-600">Sent</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-green-600">{email.analytics.delivered}</div>
+                                  <div className="text-xs text-gray-600">Delivered</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-purple-600">{email.analytics.opened}</div>
+                                  <div className="text-xs text-gray-600">Opened</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-orange-600">{email.analytics.clicked}</div>
+                                  <div className="text-xs text-gray-600">Clicked</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-red-600">{email.analytics.bounced}</div>
+                                  <div className="text-xs text-gray-600">Bounced</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-gray-600">{email.analytics.unsubscribed}</div>
+                                  <div className="text-xs text-gray-600">Unsubscribed</div>
+                                </div>
+                              </div>
+                              
+                              {/* Open Times */}
+                              {email.analytics.openTimes.length > 0 && (
+                                <div className="mb-3">
+                                  <h6 className="text-sm font-medium mb-2">👁️ Recent Opens</h6>
+                                  <div className="space-y-1">
+                                    {email.analytics.openTimes.slice(0, 3).map((open, idx) => (
+                                      <div key={idx} className="text-xs text-gray-600 flex justify-between">
+                                        <span>{open.recipient}</span>
+                                        <span>{open.timestamp}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Tracking URLs */}
+                              <div className="text-xs text-gray-500">
+                                <p><strong>Tracking ID:</strong> {email.analytics.trackingId}</p>
+                                <p><strong>Open Tracking:</strong> {email.analytics.trackingPixelUrl}</p>
+                                <p><strong>Unsubscribe:</strong> {email.analytics.unsubscribeUrl}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -3116,37 +3205,98 @@ const MainApp = () => {
                     <h3 className="text-lg font-semibold mb-4">Email History</h3>
                     <div className="space-y-4">
                       {emails.map((email) => (
-                        <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold text-gray-900">{email.subject}</h4>
-                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                email.status === 'sent' ? 'bg-green-100 text-green-800' :
-                                email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {email.status.toUpperCase()}
-                              </span>
+                        <div key={email.id} className="border rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center justify-between p-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="font-semibold text-gray-900">{email.subject}</h4>
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  email.status === 'sent' ? 'bg-green-100 text-green-800' :
+                                  email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {email.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
+                                {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
+                                {email.analytics && (
+                                  <>
+                                    <span>📊 {email.analytics.opened}/{email.analytics.totalSent} opened ({Math.round((email.analytics.opened/email.analytics.totalSent)*100)}%)</span>
+                                    <span>🖱️ {email.analytics.clicked}/{email.analytics.totalSent} clicked ({Math.round((email.analytics.clicked/email.analytics.totalSent)*100)}%)</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
-                              {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
-                              {email.openRate && <span>📊 {email.openRate} open rate</span>}
-                              {email.clickRate && <span>🖱️ {email.clickRate} click rate</span>}
+                            <div className="flex items-center gap-2">
+                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                                <Edit size={16} />
+                              </button>
+                              <button className="p-2 text-green-600 hover:bg-green-50 rounded">
+                                <Copy size={16} />
+                              </button>
+                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                                <Trash2 size={16} />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                              <Edit size={16} />
-                            </button>
-                            <button className="p-2 text-green-600 hover:bg-green-50 rounded">
-                              <Copy size={16} />
-                            </button>
-                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          
+                          {/* Detailed Analytics (for sent emails) */}
+                          {email.status === 'sent' && email.analytics && (
+                            <div className="border-t bg-gray-50 p-4">
+                              <h5 className="font-medium mb-3">📈 Email Analytics</h5>
+                              <div className="grid grid-cols-6 gap-4 mb-4">
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-blue-600">{email.analytics.totalSent}</div>
+                                  <div className="text-xs text-gray-600">Sent</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-green-600">{email.analytics.delivered}</div>
+                                  <div className="text-xs text-gray-600">Delivered</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-purple-600">{email.analytics.opened}</div>
+                                  <div className="text-xs text-gray-600">Opened</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-orange-600">{email.analytics.clicked}</div>
+                                  <div className="text-xs text-gray-600">Clicked</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-red-600">{email.analytics.bounced}</div>
+                                  <div className="text-xs text-gray-600">Bounced</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-lg font-bold text-gray-600">{email.analytics.unsubscribed}</div>
+                                  <div className="text-xs text-gray-600">Unsubscribed</div>
+                                </div>
+                              </div>
+                              
+                              {/* Open Times */}
+                              {email.analytics.openTimes.length > 0 && (
+                                <div className="mb-3">
+                                  <h6 className="text-sm font-medium mb-2">👁️ Recent Opens</h6>
+                                  <div className="space-y-1">
+                                    {email.analytics.openTimes.slice(0, 3).map((open, idx) => (
+                                      <div key={idx} className="text-xs text-gray-600 flex justify-between">
+                                        <span>{open.recipient}</span>
+                                        <span>{open.timestamp}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Tracking URLs */}
+                              <div className="text-xs text-gray-500">
+                                <p><strong>Tracking ID:</strong> {email.analytics.trackingId}</p>
+                                <p><strong>Open Tracking:</strong> {email.analytics.trackingPixelUrl}</p>
+                                <p><strong>Unsubscribe:</strong> {email.analytics.unsubscribeUrl}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
