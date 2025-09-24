@@ -1744,16 +1744,26 @@ const MainApp = () => {
 
   // Settings Component - CLEAN WHITE BACKGROUNDS
   const Settings = () => (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your widgets and platform settings</p>
+    <div className="space-y-6">
+      {/* Settings Header */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-blue-100 rounded-lg">
+            <Settings size={24} className="text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+            <p className="text-gray-600">Manage your widgets and platform configuration</p>
+          </div>
+        </div>
       </div>
 
       {/* Widget Gallery Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Widget Gallery</h2>
-        <p className="text-gray-600 mb-6">Embed these widgets on your website to extend your community reach</p>
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">🎨 Widget Gallery</h2>
+          <p className="text-gray-600">Professional widgets to embed on your website and extend your community reach</p>
+        </div>
 
         {/* Category Filter */}
         <div className="mb-6">
@@ -1939,8 +1949,8 @@ const MainApp = () => {
     { id: 'campaigns', icon: Mail, label: 'Email Campaigns' },
     { id: 'members', icon: Users, label: 'Members' },
     { id: 'calendar', icon: Calendar, label: 'Calendar' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'settings', icon: Settings, label: 'Settings' }
+    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' }
   ];
 
   return (
