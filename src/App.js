@@ -548,10 +548,18 @@ const MainApp = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('post');
-  const [posts, setPosts] = useState([
-    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
-    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
-  ]);
+  const [posts, setPosts] = useState(() => {
+    const savedPosts = localStorage.getItem('socialHubPosts');
+    return savedPosts ? JSON.parse(savedPosts) : [
+      { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
+      { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
+    ];
+  });
+
+  // Save posts to localStorage whenever posts change
+  useEffect(() => {
+    localStorage.setItem('socialHubPosts', JSON.stringify(posts));
+  }, [posts]);
   const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [emails, setEmails] = useState([
