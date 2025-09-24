@@ -354,6 +354,185 @@ const StandaloneBlogWidget = () => {
   );
 };
 
+// Standalone Calendar Widget Component
+const StandaloneCalendarWidget = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const settingsParam = urlParams.get('settings');
+  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
+    primaryColor: '#8b5cf6',
+    showTime: true,
+    maxEvents: 5
+  };
+
+  // Sample calendar events for the widget
+  const calendarEvents = [
+    {
+      id: 1,
+      title: 'Community Meetup',
+      date: '2025-09-25',
+      time: '2:00 PM',
+      type: 'event'
+    },
+    {
+      id: 2,
+      title: 'Product Launch',
+      date: '2025-09-28',
+      time: '10:00 AM',
+      type: 'announcement'
+    },
+    {
+      id: 3,
+      title: 'Weekly Newsletter',
+      date: '2025-09-30',
+      time: '9:00 AM',
+      type: 'newsletter'
+    },
+    {
+      id: 4,
+      title: 'Q&A Session',
+      date: '2025-10-02',
+      time: '3:00 PM',
+      type: 'event'
+    },
+    {
+      id: 5,
+      title: 'Feature Demo',
+      date: '2025-10-05',
+      time: '1:00 PM',
+      type: 'event'
+    }
+  ];
+
+  const displayEvents = calendarEvents.slice(0, settings.maxEvents);
+  
+  return (
+    <div style={{ 
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '0',
+      overflow: 'visible',
+      width: '100%',
+      height: '100vh',
+      boxShadow: 'none',
+      position: 'relative'
+    }}>
+      {/* Widget Header */}
+      <div style={{
+        backgroundColor: settings.primaryColor,
+        color: 'white',
+        padding: '16px',
+        fontWeight: '700',
+        fontSize: '18px',
+        textAlign: 'center',
+        letterSpacing: '0.5px',
+        borderRadius: '8px 8px 0 0'
+      }}>
+        📅 Upcoming Events
+      </div>
+      
+      {/* Calendar Events Content */}
+      <div style={{ 
+        height: 'calc(100vh - 120px)', 
+        overflowY: 'auto',
+        backgroundColor: 'transparent',
+        padding: '0'
+      }}>
+        {displayEvents.length > 0 ? displayEvents.map((event, index) => (
+          <div key={event.id} style={{
+            padding: '20px',
+            borderBottom: index < displayEvents.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
+            backgroundColor: 'transparent'
+          }}>
+            {/* Event Title */}
+            <h3 style={{
+              margin: '0 0 10px 0',
+              fontSize: '18px',
+              fontWeight: '700',
+              color: '#1a1a1a',
+              lineHeight: '1.3',
+              cursor: 'pointer'
+            }}>
+              {event.title}
+            </h3>
+            
+            {/* Event Date */}
+            <div style={{
+              color: '#666',
+              fontSize: '14px',
+              marginBottom: '8px',
+              fontWeight: '500'
+            }}>
+              📅 {new Date(event.date).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric',
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+            
+            {/* Event Time */}
+            {settings.showTime && (
+              <div style={{
+                color: '#666',
+                fontSize: '14px',
+                marginBottom: '12px',
+                fontWeight: '500'
+              }}>
+                🕐 {event.time}
+              </div>
+            )}
+            
+            {/* Event Type Badge */}
+            <div style={{
+              display: 'inline-block',
+              backgroundColor: event.type === 'event' ? '#10b981' : event.type === 'announcement' ? '#f59e0b' : '#8b5cf6',
+              color: 'white',
+              padding: '6px 16px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              {event.type === 'event' ? '🎉 Event' : event.type === 'announcement' ? '📢 Announcement' : '📧 Newsletter'}
+            </div>
+          </div>
+        )) : (
+          <div style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            color: '#999',
+            fontSize: '16px',
+            backgroundColor: 'transparent'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+            <div>No upcoming events</div>
+            <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
+          </div>
+        )}
+      </div>
+      
+      {/* Widget Footer */}
+      <div style={{
+        position: 'absolute',
+        bottom: '0',
+        left: '0',
+        right: '0',
+        backgroundColor: settings.primaryColor,
+        color: 'white',
+        padding: '8px',
+        textAlign: 'center',
+        fontSize: '12px',
+        fontWeight: '600',
+        borderRadius: '0 0 8px 8px'
+      }}>
+        Powered by Social Hub
+      </div>
+    </div>
+  );
+};
+
 // Main App Component
 const MainApp = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -4191,6 +4370,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/widget/blog" element={<StandaloneBlogWidget />} />
+        <Route path="/widget/calendar" element={<StandaloneCalendarWidget />} />
         <Route path="/widget/newsfeed" element={<StandaloneNewsFeedWidget />} />
         <Route path="/*" element={<MainApp />} />
       </Routes>
