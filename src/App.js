@@ -526,19 +526,33 @@ const MainApp = () => {
         }
       };
 
-      // In production, you would make the actual API call:
-      // const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${process.env.REACT_APP_SENDGRID_API_KEY}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify(sendGridPayload)
-      // });
+      // Make the actual SendGrid API call
+      const apiKey = process.env.REACT_APP_SENDGRID_API_KEY;
+      if (!apiKey) {
+        console.log('SendGrid API key not found, running in demo mode');
+        console.log('SendGrid payload prepared:', sendGridPayload);
+        return { success: true, messageId: `demo_${Date.now()}` };
+      }
+      
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(sendGridPayload)
+      });
 
-      // For demo purposes, we'll simulate success
-      console.log('SendGrid payload prepared:', sendGridPayload);
-      return { success: true, messageId: `sg_${Date.now()}` };
+      console.log('SendGrid payload sent:', sendGridPayload);
+      
+      if (response.ok) {
+        const responseData = await response.text();
+        return { success: true, messageId: response.headers.get('X-Message-Id') || `sg_${Date.now()}` };
+      } else {
+        const errorData = await response.text();
+        console.error('SendGrid error response:', errorData);
+        return { success: false, error: `SendGrid API error: ${response.status} - ${errorData}` };
+      }
       
     } catch (error) {
       console.error('SendGrid error:', error);
