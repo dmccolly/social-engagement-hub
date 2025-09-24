@@ -1704,7 +1704,8 @@ const MainApp = () => {
     featured: { primaryColor: '#f59e0b', showImage: true },
     stats: { primaryColor: '#ef4444', showGrowth: true },
     poll: { primaryColor: '#06b6d4', question: 'What\'s your favorite feature?' },
-    activity: { primaryColor: '#84cc16', showTimestamps: true }
+    activity: { primaryColor: '#84cc16', showTimestamps: true },
+    calendar: { primaryColor: '#8b5cf6', showTime: true, maxEvents: 5 }
   });
   const [copiedWidget, setCopiedWidget] = useState('');
 
@@ -1758,6 +1759,13 @@ const MainApp = () => {
       description: 'Display latest community activity',
       icon: Activity,
       category: 'Community'
+    },
+    {
+      id: 'calendar',
+      name: 'Calendar Widget',
+      description: 'Display upcoming events and important dates',
+      icon: Calendar,
+      category: 'Content'
     }
   ];
 
@@ -2128,7 +2136,6 @@ const MainApp = () => {
     { id: 'campaigns', icon: Mail, label: 'Email Campaigns' },
     { id: 'members', icon: Users, label: 'Members' },
     { id: 'calendar', icon: Calendar, label: 'Calendar' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
     { id: 'analytics', icon: BarChart3, label: 'Analytics' }
   ];
 
