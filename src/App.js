@@ -1200,17 +1200,47 @@ const MainApp = () => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Create Blog Post</h2>
           <div className="flex gap-2">
-            <button onClick={onCancel} className="px-4 py-2 border rounded hover:bg-gray-50">
+            <button onClick={() => {
+              // Clean up image toolbars before canceling
+              document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+              document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+              document.querySelectorAll('.selected-image').forEach(el => {
+                el.classList.remove('selected-image');
+                el.style.border = '2px solid transparent';
+                el.style.boxShadow = 'none';
+              });
+              onCancel();
+            }} className="px-4 py-2 border rounded hover:bg-gray-50">
               Cancel
             </button>
             <button 
-              onClick={() => onSave({ title, content, isDraft: true })}
+              onClick={() => {
+                // Clean up image toolbars before saving
+                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+                document.querySelectorAll('.selected-image').forEach(el => {
+                  el.classList.remove('selected-image');
+                  el.style.border = '2px solid transparent';
+                  el.style.boxShadow = 'none';
+                });
+                onSave({ title, content, isDraft: true });
+              }}
               className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
             >
               Save Draft
             </button>
             <button 
-              onClick={() => onSave({ title, content, isDraft: false })}
+              onClick={() => {
+                // Clean up image toolbars before publishing
+                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+                document.querySelectorAll('.selected-image').forEach(el => {
+                  el.classList.remove('selected-image');
+                  el.style.border = '2px solid transparent';
+                  el.style.boxShadow = 'none';
+                });
+                onSave({ title, content, isDraft: false });
+              }}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             >
               Publish Post
@@ -1790,10 +1820,16 @@ const MainApp = () => {
   };
 
   // Blog Widget Preview Component - ONLY BLOG POSTS
-  const BlogWidgetPreview = ({ settings }) => {
+  const BlogWidgetPreview = ({ settings, narrow = false }) => {
     // Get only published blog posts
     const blogPosts = posts.filter(post => post.published === true);
     const displayPosts = blogPosts.slice(0, settings.maxPosts);
+    
+    const widgetWidth = narrow ? '280px' : '320px';
+    const widgetHeight = narrow ? '400px' : '480px';
+    const headerFontSize = narrow ? '16px' : '18px';
+    const headerPadding = narrow ? '12px' : '16px';
+    const contentPadding = narrow ? '12px' : '16px';
     
     return (
       <div style={{ 
@@ -1802,8 +1838,8 @@ const MainApp = () => {
         border: 'none',
         borderRadius: '0',
         overflow: 'visible',
-        width: '320px',
-        height: '480px',
+        width: widgetWidth,
+        height: widgetHeight,
         boxShadow: 'none',
         position: 'relative'
       }}>
@@ -1811,9 +1847,9 @@ const MainApp = () => {
         <div style={{
           backgroundColor: settings.primaryColor,
           color: 'white',
-          padding: '16px',
+          padding: headerPadding,
           fontWeight: '700',
-          fontSize: '18px',
+          fontSize: headerFontSize,
           textAlign: 'center',
           letterSpacing: '0.5px',
           borderRadius: '8px 8px 0 0'
@@ -1823,21 +1859,21 @@ const MainApp = () => {
         
         {/* Blog Posts Content */}
         <div style={{ 
-          height: '416px', 
+          height: narrow ? '336px' : '416px', 
           overflowY: 'auto',
           backgroundColor: 'transparent',
           padding: '0'
         }}>
           {displayPosts.length > 0 ? displayPosts.map((post, index) => (
             <article key={post.id} style={{
-              padding: '20px',
+              padding: contentPadding,
               borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
               backgroundColor: 'transparent'
             }}>
               {/* Post Title */}
               <h3 style={{
                 margin: '0 0 10px 0',
-                fontSize: '18px',
+                fontSize: narrow ? '16px' : '18px',
                 fontWeight: '700',
                 color: '#1a1a1a',
                 lineHeight: '1.3',
@@ -1849,8 +1885,8 @@ const MainApp = () => {
               {/* Post Date */}
               <div style={{
                 color: '#666',
-                fontSize: '13px',
-                marginBottom: '12px',
+                fontSize: narrow ? '12px' : '13px',
+                marginBottom: narrow ? '8px' : '12px',
                 fontWeight: '500'
               }}>
                 📅 {post.date}
@@ -1859,9 +1895,9 @@ const MainApp = () => {
               {/* Post Content */}
               <div style={{
                 color: '#333',
-                fontSize: '15px',
+                fontSize: narrow ? '14px' : '15px',
                 lineHeight: '1.6',
-                marginBottom: '12px'
+                marginBottom: narrow ? '8px' : '12px'
               }}>
                 {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
               </div>
@@ -1997,17 +2033,37 @@ const MainApp = () => {
                   {/* Live Preview */}
                   <div>
                     <h4 className="font-medium text-gray-900 mb-3">Live Preview</h4>
-                    <div className="flex justify-center p-4 bg-gray-50 rounded">
-                      {widget.id === 'blog' && <BlogWidgetPreview settings={widgetSettings[widget.id]} />}
-                      {widget.id !== 'blog' && (
+                    
+                    {widget.id === 'blog' ? (
+                      <div className="space-y-4">
+                        {/* Full Width Preview */}
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Full Width (420px)</h5>
+                          <div className="flex justify-center p-4 bg-gray-50 rounded">
+                            <BlogWidgetPreview settings={widgetSettings[widget.id]} />
+                          </div>
+                        </div>
+                        
+                        {/* Narrow Preview */}
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Narrow Width (300px)</h5>
+                          <div className="flex justify-center p-4 bg-gray-50 rounded">
+                            <div style={{ width: '300px' }}>
+                              <BlogWidgetPreview settings={widgetSettings[widget.id]} narrow={true} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-center p-4 bg-gray-50 rounded">
                         <div className="w-80 h-96 bg-white border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500">
                           <div className="text-center">
                             <widget.icon size={32} className="mx-auto mb-2 text-gray-400" />
                             <p className="text-sm">Preview for {widget.name}</p>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Settings & Embed */}
@@ -2150,7 +2206,17 @@ const MainApp = () => {
           {navItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveSection(item.id)}
+              onClick={() => {
+                // Clean up image toolbars when switching sections
+                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+                document.querySelectorAll('.selected-image').forEach(el => {
+                  el.classList.remove('selected-image');
+                  el.style.border = '2px solid transparent';
+                  el.style.boxShadow = 'none';
+                });
+                setActiveSection(item.id);
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                 activeSection === item.id
                   ? 'bg-blue-50 text-blue-600'
@@ -3265,6 +3331,14 @@ const MainApp = () => {
             <button
               key={item.id}
               onClick={() => {
+                // Clean up image toolbars when switching sections
+                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+                document.querySelectorAll('.selected-image').forEach(el => {
+                  el.classList.remove('selected-image');
+                  el.style.border = '2px solid transparent';
+                  el.style.boxShadow = 'none';
+                });
                 setActiveSection(item.id);
                 setIsCreating(false);
               }}
