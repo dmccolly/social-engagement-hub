@@ -365,6 +365,7 @@ const MainApp = () => {
   ]);
   const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  const [memberFilter, setMemberFilter] = useState('all');
   const [members, setMembers] = useState([
     {
       id: 1,
@@ -999,6 +1000,17 @@ const MainApp = () => {
                           <p className="text-sm text-gray-700">{comment.content}</p>
                         </div>
                       ))}
+                      
+                      {/* Empty State */}
+                      {members.filter(member => {
+                        if (memberFilter === 'all') return true;
+                        if (memberFilter === 'pending') return member.status === 'pending';
+                        return member.role === memberFilter;
+                      }).length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1715,6 +1727,17 @@ const MainApp = () => {
                           </div>
                         </div>
                       ))}
+                      
+                      {/* Empty State */}
+                      {members.filter(member => {
+                        if (memberFilter === 'all') return true;
+                        if (memberFilter === 'pending') return member.status === 'pending';
+                        return member.role === memberFilter;
+                      }).length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1785,11 +1808,56 @@ const MainApp = () => {
 
                   {/* Role Filter Tabs */}
                   <div className="flex gap-2 mb-6">
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">All Members</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Admins</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Moderators</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Members</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Pending</button>
+                    <button 
+                      onClick={() => setMemberFilter('all')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'all' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      All Members
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('admin')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'admin' 
+                          ? 'bg-purple-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Admins
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('moderator')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'moderator' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Moderators
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('member')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'member' 
+                          ? 'bg-gray-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Members
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('pending')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'pending' 
+                          ? 'bg-yellow-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Pending
+                    </button>
                   </div>
                 </div>
 
@@ -1798,7 +1866,13 @@ const MainApp = () => {
                   <div className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Member Directory</h3>
                     <div className="space-y-4">
-                      {members.map((member) => (
+                      {members
+                        .filter(member => {
+                          if (memberFilter === 'all') return true;
+                          if (memberFilter === 'pending') return member.status === 'pending';
+                          return member.role === memberFilter;
+                        })
+                        .map((member) => (
                         <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                           <div className="flex items-center gap-4">
                             {/* Avatar */}
@@ -1856,6 +1930,17 @@ const MainApp = () => {
                           </div>
                         </div>
                       ))}
+                      
+                      {/* Empty State */}
+                      {members.filter(member => {
+                        if (memberFilter === 'all') return true;
+                        if (memberFilter === 'pending') return member.status === 'pending';
+                        return member.role === memberFilter;
+                      }).length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2091,6 +2176,17 @@ const MainApp = () => {
                           </div>
                         </div>
                       ))}
+                      
+                      {/* Empty State */}
+                      {members.filter(member => {
+                        if (memberFilter === 'all') return true;
+                        if (memberFilter === 'pending') return member.status === 'pending';
+                        return member.role === memberFilter;
+                      }).length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2161,11 +2257,56 @@ const MainApp = () => {
 
                   {/* Role Filter Tabs */}
                   <div className="flex gap-2 mb-6">
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">All Members</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Admins</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Moderators</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Members</button>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Pending</button>
+                    <button 
+                      onClick={() => setMemberFilter('all')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'all' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      All Members
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('admin')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'admin' 
+                          ? 'bg-purple-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Admins
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('moderator')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'moderator' 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Moderators
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('member')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'member' 
+                          ? 'bg-gray-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Members
+                    </button>
+                    <button 
+                      onClick={() => setMemberFilter('pending')}
+                      className={`px-4 py-2 rounded-lg font-medium ${
+                        memberFilter === 'pending' 
+                          ? 'bg-yellow-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Pending
+                    </button>
                   </div>
                 </div>
 
@@ -2174,7 +2315,13 @@ const MainApp = () => {
                   <div className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Member Directory</h3>
                     <div className="space-y-4">
-                      {members.map((member) => (
+                      {members
+                        .filter(member => {
+                          if (memberFilter === 'all') return true;
+                          if (memberFilter === 'pending') return member.status === 'pending';
+                          return member.role === memberFilter;
+                        })
+                        .map((member) => (
                         <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                           <div className="flex items-center gap-4">
                             {/* Avatar */}
@@ -2232,6 +2379,17 @@ const MainApp = () => {
                           </div>
                         </div>
                       ))}
+                      
+                      {/* Empty State */}
+                      {members.filter(member => {
+                        if (memberFilter === 'all') return true;
+                        if (memberFilter === 'pending') return member.status === 'pending';
+                        return member.role === memberFilter;
+                      }).length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
