@@ -365,7 +365,52 @@ const MainApp = () => {
   ]);
   const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
-  const [members, setMembers] = useState([]);
+  const [members, setMembers] = useState([
+    {
+      id: 1,
+      name: 'John Smith',
+      email: 'john.smith@example.com',
+      role: 'admin',
+      status: 'active',
+      joinDate: '2025-01-15',
+      lastActive: '2025-09-23',
+      avatar: 'JS',
+      permissions: ['read', 'write', 'delete', 'manage_users', 'manage_settings']
+    },
+    {
+      id: 2,
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@example.com',
+      role: 'moderator',
+      status: 'active',
+      joinDate: '2025-02-20',
+      lastActive: '2025-09-22',
+      avatar: 'SJ',
+      permissions: ['read', 'write', 'moderate_content']
+    },
+    {
+      id: 3,
+      name: 'Mike Davis',
+      email: 'mike.davis@example.com',
+      role: 'member',
+      status: 'active',
+      joinDate: '2025-03-10',
+      lastActive: '2025-09-21',
+      avatar: 'MD',
+      permissions: ['read', 'write']
+    },
+    {
+      id: 4,
+      name: 'Emily Wilson',
+      email: 'emily.wilson@example.com',
+      role: 'member',
+      status: 'pending',
+      joinDate: '2025-09-20',
+      lastActive: 'Never',
+      avatar: 'EW',
+      permissions: ['read']
+    }
+  ]);
   const [newsFeedPosts, setNewsFeedPosts] = useState([
     {
       id: 1,
@@ -1743,28 +1788,172 @@ const MainApp = () => {
               </div>
             )}
             {activeSection === 'members' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-2xl font-bold mb-6">Members ({members.length})</h2>
-                <div className="space-y-2">
-                  {members.map((member, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <p className="font-medium">{member.name || member.email}</p>
-                        <p className="text-sm text-gray-500">{member.email}</p>
+              <div className="space-y-6">
+                {/* Member Management Header */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">👥 Member Management ({members.length})</h2>
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2">
+                      <Plus size={20} /> Invite Member
+                    </button>
+                  </div>
+
+                  {/* Member Statistics */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-2xl font-bold text-green-600">{members.filter(m => m.status === 'active').length}</div>
+                      <div className="text-sm text-green-700">Active Members</div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <div className="text-2xl font-bold text-yellow-600">{members.filter(m => m.status === 'pending').length}</div>
+                      <div className="text-sm text-yellow-700">Pending Approval</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin').length}</div>
+                      <div className="text-sm text-purple-700">Administrators</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator').length}</div>
+                      <div className="text-sm text-blue-700">Moderators</div>
+                    </div>
+                  </div>
+
+                  {/* Role Filter Tabs */}
+                  <div className="flex gap-2 mb-6">
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">All Members</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Admins</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Moderators</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Members</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Pending</button>
+                  </div>
+                </div>
+
+                {/* Members List */}
+                <div className="bg-white rounded-lg shadow">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Member Directory</h3>
+                    <div className="space-y-4">
+                      {members.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            {/* Avatar */}
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                              member.role === 'admin' ? 'bg-purple-600' : 
+                              member.role === 'moderator' ? 'bg-blue-600' : 'bg-gray-600'
+                            }`}>
+                              {member.avatar}
+                            </div>
+                            
+                            {/* Member Info */}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">{member.name}</h4>
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                  member.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {member.role.toUpperCase()}
+                                </span>
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  member.status === 'active' ? 'bg-green-100 text-green-800' :
+                                  member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {member.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">{member.email}</p>
+                              <p className="text-xs text-gray-500">
+                                Joined: {member.joinDate} • Last active: {member.lastActive}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            {member.status === 'pending' && (
+                              <>
+                                <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                                  Approve
+                                </button>
+                                <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                              <Edit size={16} />
+                            </button>
+                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Role Management */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold mb-4">🔐 Role & Permission Management</h3>
+                  
+                  <div className="grid grid-cols-3 gap-6">
+                    {/* Admin Role */}
+                    <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">A</span>
+                        </div>
+                        <h4 className="font-semibold text-purple-900">Administrator</h4>
                       </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 size={16} />
-                        </button>
+                      <p className="text-sm text-purple-700 mb-3">Full platform access and management capabilities</p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-purple-600">✓ Read all content</div>
+                        <div className="text-xs text-purple-600">✓ Write and edit content</div>
+                        <div className="text-xs text-purple-600">✓ Delete any content</div>
+                        <div className="text-xs text-purple-600">✓ Manage users and roles</div>
+                        <div className="text-xs text-purple-600">✓ Platform settings</div>
                       </div>
                     </div>
-                  ))}
-                  {members.length === 0 && (
-                    <p className="text-gray-500">No members yet.</p>
-                  )}
+
+                    {/* Moderator Role */}
+                    <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">M</span>
+                        </div>
+                        <h4 className="font-semibold text-blue-900">Moderator</h4>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-3">Content moderation and community management</p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-blue-600">✓ Read all content</div>
+                        <div className="text-xs text-blue-600">✓ Write and edit content</div>
+                        <div className="text-xs text-blue-600">✓ Moderate community posts</div>
+                        <div className="text-xs text-blue-600">✓ Manage member interactions</div>
+                        <div className="text-xs text-gray-400">✗ User management</div>
+                      </div>
+                    </div>
+
+                    {/* Member Role */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">U</span>
+                        </div>
+                        <h4 className="font-semibold text-gray-900">Member</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">Standard community member access</p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-600">✓ Read public content</div>
+                        <div className="text-xs text-gray-600">✓ Write posts and comments</div>
+                        <div className="text-xs text-gray-600">✓ Engage with community</div>
+                        <div className="text-xs text-gray-400">✗ Content moderation</div>
+                        <div className="text-xs text-gray-400">✗ User management</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1975,28 +2164,172 @@ const MainApp = () => {
               </div>
             )}
             {activeSection === 'members' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-2xl font-bold mb-6">Members ({members.length})</h2>
-                <div className="space-y-2">
-                  {members.map((member, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <p className="font-medium">{member.name || member.email}</p>
-                        <p className="text-sm text-gray-500">{member.email}</p>
+              <div className="space-y-6">
+                {/* Member Management Header */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">👥 Member Management ({members.length})</h2>
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2">
+                      <Plus size={20} /> Invite Member
+                    </button>
+                  </div>
+
+                  {/* Member Statistics */}
+                  <div className="grid grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-2xl font-bold text-green-600">{members.filter(m => m.status === 'active').length}</div>
+                      <div className="text-sm text-green-700">Active Members</div>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <div className="text-2xl font-bold text-yellow-600">{members.filter(m => m.status === 'pending').length}</div>
+                      <div className="text-sm text-yellow-700">Pending Approval</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin').length}</div>
+                      <div className="text-sm text-purple-700">Administrators</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator').length}</div>
+                      <div className="text-sm text-blue-700">Moderators</div>
+                    </div>
+                  </div>
+
+                  {/* Role Filter Tabs */}
+                  <div className="flex gap-2 mb-6">
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">All Members</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Admins</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Moderators</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Members</button>
+                    <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">Pending</button>
+                  </div>
+                </div>
+
+                {/* Members List */}
+                <div className="bg-white rounded-lg shadow">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">Member Directory</h3>
+                    <div className="space-y-4">
+                      {members.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            {/* Avatar */}
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                              member.role === 'admin' ? 'bg-purple-600' : 
+                              member.role === 'moderator' ? 'bg-blue-600' : 'bg-gray-600'
+                            }`}>
+                              {member.avatar}
+                            </div>
+                            
+                            {/* Member Info */}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-gray-900">{member.name}</h4>
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                  member.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {member.role.toUpperCase()}
+                                </span>
+                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                                  member.status === 'active' ? 'bg-green-100 text-green-800' :
+                                  member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {member.status.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">{member.email}</p>
+                              <p className="text-xs text-gray-500">
+                                Joined: {member.joinDate} • Last active: {member.lastActive}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2">
+                            {member.status === 'pending' && (
+                              <>
+                                <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                                  Approve
+                                </button>
+                                <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                              <Edit size={16} />
+                            </button>
+                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Role Management */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold mb-4">🔐 Role & Permission Management</h3>
+                  
+                  <div className="grid grid-cols-3 gap-6">
+                    {/* Admin Role */}
+                    <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">A</span>
+                        </div>
+                        <h4 className="font-semibold text-purple-900">Administrator</h4>
                       </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 size={16} />
-                        </button>
+                      <p className="text-sm text-purple-700 mb-3">Full platform access and management capabilities</p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-purple-600">✓ Read all content</div>
+                        <div className="text-xs text-purple-600">✓ Write and edit content</div>
+                        <div className="text-xs text-purple-600">✓ Delete any content</div>
+                        <div className="text-xs text-purple-600">✓ Manage users and roles</div>
+                        <div className="text-xs text-purple-600">✓ Platform settings</div>
                       </div>
                     </div>
-                  ))}
-                  {members.length === 0 && (
-                    <p className="text-gray-500">No members yet.</p>
-                  )}
+
+                    {/* Moderator Role */}
+                    <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">M</span>
+                        </div>
+                        <h4 className="font-semibold text-blue-900">Moderator</h4>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-3">Content moderation and community management</p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-blue-600">✓ Read all content</div>
+                        <div className="text-xs text-blue-600">✓ Write and edit content</div>
+                        <div className="text-xs text-blue-600">✓ Moderate community posts</div>
+                        <div className="text-xs text-blue-600">✓ Manage member interactions</div>
+                        <div className="text-xs text-gray-400">✗ User management</div>
+                      </div>
+                    </div>
+
+                    {/* Member Role */}
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">U</span>
+                        </div>
+                        <h4 className="font-semibold text-gray-900">Member</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-3">Standard community member access</p>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-600">✓ Read public content</div>
+                        <div className="text-xs text-gray-600">✓ Write posts and comments</div>
+                        <div className="text-xs text-gray-600">✓ Engage with community</div>
+                        <div className="text-xs text-gray-400">✗ Content moderation</div>
+                        <div className="text-xs text-gray-400">✗ User management</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
