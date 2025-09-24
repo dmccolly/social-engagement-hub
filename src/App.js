@@ -1462,6 +1462,18 @@ const MainApp = () => {
           className="min-h-96 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           style={{ lineHeight: '1.6' }}
           onInput={handleContentChange}
+          onKeyDown={(e) => {
+            // Allow all keyboard input including delete/backspace
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+              // Let the browser handle delete operations naturally
+              return;
+            }
+            // Handle other special keys if needed
+          }}
+          onPaste={(e) => {
+            // Allow paste operations
+            setTimeout(() => handleContentChange(), 0);
+          }}
           suppressContentEditableWarning={true}
         />
 
@@ -1786,7 +1798,7 @@ const MainApp = () => {
   };
 
   // Post Component with Featured Styling
-  const PostCard = ({ post }) => (
+  const PostCard = ({ post, onDelete }) => (
     <div className={`border rounded-lg p-4 transition-all duration-300 ${
       post.featured 
         ? 'bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-amber-200 shadow-lg hover:shadow-xl' 
@@ -1821,7 +1833,14 @@ const MainApp = () => {
           }`}>
             <Edit size={16} />
           </button>
-          <button className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
+          <button 
+            onClick={() => {
+              if (window.confirm('Are you sure you want to delete this post?')) {
+                onDelete(post.id);
+              }
+            }}
+            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+          >
             <Trash2 size={16} />
           </button>
         </div>
@@ -2414,7 +2433,15 @@ const MainApp = () => {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
+                    {posts.filter(post => post.published).map(post => (
+                      <PostCard 
+                        key={post.id} 
+                        post={post} 
+                        onDelete={(postId) => {
+                          setPosts(prev => prev.filter(p => p.id !== postId));
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
 
@@ -3539,7 +3566,15 @@ const MainApp = () => {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
+                    {posts.filter(post => post.published).map(post => (
+                      <PostCard 
+                        key={post.id} 
+                        post={post} 
+                        onDelete={(postId) => {
+                          setPosts(prev => prev.filter(p => p.id !== postId));
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
 
