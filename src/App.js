@@ -199,6 +199,8 @@ const StandaloneNewsFeedWidget = () => {
 
 // Standalone Blog Widget Component
 const StandaloneBlogWidget = () => {
+  const [posts, setPosts] = useState([]);
+  
   const urlParams = new URLSearchParams(window.location.search);
   const settingsParam = urlParams.get('settings');
   const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
@@ -207,11 +209,14 @@ const StandaloneBlogWidget = () => {
     maxPosts: 3
   };
 
-  // Sample blog posts for the widget
-  const posts = [
-    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
-    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
-  ];
+  // Load published posts from localStorage on component mount
+  useEffect(() => {
+    const savedPosts = localStorage.getItem('socialHubPosts');
+    if (savedPosts) {
+      const allPosts = JSON.parse(savedPosts);
+      setPosts(allPosts);
+    }
+  }, []);
 
   const blogPosts = posts.filter(post => post.published === true);
   const displayPosts = blogPosts.slice(0, settings.maxPosts);
@@ -278,14 +283,19 @@ const StandaloneBlogWidget = () => {
             </div>
             
             {/* Post Content */}
-            <div style={{
-              color: '#333',
-              fontSize: '15px',
-              lineHeight: '1.6',
-              marginBottom: '12px'
-            }}>
-              {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
-            </div>
+            <div 
+              style={{
+                color: '#333',
+                fontSize: '15px',
+                lineHeight: '1.6',
+                marginBottom: '12px'
+              }}
+              dangerouslySetInnerHTML={{ 
+                __html: post.content && post.content.length > 150 
+                  ? `${post.content.substring(0, 150)}...` 
+                  : post.content || ''
+              }}
+            />
             
             {/* Featured Badge */}
             {post.featured && (
