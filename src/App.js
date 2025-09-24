@@ -366,6 +366,13 @@ const MainApp = () => {
   const [drafts, setDrafts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [memberFilter, setMemberFilter] = useState('all');
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteForm, setInviteForm] = useState({
+    name: '',
+    email: '',
+    role: 'member',
+    sendEmail: true
+  });
   const [members, setMembers] = useState([
     {
       id: 1,
@@ -437,6 +444,57 @@ const MainApp = () => {
       saved: true
     }
   ]);
+
+  // Invite Member Functions
+  const handleInviteMember = () => {
+    if (!inviteForm.name.trim() || !inviteForm.email.trim()) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    const newMember = {
+      id: Date.now(),
+      name: inviteForm.name,
+      email: inviteForm.email,
+      role: inviteForm.role,
+      status: 'pending',
+      joinDate: new Date().toLocaleDateString(),
+      lastActive: 'Never',
+      avatar: inviteForm.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+      permissions: inviteForm.role === 'admin' 
+        ? ['read', 'write', 'delete', 'manage_users', 'manage_settings']
+        : inviteForm.role === 'moderator'
+        ? ['read', 'write', 'moderate_content']
+        : ['read']
+    };
+
+    setMembers(prev => [...prev, newMember]);
+    
+    if (inviteForm.sendEmail) {
+      alert(`Invitation sent to ${inviteForm.email}! They will receive an email with instructions to join.`);
+    } else {
+      alert(`Member ${inviteForm.name} added successfully! They can now access the platform.`);
+    }
+
+    // Reset form and close modal
+    setInviteForm({
+      name: '',
+      email: '',
+      role: 'member',
+      sendEmail: true
+    });
+    setShowInviteModal(false);
+  };
+
+  const resetInviteForm = () => {
+    setInviteForm({
+      name: '',
+      email: '',
+      role: 'member',
+      sendEmail: true
+    });
+    setShowInviteModal(false);
+  };
 
   // Rich Blog Editor Component with ALL formatting tools
   const RichBlogEditor = ({ onSave, onCancel }) => {
@@ -1757,6 +1815,107 @@ const MainApp = () => {
                     {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
                   </div>
                 </div>
+
+                {/* Invite Member Modal */}
+                {showInviteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
+                        <button 
+                          onClick={resetInviteForm}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
+                        {/* Name Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={inviteForm.name}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter full name"
+                            required
+                          />
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            value={inviteForm.email}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter email address"
+                            required
+                          />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Role
+                          </label>
+                          <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="member">Member - Standard access</option>
+                            <option value="moderator">Moderator - Content moderation</option>
+                            <option value="admin">Administrator - Full access</option>
+                          </select>
+                        </div>
+
+                        {/* Send Email Option */}
+                        <div className="mb-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={inviteForm.sendEmail}
+                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Send invitation email</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inviteForm.sendEmail 
+                              ? "An email invitation will be sent to the user" 
+                              : "User will be added directly without email notification"
+                            }
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetInviteForm}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'campaigns' && (
@@ -1781,7 +1940,10 @@ const MainApp = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">👥 Member Management ({members.length})</h2>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowInviteModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                    >
                       <Plus size={20} /> Invite Member
                     </button>
                   </div>
@@ -2005,6 +2167,107 @@ const MainApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Invite Member Modal */}
+                {showInviteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
+                        <button 
+                          onClick={resetInviteForm}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
+                        {/* Name Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={inviteForm.name}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter full name"
+                            required
+                          />
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            value={inviteForm.email}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter email address"
+                            required
+                          />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Role
+                          </label>
+                          <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="member">Member - Standard access</option>
+                            <option value="moderator">Moderator - Content moderation</option>
+                            <option value="admin">Administrator - Full access</option>
+                          </select>
+                        </div>
+
+                        {/* Send Email Option */}
+                        <div className="mb-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={inviteForm.sendEmail}
+                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Send invitation email</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inviteForm.sendEmail 
+                              ? "An email invitation will be sent to the user" 
+                              : "User will be added directly without email notification"
+                            }
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetInviteForm}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'calendar' && (
@@ -2078,6 +2341,107 @@ const MainApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Invite Member Modal */}
+                {showInviteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
+                        <button 
+                          onClick={resetInviteForm}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
+                        {/* Name Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={inviteForm.name}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter full name"
+                            required
+                          />
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            value={inviteForm.email}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter email address"
+                            required
+                          />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Role
+                          </label>
+                          <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="member">Member - Standard access</option>
+                            <option value="moderator">Moderator - Content moderation</option>
+                            <option value="admin">Administrator - Full access</option>
+                          </select>
+                        </div>
+
+                        {/* Send Email Option */}
+                        <div className="mb-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={inviteForm.sendEmail}
+                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Send invitation email</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inviteForm.sendEmail 
+                              ? "An email invitation will be sent to the user" 
+                              : "User will be added directly without email notification"
+                            }
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetInviteForm}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'analytics' && (
@@ -2206,6 +2570,107 @@ const MainApp = () => {
                     {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
                   </div>
                 </div>
+
+                {/* Invite Member Modal */}
+                {showInviteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
+                        <button 
+                          onClick={resetInviteForm}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
+                        {/* Name Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={inviteForm.name}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter full name"
+                            required
+                          />
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            value={inviteForm.email}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter email address"
+                            required
+                          />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Role
+                          </label>
+                          <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="member">Member - Standard access</option>
+                            <option value="moderator">Moderator - Content moderation</option>
+                            <option value="admin">Administrator - Full access</option>
+                          </select>
+                        </div>
+
+                        {/* Send Email Option */}
+                        <div className="mb-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={inviteForm.sendEmail}
+                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Send invitation email</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inviteForm.sendEmail 
+                              ? "An email invitation will be sent to the user" 
+                              : "User will be added directly without email notification"
+                            }
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetInviteForm}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'campaigns' && (
@@ -2230,7 +2695,10 @@ const MainApp = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">👥 Member Management ({members.length})</h2>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowInviteModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                    >
                       <Plus size={20} /> Invite Member
                     </button>
                   </div>
@@ -2454,6 +2922,107 @@ const MainApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Invite Member Modal */}
+                {showInviteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
+                        <button 
+                          onClick={resetInviteForm}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
+                        {/* Name Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={inviteForm.name}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter full name"
+                            required
+                          />
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            value={inviteForm.email}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter email address"
+                            required
+                          />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Role
+                          </label>
+                          <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="member">Member - Standard access</option>
+                            <option value="moderator">Moderator - Content moderation</option>
+                            <option value="admin">Administrator - Full access</option>
+                          </select>
+                        </div>
+
+                        {/* Send Email Option */}
+                        <div className="mb-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={inviteForm.sendEmail}
+                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Send invitation email</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inviteForm.sendEmail 
+                              ? "An email invitation will be sent to the user" 
+                              : "User will be added directly without email notification"
+                            }
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetInviteForm}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'calendar' && (
@@ -2527,6 +3096,107 @@ const MainApp = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Invite Member Modal */}
+                {showInviteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
+                        <button 
+                          onClick={resetInviteForm}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
+                        {/* Name Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={inviteForm.name}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter full name"
+                            required
+                          />
+                        </div>
+
+                        {/* Email Field */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            value={inviteForm.email}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter email address"
+                            required
+                          />
+                        </div>
+
+                        {/* Role Selection */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Role
+                          </label>
+                          <select
+                            value={inviteForm.role}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="member">Member - Standard access</option>
+                            <option value="moderator">Moderator - Content moderation</option>
+                            <option value="admin">Administrator - Full access</option>
+                          </select>
+                        </div>
+
+                        {/* Send Email Option */}
+                        <div className="mb-6">
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={inviteForm.sendEmail}
+                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Send invitation email</span>
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {inviteForm.sendEmail 
+                              ? "An email invitation will be sent to the user" 
+                              : "User will be added directly without email notification"
+                            }
+                          </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={resetInviteForm}
+                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeSection === 'analytics' && (
