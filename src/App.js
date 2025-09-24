@@ -258,23 +258,50 @@ const StandaloneBlogWidget = () => {
           <article key={post.id} style={{
             padding: '20px',
             borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-            backgroundColor: 'transparent'
+            backgroundColor: post.featured ? 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fef3c7 100%)' : 'transparent',
+            borderRadius: post.featured ? '12px' : '0',
+            margin: post.featured ? '8px' : '0',
+            boxShadow: post.featured ? '0 4px 12px rgba(245, 158, 11, 0.15)' : 'none',
+            border: post.featured ? '1px solid #f59e0b20' : 'none',
+            position: 'relative'
           }}>
+            {/* Featured Badge */}
+            {post.featured && (
+              <div style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'linear-gradient(45deg, #f59e0b, #f97316)',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                fontSize: '10px',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                boxShadow: '0 2px 4px rgba(245, 158, 11, 0.3)'
+              }}>
+                ⭐ Featured
+              </div>
+            )}
+            
             {/* Post Title */}
             <h3 style={{
               margin: '0 0 10px 0',
               fontSize: '18px',
               fontWeight: '700',
-              color: '#1a1a1a',
+              color: post.featured ? '#92400e' : '#1a1a1a',
               lineHeight: '1.3',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              paddingRight: post.featured ? '80px' : '0'
             }}>
               {post.title}
             </h3>
             
             {/* Post Date */}
             <div style={{
-              color: '#666',
+              color: post.featured ? '#a16207' : '#666',
               fontSize: '13px',
               marginBottom: '12px',
               fontWeight: '500'
@@ -285,7 +312,7 @@ const StandaloneBlogWidget = () => {
             {/* Post Content */}
             <div 
               style={{
-                color: '#333',
+                color: post.featured ? '#92400e' : '#333',
                 fontSize: '15px',
                 lineHeight: '1.6',
                 marginBottom: '12px'
@@ -933,6 +960,7 @@ const MainApp = () => {
   const RichBlogEditor = ({ onSave, onCancel }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const [featured, setFeatured] = useState(false);
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const contentRef = useRef(null);
@@ -1241,7 +1269,7 @@ const MainApp = () => {
                   el.style.border = '2px solid transparent';
                   el.style.boxShadow = 'none';
                 });
-                onSave({ title, content, isDraft: true });
+                onSave({ title, content, featured, isDraft: true });
               }}
               className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
             >
@@ -1257,7 +1285,7 @@ const MainApp = () => {
                   el.style.border = '2px solid transparent';
                   el.style.boxShadow = 'none';
                 });
-                onSave({ title, content, isDraft: false });
+                onSave({ title, content, featured, isDraft: false });
               }}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             >
@@ -1274,6 +1302,28 @@ const MainApp = () => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+
+        {/* Featured Post Toggle */}
+        <div className="mb-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Star className="text-amber-500" size={20} />
+              <div>
+                <h4 className="font-semibold text-gray-800">Featured Post</h4>
+                <p className="text-sm text-gray-600">Highlight this post with special styling</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={featured}
+                onChange={(e) => setFeatured(e.target.checked)}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+          </div>
+        </div>
 
         {/* Complete Formatting Toolbar */}
         <div className="mb-4 p-4 bg-gray-50 rounded-lg">
@@ -1722,23 +1772,43 @@ const MainApp = () => {
     );
   };
 
-  // Post Component
+  // Post Component with Featured Styling
   const PostCard = ({ post }) => (
-    <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
+    <div className={`border rounded-lg p-4 transition-all duration-300 ${
+      post.featured 
+        ? 'bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 border-amber-200 shadow-lg hover:shadow-xl' 
+        : 'hover:bg-gray-50 border-gray-200'
+    }`}>
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h3 className="font-semibold">{post.title}</h3>
-          <p className="text-sm text-gray-500 mb-2">{post.date}</p>
+          <div className="flex items-center gap-2 mb-2">
+            {post.featured && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs font-semibold rounded-full shadow-sm">
+                <Star size={12} fill="currentColor" />
+                Featured
+              </div>
+            )}
+            <h3 className={`font-semibold ${post.featured ? 'text-amber-900' : 'text-gray-900'}`}>
+              {post.title}
+            </h3>
+          </div>
+          <p className={`text-sm mb-2 ${post.featured ? 'text-amber-700' : 'text-gray-500'}`}>
+            📅 {post.date}
+          </p>
           <div 
-            className="text-gray-700 prose max-w-none"
+            className={`prose max-w-none ${post.featured ? 'text-amber-800' : 'text-gray-700'}`}
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
         </div>
         <div className="flex gap-2 ml-4">
-          <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+          <button className={`p-1 rounded transition-colors ${
+            post.featured 
+              ? 'text-amber-600 hover:bg-amber-100' 
+              : 'text-blue-600 hover:bg-blue-50'
+          }`}>
             <Edit size={16} />
           </button>
-          <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+          <button className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors">
             <Trash2 size={16} />
           </button>
         </div>
