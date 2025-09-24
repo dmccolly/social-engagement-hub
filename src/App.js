@@ -209,13 +209,25 @@ const StandaloneBlogWidget = () => {
     maxPosts: 3
   };
 
-  // Load published posts from localStorage on component mount
+  // Load published posts from localStorage on component mount and refresh periodically
   useEffect(() => {
-    const savedPosts = localStorage.getItem('socialHubPosts');
-    if (savedPosts) {
-      const allPosts = JSON.parse(savedPosts);
-      setPosts(allPosts);
-    }
+    const loadPosts = () => {
+      const savedPosts = localStorage.getItem('socialHubPosts');
+      if (savedPosts) {
+        const allPosts = JSON.parse(savedPosts);
+        console.log('Widget loaded posts:', allPosts);
+        setPosts(allPosts);
+      } else {
+        console.log('No posts found in localStorage');
+      }
+    };
+
+    loadPosts();
+    
+    // Refresh posts every 5 seconds to catch new posts
+    const interval = setInterval(loadPosts, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const blogPosts = posts.filter(post => post.published === true);
@@ -1700,7 +1712,7 @@ const MainApp = () => {
               title: postData.title,
               content: postData.content,
               date: new Date().toLocaleDateString(),
-              featured: false,
+              featured: postData.featured || false,
               published: !postData.isDraft
             };
             
@@ -1745,6 +1757,7 @@ const MainApp = () => {
               title: postData.title,
               content: postData.content,
               date: new Date().toLocaleDateString(),
+              featured: postData.featured || false,
               scheduled: true,
               published: false
             };
