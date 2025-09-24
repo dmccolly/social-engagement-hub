@@ -1,533 +1,191 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { 
-  Home, MessageSquare, FileText, Mail, Users, Calendar, BarChart3, Settings,
-  Plus, Send, Clock, Edit, Trash2, Heart, MessageCircle, Bookmark,
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload,
-  Eye, Copy, Check, Star, TrendingUp, Activity, Vote, X
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Home, MessageSquare, FileText, Mail, Users, Calendar, Settings, BarChart3, Plus, Edit, Trash2, Send, X, UserPlus, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Link, Unlink, Type, Palette, Image, Upload } from 'lucide-react';
 
-// Standalone News Feed Widget Component
 const StandaloneNewsFeedWidget = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const settingsParam = urlParams.get('settings');
-  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
-    primaryColor: '#10b981',
-    showReplies: true,
-    maxPosts: 5
+  const settings = {
+    backgroundColor: '#ffffff',
+    textColor: '#333333',
+    accentColor: '#3b82f6'
   };
 
-  // Sample news feed posts for the widget
   const newsFeedPosts = [
     {
       id: 1,
-      author: 'Admin',
-      content: 'Welcome to our community! Feel free to share your thoughts and engage with other members.',
+      author: 'Community Team',
+      content: 'Welcome to our community! We\'re excited to have you here.',
       timestamp: '2 hours ago',
-      likes: 5,
-      comments: [
-        { author: 'User1', content: 'Thanks for the warm welcome!', timestamp: '1 hour ago' }
-      ]
+      likes: 12,
+      comments: 3,
+      isLiked: false,
+      isSaved: false
     },
     {
       id: 2,
-      author: 'Community Manager',
-      content: 'What features would you like to see added to our platform? Let us know in the comments!',
+      author: 'John Doe',
+      content: 'Just finished reading an amazing article about web development trends. The future looks bright!',
       timestamp: '4 hours ago',
-      likes: 12,
-      comments: [
-        { author: 'User2', content: 'More customization options would be great!', timestamp: '3 hours ago' },
-        { author: 'User3', content: 'I agree with User2!', timestamp: '2 hours ago' }
-      ]
+      likes: 8,
+      comments: 2,
+      isLiked: true,
+      isSaved: false
+    },
+    {
+      id: 3,
+      author: 'Jane Smith',
+      content: 'Looking forward to our upcoming community meetup next week. Who else is planning to attend?',
+      timestamp: '6 hours ago',
+      likes: 15,
+      comments: 7,
+      isLiked: false,
+      isSaved: true
     }
   ];
 
-  const displayPosts = newsFeedPosts.slice(0, settings.maxPosts);
-  
   return (
-    <div style={{ 
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      backgroundColor: 'transparent',
-      border: 'none',
-      borderRadius: '0',
-      overflow: 'visible',
-      width: '100%',
-      height: '100vh',
-      boxShadow: 'none',
-      position: 'relative'
-    }}>
-      {/* Widget Header */}
-      <div style={{
-        backgroundColor: settings.primaryColor,
-        color: 'white',
-        padding: '16px',
-        fontWeight: '700',
-        fontSize: '18px',
-        textAlign: 'center',
-        letterSpacing: '0.5px',
-        borderRadius: '8px 8px 0 0'
-      }}>
-        💬 Community Feed
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: settings.backgroundColor }}>
+      <div className="p-4 border-b" style={{ borderColor: settings.accentColor + '20' }}>
+        <h3 className="text-lg font-semibold" style={{ color: settings.textColor }}>Community Feed</h3>
       </div>
-      
-      {/* News Feed Content */}
-      <div style={{ 
-        height: 'calc(100vh - 120px)', 
-        overflowY: 'auto',
-        backgroundColor: 'transparent',
-        padding: '0'
-      }}>
-        {displayPosts.map((post, index) => (
-          <article key={post.id} style={{
-            padding: '20px',
-            borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-            backgroundColor: 'transparent'
-          }}>
-            {/* Post Header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              marginBottom: '12px'
-            }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: settings.primaryColor,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold',
-                marginRight: '12px'
-              }}>
-                {post.author[0]}
+      <div className="max-h-96 overflow-y-auto">
+        {newsFeedPosts.map(post => (
+          <div key={post.id} className="p-4 border-b border-gray-100">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold" style={{ backgroundColor: settings.accentColor }}>
+                {post.author.charAt(0)}
               </div>
-              <div>
-                <div style={{ fontWeight: '600', color: '#1a1a1a' }}>{post.author}</div>
-                <div style={{ fontSize: '12px', color: '#666' }}>{post.timestamp}</div>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="font-medium text-sm" style={{ color: settings.textColor }}>{post.author}</span>
+                  <span className="text-xs text-gray-500">{post.timestamp}</span>
+                </div>
+                <p className="text-sm mb-2" style={{ color: settings.textColor }}>{post.content}</p>
+                <div className="flex items-center space-x-4 text-xs text-gray-500">
+                  <button className={`flex items-center space-x-1 ${post.isLiked ? 'text-red-500' : 'hover:text-red-500'}`}>
+                    <span>♥</span>
+                    <span>{post.likes}</span>
+                  </button>
+                  <button className="flex items-center space-x-1 hover:text-blue-500">
+                    <span>💬</span>
+                    <span>{post.comments}</span>
+                  </button>
+                  <button className={`${post.isSaved ? 'text-yellow-500' : 'hover:text-yellow-500'}`}>
+                    <span>⭐</span>
+                  </button>
+                </div>
               </div>
             </div>
-            
-            {/* Post Content */}
-            <div style={{
-              color: '#333',
-              fontSize: '15px',
-              lineHeight: '1.6',
-              marginBottom: '12px'
-            }}>
-              {post.content}
-            </div>
-            
-            {/* Post Actions */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              marginBottom: '12px'
-            }}>
-              <button style={{
-                background: 'none',
-                border: 'none',
-                color: settings.primaryColor,
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                ❤️ {post.likes}
-              </button>
-              <button style={{
-                background: 'none',
-                border: 'none',
-                color: settings.primaryColor,
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                💬 {post.comments.length}
-              </button>
-            </div>
-            
-            {/* Comments */}
-            {settings.showReplies && post.comments.length > 0 && (
-              <div style={{
-                marginLeft: '20px',
-                paddingLeft: '16px',
-                borderLeft: `2px solid ${settings.primaryColor}30`
-              }}>
-                {post.comments.slice(0, 2).map((comment, idx) => (
-                  <div key={idx} style={{
-                    marginBottom: '8px',
-                    fontSize: '14px'
-                  }}>
-                    <span style={{ fontWeight: '600', color: '#1a1a1a' }}>{comment.author}</span>
-                    <span style={{ color: '#333', marginLeft: '8px' }}>{comment.content}</span>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>{comment.timestamp}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
+          </div>
         ))}
       </div>
-      
-      {/* Widget Footer */}
-      <div style={{
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        right: '0',
-        backgroundColor: settings.primaryColor,
-        color: 'white',
-        padding: '8px',
-        textAlign: 'center',
-        fontSize: '12px',
-        fontWeight: '600',
-        borderRadius: '0 0 8px 8px'
-      }}>
-        Powered by Social Hub
-      </div>
     </div>
   );
 };
 
-// Standalone Blog Widget Component
 const StandaloneBlogWidget = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const settingsParam = urlParams.get('settings');
-  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
-    primaryColor: '#3b82f6',
-    showImages: true,
-    maxPosts: 3
+  const settings = {
+    backgroundColor: '#ffffff',
+    textColor: '#333333',
+    accentColor: '#3b82f6'
   };
 
-  // Sample blog posts for the widget
   const posts = [
-    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
-    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
+    { id: 1, title: 'Getting Started with React', excerpt: 'Learn the basics of React development...', date: '2024-01-15', author: 'John Doe' },
+    { id: 2, title: 'Advanced JavaScript Techniques', excerpt: 'Explore advanced concepts in JavaScript...', date: '2024-01-10', author: 'Jane Smith' }
   ];
 
-  const blogPosts = posts.filter(post => post.published === true);
-  const displayPosts = blogPosts.slice(0, settings.maxPosts);
-  
   return (
-    <div style={{ 
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      backgroundColor: 'transparent',
-      border: 'none',
-      borderRadius: '0',
-      overflow: 'visible',
-      width: '100%',
-      height: '100vh',
-      boxShadow: 'none',
-      position: 'relative'
-    }}>
-      {/* Widget Header */}
-      <div style={{
-        backgroundColor: settings.primaryColor,
-        color: 'white',
-        padding: '16px',
-        fontWeight: '700',
-        fontSize: '18px',
-        textAlign: 'center',
-        letterSpacing: '0.5px',
-        borderRadius: '8px 8px 0 0'
-      }}>
-        📝 Latest Blog Posts
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: settings.backgroundColor }}>
+      <div className="p-4 border-b" style={{ borderColor: settings.accentColor + '20' }}>
+        <h3 className="text-lg font-semibold" style={{ color: settings.textColor }}>Latest Posts</h3>
       </div>
-      
-      {/* Blog Posts Content */}
-      <div style={{ 
-        height: 'calc(100vh - 120px)', 
-        overflowY: 'auto',
-        backgroundColor: 'transparent',
-        padding: '0'
-      }}>
-        {displayPosts.length > 0 ? displayPosts.map((post, index) => (
-          <article key={post.id} style={{
-            padding: '20px',
-            borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-            backgroundColor: 'transparent'
-          }}>
-            {/* Post Title */}
-            <h3 style={{
-              margin: '0 0 10px 0',
-              fontSize: '18px',
-              fontWeight: '700',
-              color: '#1a1a1a',
-              lineHeight: '1.3',
-              cursor: 'pointer'
-            }}>
-              {post.title}
-            </h3>
-            
-            {/* Post Date */}
-            <div style={{
-              color: '#666',
-              fontSize: '13px',
-              marginBottom: '12px',
-              fontWeight: '500'
-            }}>
-              📅 {post.date}
+      <div className="max-h-96 overflow-y-auto">
+        {posts.map(post => (
+          <div key={post.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+            <h4 className="font-medium mb-2" style={{ color: settings.textColor }}>{post.title}</h4>
+            <p className="text-sm text-gray-600 mb-2">{post.excerpt}</p>
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              <span>{post.author}</span>
+              <span>{post.date}</span>
             </div>
-            
-            {/* Post Content */}
-            <div style={{
-              color: '#333',
-              fontSize: '15px',
-              lineHeight: '1.6',
-              marginBottom: '12px'
-            }}>
-              {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
-            </div>
-            
-            {/* Featured Badge */}
-            {post.featured && (
-              <div style={{
-                display: 'inline-block',
-                backgroundColor: '#ff6b35',
-                color: 'white',
-                padding: '4px 12px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
-                ⭐ Featured
-              </div>
-            )}
-            
-            {/* Read More Link */}
-            <div style={{
-              marginTop: '12px'
-            }}>
-              <a href="#" style={{
-                color: settings.primaryColor,
-                fontSize: '14px',
-                fontWeight: '600',
-                textDecoration: 'none',
-                borderBottom: `2px solid ${settings.primaryColor}40`
-              }}>
-                Read More →
-              </a>
-            </div>
-          </article>
-        )) : (
-          <div style={{
-            padding: '60px 20px',
-            textAlign: 'center',
-            color: '#999',
-            fontSize: '16px',
-            backgroundColor: 'transparent'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-            <div>No blog posts yet</div>
-            <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
           </div>
-        )}
-      </div>
-      
-      {/* Widget Footer */}
-      <div style={{
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        right: '0',
-        backgroundColor: settings.primaryColor,
-        color: 'white',
-        padding: '8px',
-        textAlign: 'center',
-        fontSize: '12px',
-        fontWeight: '600',
-        borderRadius: '0 0 8px 8px'
-      }}>
-        Powered by Social Hub
+        ))}
       </div>
     </div>
   );
 };
 
-// Standalone Calendar Widget Component
 const StandaloneCalendarWidget = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const settingsParam = urlParams.get('settings');
-  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
-    primaryColor: '#8b5cf6',
-    showTime: true,
-    maxEvents: 5
+  const settings = {
+    backgroundColor: '#ffffff',
+    textColor: '#333333',
+    accentColor: '#3b82f6'
   };
 
-  // Sample calendar events for the widget
   const calendarEvents = [
     {
       id: 1,
-      title: 'Community Meetup',
-      date: '2025-09-25',
+      title: 'Team Meeting',
+      date: '2024-01-20',
+      time: '10:00 AM',
+      type: 'meeting'
+    },
+    {
+      id: 2,
+      title: 'Project Deadline',
+      date: '2024-01-25',
+      time: '11:59 PM',
+      type: 'deadline'
+    },
+    {
+      id: 3,
+      title: 'Community Event',
+      date: '2024-01-30',
       time: '2:00 PM',
       type: 'event'
     },
     {
-      id: 2,
-      title: 'Product Launch',
-      date: '2025-09-28',
-      time: '10:00 AM',
-      type: 'announcement'
-    },
-    {
-      id: 3,
-      title: 'Weekly Newsletter',
-      date: '2025-09-30',
-      time: '9:00 AM',
-      type: 'newsletter'
-    },
-    {
       id: 4,
-      title: 'Q&A Session',
-      date: '2025-10-02',
+      title: 'Workshop: React Basics',
+      date: '2024-02-05',
       time: '3:00 PM',
-      type: 'event'
+      type: 'workshop'
     },
     {
       id: 5,
-      title: 'Feature Demo',
-      date: '2025-10-05',
-      time: '1:00 PM',
-      type: 'event'
+      title: 'Monthly Review',
+      date: '2024-02-10',
+      time: '9:00 AM',
+      type: 'meeting'
     }
   ];
 
-  const displayEvents = calendarEvents.slice(0, settings.maxEvents);
-  
   return (
-    <div style={{ 
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      backgroundColor: 'transparent',
-      border: 'none',
-      borderRadius: '0',
-      overflow: 'visible',
-      width: '100%',
-      height: '100vh',
-      boxShadow: 'none',
-      position: 'relative'
-    }}>
-      {/* Widget Header */}
-      <div style={{
-        backgroundColor: settings.primaryColor,
-        color: 'white',
-        padding: '16px',
-        fontWeight: '700',
-        fontSize: '18px',
-        textAlign: 'center',
-        letterSpacing: '0.5px',
-        borderRadius: '8px 8px 0 0'
-      }}>
-        📅 Upcoming Events
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: settings.backgroundColor }}>
+      <div className="p-4 border-b" style={{ borderColor: settings.accentColor + '20' }}>
+        <h3 className="text-lg font-semibold" style={{ color: settings.textColor }}>Upcoming Events</h3>
       </div>
-      
-      {/* Calendar Events Content */}
-      <div style={{ 
-        height: 'calc(100vh - 120px)', 
-        overflowY: 'auto',
-        backgroundColor: 'transparent',
-        padding: '0'
-      }}>
-        {displayEvents.length > 0 ? displayEvents.map((event, index) => (
-          <div key={event.id} style={{
-            padding: '20px',
-            borderBottom: index < displayEvents.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-            backgroundColor: 'transparent'
-          }}>
-            {/* Event Title */}
-            <h3 style={{
-              margin: '0 0 10px 0',
-              fontSize: '18px',
-              fontWeight: '700',
-              color: '#1a1a1a',
-              lineHeight: '1.3',
-              cursor: 'pointer'
-            }}>
-              {event.title}
-            </h3>
-            
-            {/* Event Date */}
-            <div style={{
-              color: '#666',
-              fontSize: '14px',
-              marginBottom: '8px',
-              fontWeight: '500'
-            }}>
-              📅 {new Date(event.date).toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric',
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </div>
-            
-            {/* Event Time */}
-            {settings.showTime && (
-              <div style={{
-                color: '#666',
-                fontSize: '14px',
-                marginBottom: '12px',
-                fontWeight: '500'
-              }}>
-                🕐 {event.time}
+      <div className="max-h-96 overflow-y-auto">
+        {calendarEvents.map(event => (
+          <div key={event.id} className="p-3 border-b border-gray-100 hover:bg-gray-50">
+            <div className="flex items-start space-x-3">
+              <div className={`w-3 h-3 rounded-full mt-1 ${
+                event.type === 'meeting' ? 'bg-blue-500' :
+                event.type === 'deadline' ? 'bg-red-500' :
+                event.type === 'workshop' ? 'bg-green-500' :
+                'bg-purple-500'
+              }`}></div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm" style={{ color: settings.textColor }}>{event.title}</h4>
+                <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+                  <span>{event.date}</span>
+                  <span>•</span>
+                  <span>{event.time}</span>
+                </div>
               </div>
-            )}
-            
-            {/* Event Type Badge */}
-            <div style={{
-              display: 'inline-block',
-              backgroundColor: event.type === 'event' ? '#10b981' : event.type === 'announcement' ? '#f59e0b' : '#8b5cf6',
-              color: 'white',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              {event.type === 'event' ? '🎉 Event' : event.type === 'announcement' ? '📢 Announcement' : '📧 Newsletter'}
             </div>
           </div>
-        )) : (
-          <div style={{
-            padding: '60px 20px',
-            textAlign: 'center',
-            color: '#999',
-            fontSize: '16px',
-            backgroundColor: 'transparent'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
-            <div>No upcoming events</div>
-            <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
-          </div>
-        )}
-      </div>
-      
-      {/* Widget Footer */}
-      <div style={{
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        right: '0',
-        backgroundColor: settings.primaryColor,
-        color: 'white',
-        padding: '8px',
-        textAlign: 'center',
-        fontSize: '12px',
-        fontWeight: '600',
-        borderRadius: '0 0 8px 8px'
-      }}>
-        Powered by Social Hub
+        ))}
       </div>
     </div>
   );
@@ -539,213 +197,145 @@ const MainApp = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [contentType, setContentType] = useState('post');
   const [posts, setPosts] = useState([
-    { id: 1, title: 'Welcome to Our Platform', content: 'This is a featured post!', date: '9/23/2025', featured: true, published: true },
-    { id: 2, title: 'Latest Updates', content: 'Check out our new features', date: '9/23/2025', featured: false, published: true }
+    { id: 1, title: 'Welcome to Our Community', content: 'This is our first blog post...', date: '2024-01-15', published: true },
+    { id: 2, title: 'Getting Started Guide', content: 'Here\'s how to get started...', date: '2024-01-10', published: true }
   ]);
-  const [drafts, setDrafts] = useState([]);
-  const [campaigns, setCampaigns] = useState([]);
+
   const [emails, setEmails] = useState([
-    {
-      id: 1,
-      subject: 'Welcome to Our Platform',
-      recipients: ['john.smith@example.com', 'sarah.johnson@example.com'],
-      content: 'Welcome to our community! We\'re excited to have you on board.',
+    { 
+      id: 1, 
+      subject: 'Welcome to the Community', 
+      content: 'Thank you for joining our community...', 
+      recipients: 25, 
+      date: '2024-01-15', 
       status: 'sent',
-      sentDate: '2025-09-20',
-      openRate: '85%',
-      clickRate: '12%',
-      analytics: {
-        totalSent: 2,
-        delivered: 2,
-        opened: 1,
-        clicked: 0,
-        bounced: 0,
-        unsubscribed: 0,
-        openTimes: [
-          { recipient: 'john.smith@example.com', timestamp: '2025-09-20 10:30:00', userAgent: 'Chrome/Safari' }
-        ],
-        clickTimes: [],
-        trackingId: 'email_1_tracking'
-      }
+      opens: 18
     },
-    {
-      id: 2,
-      subject: 'Weekly Platform Updates',
-      recipients: ['all_members'],
-      content: 'Here are this week\'s updates and new features...',
-      status: 'draft',
-      createdDate: '2025-09-23',
-      scheduledDate: null,
-      analytics: null
+    { 
+      id: 2, 
+      subject: 'Weekly Newsletter', 
+      content: 'Here are this week\'s highlights...', 
+      recipients: 30, 
+      date: '2024-01-10', 
+      status: 'sent',
+      opens: 22
     }
   ]);
+
   const [emailComposer, setEmailComposer] = useState({
     isOpen: false,
     subject: '',
     content: '',
-    recipients: [],
-    recipientType: 'specific', // 'specific', 'all', 'role'
+    recipientType: 'all',
     selectedRole: 'member',
-    template: 'blank'
+    recipients: [],
+    saveAsDraft: false,
+    trackOpens: true
   });
-  const [memberFilter, setMemberFilter] = useState('all');
-  const [showInviteModal, setShowInviteModal] = useState(false);
+
   const [inviteForm, setInviteForm] = useState({
+    isOpen: false,
     name: '',
     email: '',
     role: 'member',
     sendEmail: true
   });
+
   const [members, setMembers] = useState([
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@example.com',
-      role: 'admin',
-      status: 'active',
-      joinDate: '2025-01-15',
-      lastActive: '2025-09-23',
-      avatar: 'JS',
-      permissions: ['read', 'write', 'delete', 'manage_users', 'manage_settings']
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@example.com',
-      role: 'moderator',
-      status: 'active',
-      joinDate: '2025-02-20',
-      lastActive: '2025-09-22',
-      avatar: 'SJ',
-      permissions: ['read', 'write', 'moderate_content']
-    },
-    {
-      id: 3,
-      name: 'Mike Davis',
-      email: 'mike.davis@example.com',
-      role: 'member',
-      status: 'active',
-      joinDate: '2025-03-10',
-      lastActive: '2025-09-21',
-      avatar: 'MD',
-      permissions: ['read', 'write']
-    },
-    {
-      id: 4,
-      name: 'Emily Wilson',
-      email: 'emily.wilson@example.com',
-      role: 'member',
-      status: 'pending',
-      joinDate: '2025-09-20',
-      lastActive: 'Never',
-      avatar: 'EW',
-      permissions: ['read']
-    }
+    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'admin', status: 'active', joinDate: '2024-01-01' },
+    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'moderator', status: 'active', joinDate: '2024-01-05' },
+    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'member', status: 'active', joinDate: '2024-01-10' },
+    { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'member', status: 'pending', joinDate: '2024-01-15' },
+    { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', role: 'member', status: 'active', joinDate: '2024-01-12' },
+    { id: 6, name: 'Diana Davis', email: 'diana@example.com', role: 'moderator', status: 'active', joinDate: '2024-01-08' },
+    { id: 7, name: 'Eve Miller', email: 'eve@example.com', role: 'member', status: 'inactive', joinDate: '2024-01-03' },
+    { id: 8, name: 'Frank Garcia', email: 'frank@example.com', role: 'admin', status: 'active', joinDate: '2024-01-02' },
+    { id: 9, name: 'Grace Lee', email: 'grace@example.com', role: 'member', status: 'pending', joinDate: '2024-01-16' },
+    { id: 10, name: 'Henry Taylor', email: 'henry@example.com', role: 'member', status: 'active', joinDate: '2024-01-14' }
   ]);
+
   const [newsFeedPosts, setNewsFeedPosts] = useState([
     {
       id: 1,
-      author: 'Admin',
-      content: 'Welcome to our community! Feel free to share your thoughts and engage with other members.',
+      author: 'Community Team',
+      content: 'Welcome to our community! We\'re excited to have you here.',
       timestamp: '2 hours ago',
-      likes: 5,
-      comments: [
-        { author: 'User1', content: 'Thanks for the warm welcome!', timestamp: '1 hour ago' }
-      ],
-      saved: false
+      likes: 12,
+      comments: 3,
+      isLiked: false,
+      isSaved: false
     },
     {
       id: 2,
-      author: 'Community Manager',
-      content: 'What features would you like to see added to our platform? Let us know in the comments!',
+      author: 'John Doe',
+      content: 'Just finished reading an amazing article about web development trends. The future looks bright!',
       timestamp: '4 hours ago',
-      likes: 12,
-      comments: [
-        { author: 'User2', content: 'More customization options would be great!', timestamp: '3 hours ago' },
-        { author: 'User3', content: 'I agree with User2!', timestamp: '2 hours ago' }
-      ],
-      saved: true
+      likes: 8,
+      comments: 2,
+      isLiked: true,
+      isSaved: false
     }
   ]);
 
-  // SendGrid Integration Functions
   const sendEmailViaSendGrid = async (emailData) => {
-    try {
-      // This would be your actual SendGrid API call
-      const sendGridPayload = {
-        personalizations: emailData.recipients.map(email => ({
-          to: [{ email: email }],
-          custom_args: {
-            tracking_id: emailData.trackingId,
-            campaign_id: emailData.id.toString()
-          }
-        })),
-        from: {
-          email: 'noreply@yourdomain.com', // Replace with your verified sender
-          name: 'Social Engagement Hub'
-        },
-        subject: emailData.subject,
-        content: [
-          {
-            type: 'text/html',
-            value: `
-              ${emailData.content}
-              <br><br>
-              <img src="${emailData.analytics.trackingPixelUrl}" width="1" height="1" style="display:none;" />
-              <p style="font-size: 12px; color: #666;">
-                <a href="${emailData.analytics.unsubscribeUrl}" style="color: #666;">Unsubscribe</a>
-              </p>
-            `
-          }
-        ],
-        tracking_settings: {
-          click_tracking: { enable: true },
-          open_tracking: { enable: true },
-          subscription_tracking: { enable: true }
-        }
-      };
-
-      // Make the actual SendGrid API call
-      const apiKey = process.env.REACT_APP_SENDGRID_API_KEY;
-      if (!apiKey) {
-        console.log('SendGrid API key not found, running in demo mode');
-        console.log('SendGrid payload prepared:', sendGridPayload);
-        return { success: true, messageId: `demo_${Date.now()}` };
+    const sendGridPayload = {
+      personalizations: [{
+        to: emailData.recipients.map(email => ({ email })),
+        subject: emailData.subject
+      }],
+      from: { email: 'noreply@yourdomain.com', name: 'Community Team' },
+      content: [{
+        type: 'text/html',
+        value: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">${emailData.subject}</h2>
+            <div style="line-height: 1.6; color: #666;">
+              ${emailData.content.replace(/\n/g, '<br>')}
+            </div>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #999;">
+              This email was sent from your community platform.
+            </p>
+          </div>
+        `
+      }],
+      tracking_settings: {
+        open_tracking: { enable: emailData.trackOpens }
       }
-      
+    };
+
+    try {
+      console.log('SendGrid API Key available:', !!process.env.SENDGRID_API_KEY);
+      if (!process.env.SENDGRID_API_KEY) {
+        console.log('Demo mode: Email would be sent via SendGrid');
+        return { success: true, demo: true };
+      }
+
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(sendGridPayload)
       });
 
-      console.log('SendGrid payload sent:', sendGridPayload);
-      
       if (response.ok) {
-        const responseData = await response.text();
-        return { success: true, messageId: response.headers.get('X-Message-Id') || `sg_${Date.now()}` };
+        console.log('Email sent successfully via SendGrid');
+        return { success: true };
       } else {
-        const errorData = await response.text();
-        console.error('SendGrid error response:', errorData);
-        return { success: false, error: `SendGrid API error: ${response.status} - ${errorData}` };
+        console.error('SendGrid API error:', response.status);
+        return { success: false, error: 'SendGrid API error' };
       }
-      
     } catch (error) {
-      console.error('SendGrid error:', error);
+      console.error('Email sending error:', error);
       return { success: false, error: error.message };
     }
   };
 
-  // Email Management Functions
-  const handleSendEmail = async () => {
-    if (!emailComposer.subject.trim() || !emailComposer.content.trim()) {
-      alert('Please fill in subject and content.');
-      return;
-    }
-
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    
     let recipients = [];
     if (emailComposer.recipientType === 'all') {
       recipients = members.filter(m => m.status === 'active').map(m => m.email);
@@ -755,81 +345,66 @@ const MainApp = () => {
       recipients = emailComposer.recipients;
     }
 
-    const trackingId = `email_${Date.now()}_tracking`;
+    if (recipients.length === 0) {
+      alert('Please select at least one recipient');
+      return;
+    }
+
     const emailData = {
-      id: Date.now(),
       subject: emailComposer.subject,
       content: emailComposer.content,
       recipients: recipients,
-      trackingId: trackingId,
-      analytics: {
-        totalSent: recipients.length,
-        delivered: 0,
-        opened: 0,
-        clicked: 0,
-        bounced: 0,
-        unsubscribed: 0,
-        openTimes: [],
-        clickTimes: [],
-        trackingId: trackingId,
-        trackingPixelUrl: `https://gleaming-cendol-417bf3.netlify.app/track/open/${trackingId}`,
-        unsubscribeUrl: `https://gleaming-cendol-417bf3.netlify.app/unsubscribe/${trackingId}`
-      }
+      recipientType: emailComposer.recipientType,
+      selectedRole: emailComposer.selectedRole,
+      saveAsDraft: emailComposer.saveAsDraft,
+      trackOpens: emailComposer.trackOpens
     };
 
-    // Show sending status
-    alert('Sending email via SendGrid...');
-
-    // Send via SendGrid
-    const sendResult = await sendEmailViaSendGrid(emailData);
-
-    if (sendResult.success) {
-      const newEmail = {
-        ...emailData,
-        status: 'sent',
-        sentDate: new Date().toLocaleDateString(),
-        sendGridMessageId: sendResult.messageId,
-        openRate: '0%',
-        clickRate: '0%'
-      };
-
-      setEmails(prev => [newEmail, ...prev]);
-      alert(`✅ Email "${emailComposer.subject}" sent successfully via SendGrid!\n\n📊 Tracking enabled:\n• SendGrid delivery tracking\n• Open rate tracking\n• Click tracking\n• Bounce tracking\n• Unsubscribe tracking\n\n📧 Sent to ${recipients.length} recipients`);
+    if (!emailComposer.saveAsDraft) {
+      const result = await sendEmailViaSendGrid(emailData);
+      if (result.success) {
+        const newEmail = {
+          id: Date.now(),
+          subject: emailComposer.subject,
+          content: emailComposer.content,
+          recipients: recipients.length,
+          date: new Date().toLocaleDateString(),
+          status: result.demo ? 'demo' : 'sent',
+          opens: 0
+        };
+        setEmails(prev => [newEmail, ...prev]);
+        alert(result.demo ? 'Demo: Email would be sent via SendGrid' : 'Email sent successfully!');
+      } else {
+        alert('Failed to send email: ' + result.error);
+      }
     } else {
-      alert(`❌ Failed to send email via SendGrid:\n${sendResult.error}\n\nPlease check your SendGrid configuration.`);
+      const newDraft = {
+        id: Date.now(),
+        subject: emailComposer.subject,
+        content: emailComposer.content,
+        recipients: recipients.length,
+        date: new Date().toLocaleDateString(),
+        status: 'draft'
+      };
+      setEmails(prev => [newDraft, ...prev]);
+      alert('Email saved as draft');
     }
 
     resetEmailComposer();
   };
 
   const handleSaveEmailDraft = () => {
-    if (!emailComposer.subject.trim()) {
-      alert('Please enter a subject for the draft.');
-      return;
-    }
-
-    let recipients = [];
-    if (emailComposer.recipientType === 'all') {
-      recipients = ['all_members'];
-    } else if (emailComposer.recipientType === 'role') {
-      recipients = [`role_${emailComposer.selectedRole}`];
-    } else {
-      recipients = emailComposer.recipients;
-    }
-
     const newDraft = {
       id: Date.now(),
       subject: emailComposer.subject,
       content: emailComposer.content,
-      recipients: recipients,
-      status: 'draft',
-      createdDate: new Date().toLocaleDateString(),
-      scheduledDate: null
+      recipients: emailComposer.recipients.length,
+      date: new Date().toLocaleDateString(),
+      status: 'draft'
     };
-
     setEmails(prev => [newDraft, ...prev]);
-    alert(`Draft "${emailComposer.subject}" saved successfully!`);
     resetEmailComposer();
+    alert('Email saved as draft');
   };
 
   const resetEmailComposer = () => {
@@ -837,20 +412,19 @@ const MainApp = () => {
       isOpen: false,
       subject: '',
       content: '',
-      recipients: [],
-      recipientType: 'specific',
+      recipientType: 'all',
       selectedRole: 'member',
-      template: 'blank'
+      recipients: [],
+      saveAsDraft: false,
+      trackOpens: true
     });
   };
 
   const addRecipient = (email) => {
-    if (email && !emailComposer.recipients.includes(email)) {
-      setEmailComposer(prev => ({
-        ...prev,
-        recipients: [...prev.recipients, email]
-      }));
-    }
+    setEmailComposer(prev => ({
+      ...prev,
+      recipients: [...prev.recipients, email]
+    }));
   };
 
   const removeRecipient = (email) => {
@@ -860,334 +434,211 @@ const MainApp = () => {
     }));
   };
 
-  // Invite Member Functions
-  const handleInviteMember = () => {
-    if (!inviteForm.name.trim() || !inviteForm.email.trim()) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-
+  const handleInviteMember = (e) => {
+    e.preventDefault();
     const newMember = {
       id: Date.now(),
       name: inviteForm.name,
       email: inviteForm.email,
       role: inviteForm.role,
       status: 'pending',
-      joinDate: new Date().toLocaleDateString(),
-      lastActive: 'Never',
-      avatar: inviteForm.name.split(' ').map(n => n[0]).join('').toUpperCase(),
-      permissions: inviteForm.role === 'admin' 
-        ? ['read', 'write', 'delete', 'manage_users', 'manage_settings']
-        : inviteForm.role === 'moderator'
-        ? ['read', 'write', 'moderate_content']
-        : ['read']
+      joinDate: new Date().toLocaleDateString()
     };
-
     setMembers(prev => [...prev, newMember]);
     
     if (inviteForm.sendEmail) {
-      alert(`Invitation sent to ${inviteForm.email}! They will receive an email with instructions to join.`);
+      alert(`Invitation email sent to ${inviteForm.email}`);
     } else {
-      alert(`Member ${inviteForm.name} added successfully! They can now access the platform.`);
+      alert(`Member ${inviteForm.name} added successfully`);
     }
-
-    // Reset form and close modal
-    setInviteForm({
-      name: '',
-      email: '',
-      role: 'member',
-      sendEmail: true
-    });
-    setShowInviteModal(false);
+    
+    resetInviteForm();
   };
 
   const resetInviteForm = () => {
     setInviteForm({
+      isOpen: false,
       name: '',
       email: '',
       role: 'member',
       sendEmail: true
     });
-    setShowInviteModal(false);
   };
 
-  // Rich Blog Editor Component with ALL formatting tools
-  const RichBlogEditor = ({ onSave, onCancel }) => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [selectedImageId, setSelectedImageId] = useState(null);
-    const [isUploading, setIsUploading] = useState(false);
-    const contentRef = useRef(null);
-    const fileInputRef = useRef(null);
+  const RichBlogEditor = () => {
+    const editorRef = useRef(null);
+    const [selectedFont, setSelectedFont] = useState('Arial');
+    const [selectedSize, setSelectedSize] = useState('14');
+    const [selectedColor, setSelectedColor] = useState('#000000');
 
-    // Text formatting functions
-    const applyFormat = (command) => {
-      document.execCommand(command, false, null);
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
+    const applyFormat = (command, value = null) => {
+      document.execCommand(command, false, value);
+      editorRef.current?.focus();
     };
 
-    const applyFontFamily = (fontFamily) => {
-      document.execCommand('fontName', false, fontFamily);
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
+    const applyFontFamily = (font) => {
+      setSelectedFont(font);
+      applyFormat('fontName', font);
     };
 
-    const applyFontSize = (fontSize) => {
-      document.execCommand('fontSize', false, '7');
-      const fontElements = document.querySelectorAll('font[size="7"]');
-      fontElements.forEach(el => {
-        el.removeAttribute('size');
-        el.style.fontSize = fontSize;
-      });
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
+    const applyFontSize = (size) => {
+      setSelectedSize(size);
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = size + 'px';
+        try {
+          range.surroundContents(span);
+        } catch (e) {
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+        }
       }
     };
 
     const applyTextColor = (color) => {
-      document.execCommand('foreColor', false, color);
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
+      setSelectedColor(color);
+      applyFormat('foreColor', color);
     };
 
-    const applyHeading = (heading) => {
-      if (heading === 'normal') {
-        document.execCommand('formatBlock', false, 'div');
-      } else {
-        document.execCommand('formatBlock', false, heading);
-      }
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
+    const applyHeading = (level) => {
+      const headingTag = `h${level}`;
+      applyFormat('formatBlock', headingTag);
     };
 
     const applyAlignment = (alignment) => {
-      document.execCommand('justify' + alignment.charAt(0).toUpperCase() + alignment.slice(1), false, null);
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
-      }
+      applyFormat(`justify${alignment.charAt(0).toUpperCase() + alignment.slice(1)}`);
     };
 
     const addLink = () => {
-      const url = document.getElementById('linkUrl').value;
+      const url = prompt('Enter URL:');
       if (url) {
-        document.execCommand('createLink', false, url);
-        if (contentRef.current) {
-          setContent(contentRef.current.innerHTML);
-        }
-        document.getElementById('linkUrl').value = '';
+        applyFormat('createLink', url);
       }
     };
 
     const removeLink = () => {
-      document.execCommand('unlink', false, null);
-      if (contentRef.current) {
-        setContent(contentRef.current.innerHTML);
+      applyFormat('unlink');
+    };
+
+    const handleFileUpload = (e) => {
+      const file = e.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.maxWidth = '100%';
+          img.style.height = 'auto';
+          img.style.border = '2px solid transparent';
+          img.style.cursor = 'pointer';
+          img.onclick = () => selectImage(img);
+          
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.insertNode(img);
+            range.collapse(false);
+          } else {
+            editorRef.current.appendChild(img);
+          }
+        };
+        reader.readAsDataURL(file);
       }
     };
 
-    // Image handling functions
-    const handleFileUpload = async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      setIsUploading(true);
-      
-      try {
-        // Create local URL for immediate display
-        const localUrl = URL.createObjectURL(file);
-        const imageId = Date.now().toString();
-        
-        const img = document.createElement('img');
-        img.src = localUrl;
-        img.id = `img-${imageId}`;
-        img.style.maxWidth = '400px';
-        img.style.height = 'auto';
-        img.style.border = '2px solid transparent';
-        img.style.borderRadius = '4px';
-        img.style.cursor = 'pointer';
-        img.style.transition = 'border-color 0.2s';
-        img.style.display = 'block';
-        img.style.margin = '15px auto';
-        
-        // Add click handler for selection
-        img.onclick = () => selectImage(imageId);
-        
-        // Insert into editor
-        const editor = contentRef.current;
-        if (editor) {
-          editor.appendChild(img);
-          setContent(editor.innerHTML);
-        }
-        
-        console.log('Image inserted successfully');
-      } catch (error) {
-        console.error('Upload failed:', error);
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-    // Image selection and manipulation
-    const selectImage = (imageId) => {
-      console.log('Image selected:', imageId);
-      setSelectedImageId(imageId);
-      
-      // Clean up previous selections
+    const selectImage = (img) => {
       document.querySelectorAll('.selected-image').forEach(el => {
         el.classList.remove('selected-image');
         el.style.border = '2px solid transparent';
         el.style.boxShadow = 'none';
       });
       
+      img.classList.add('selected-image');
+      img.style.border = '2px solid #3b82f6';
+      img.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)';
+      
       document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
       document.querySelectorAll('.resize-handle').forEach(el => el.remove());
       
-      // Find and select the image
-      const img = document.getElementById(`img-${imageId}`);
-      if (!img) return;
-      
-      // Add selection styling
-      img.classList.add('selected-image');
-      img.style.border = '2px solid #4285f4';
-      img.style.boxShadow = '0 0 0 2px rgba(66, 133, 244, 0.25)';
-      
-      // Create floating toolbar
-      const rect = img.getBoundingClientRect();
       const toolbar = document.createElement('div');
       toolbar.className = 'image-toolbar';
-      toolbar.style.position = 'fixed';
-      toolbar.style.top = (rect.top - 50) + 'px';
-      toolbar.style.left = rect.left + 'px';
-      toolbar.style.background = '#333';
-      toolbar.style.padding = '8px';
-      toolbar.style.borderRadius = '6px';
-      toolbar.style.zIndex = '1000';
-      toolbar.style.display = 'flex';
-      toolbar.style.gap = '4px';
-      
       toolbar.innerHTML = `
-        <button onclick="window.resizeImageTo('${imageId}', 'small')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Small</button>
-        <button onclick="window.resizeImageTo('${imageId}', 'medium')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Medium</button>
-        <button onclick="window.resizeImageTo('${imageId}', 'large')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Large</button>
-        <button onclick="window.resizeImageTo('${imageId}', 'full')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Full</button>
-        <div style="width: 1px; background: #666; margin: 0 4px;"></div>
-        <button onclick="window.positionImageTo('${imageId}', 'left')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Left</button>
-        <button onclick="window.positionImageTo('${imageId}', 'center')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Center</button>
-        <button onclick="window.positionImageTo('${imageId}', 'right')" style="background: #555; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Right</button>
+        <div style="position: absolute; top: -40px; left: 0; background: white; border: 1px solid #ccc; border-radius: 4px; padding: 4px; display: flex; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 1000;">
+          <button onclick="window.resizeImageTo(this, 'small')" style="padding: 4px 8px; border: none; background: #f3f4f6; border-radius: 2px; cursor: pointer; font-size: 12px;">Small</button>
+          <button onclick="window.resizeImageTo(this, 'medium')" style="padding: 4px 8px; border: none; background: #f3f4f6; border-radius: 2px; cursor: pointer; font-size: 12px;">Medium</button>
+          <button onclick="window.resizeImageTo(this, 'large')" style="padding: 4px 8px; border: none; background: #f3f4f6; border-radius: 2px; cursor: pointer; font-size: 12px;">Large</button>
+          <button onclick="window.positionImageTo(this, 'left')" style="padding: 4px 8px; border: none; background: #f3f4f6; border-radius: 2px; cursor: pointer; font-size: 12px;">Left</button>
+          <button onclick="window.positionImageTo(this, 'center')" style="padding: 4px 8px; border: none; background: #f3f4f6; border-radius: 2px; cursor: pointer; font-size: 12px;">Center</button>
+          <button onclick="window.positionImageTo(this, 'right')" style="padding: 4px 8px; border: none; background: #f3f4f6; border-radius: 2px; cursor: pointer; font-size: 12px;">Right</button>
+          <button onclick="this.closest('.image-toolbar').previousElementSibling.remove(); this.closest('.image-toolbar').remove();" style="padding: 4px 8px; border: none; background: #ef4444; color: white; border-radius: 2px; cursor: pointer; font-size: 12px;">Delete</button>
+        </div>
       `;
       
-      document.body.appendChild(toolbar);
+      img.style.position = 'relative';
+      img.parentNode.insertBefore(toolbar, img.nextSibling);
       
-      // Add corner handles
-      addCornerHandles(img, imageId);
+      addCornerHandles(img);
     };
 
-    const addCornerHandles = (img, imageId) => {
-      const rect = img.getBoundingClientRect();
-      const handles = ['nw', 'ne', 'sw', 'se'];
-      
-      handles.forEach(handle => {
-        const handleEl = document.createElement('div');
-        handleEl.className = `resize-handle resize-${handle}`;
-        handleEl.style.position = 'fixed';
-        handleEl.style.width = '12px';
-        handleEl.style.height = '12px';
-        handleEl.style.background = '#4285f4';
-        handleEl.style.border = '2px solid white';
-        handleEl.style.borderRadius = '50%';
-        handleEl.style.cursor = `${handle}-resize`;
-        handleEl.style.zIndex = '1001';
-        
-        // Position handles
-        if (handle.includes('n')) handleEl.style.top = (rect.top - 6) + 'px';
-        if (handle.includes('s')) handleEl.style.top = (rect.bottom - 6) + 'px';
-        if (handle.includes('w')) handleEl.style.left = (rect.left - 6) + 'px';
-        if (handle.includes('e')) handleEl.style.left = (rect.right - 6) + 'px';
-        
-        document.body.appendChild(handleEl);
+    const addCornerHandles = (img) => {
+      ['nw', 'ne', 'sw', 'se'].forEach(corner => {
+        const handle = document.createElement('div');
+        handle.className = 'resize-handle';
+        handle.style.cssText = `
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: #3b82f6;
+          border: 1px solid white;
+          cursor: ${corner.includes('n') ? (corner.includes('w') ? 'nw' : 'ne') : (corner.includes('w') ? 'sw' : 'se')}-resize;
+          ${corner.includes('n') ? 'top: -4px;' : 'bottom: -4px;'}
+          ${corner.includes('w') ? 'left: -4px;' : 'right: -4px;'}
+          z-index: 1001;
+        `;
+        img.parentNode.insertBefore(handle, img.nextSibling);
       });
     };
 
-    // Global functions for toolbar buttons
-    useEffect(() => {
-      window.resizeImageTo = (imageId, size) => {
-        const img = document.getElementById(`img-${imageId}`);
-        if (!img) return;
-        
-        const sizes = {
-          small: '200px',
-          medium: '400px', 
-          large: '600px',
-          full: '100%'
-        };
-        
-        img.style.width = sizes[size];
-        img.style.maxWidth = sizes[size];
-        setContent(contentRef.current.innerHTML);
-      };
-
-      window.positionImageTo = (imageId, position) => {
-        const img = document.getElementById(`img-${imageId}`);
-        if (!img) return;
-        
-        // Reset positioning
-        img.style.float = 'none';
-        img.style.display = 'block';
-        img.style.margin = '15px auto';
-        
-        if (position === 'left') {
-          img.style.float = 'left';
-          img.style.margin = '0 15px 15px 0';
-        } else if (position === 'right') {
-          img.style.float = 'right';
-          img.style.margin = '0 0 15px 15px';
-        }
-        
-        setContent(contentRef.current.innerHTML);
-      };
-    }, []);
-
-    // Handle content changes with cursor position fix
-    const handleContentChange = () => {
-      if (contentRef.current) {
-        // Save cursor position
-        const selection = window.getSelection();
-        const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-        
-        setContent(contentRef.current.innerHTML);
-        
-        // Restore cursor position
-        if (range) {
-          setTimeout(() => {
-            try {
-              selection.removeAllRanges();
-              selection.addRange(range);
-            } catch (e) {
-              // Ignore errors if range is no longer valid
-            }
-          }, 0);
-        }
-      }
+    window.resizeImageTo = (button, size) => {
+      const img = button.closest('.image-toolbar').previousElementSibling;
+      const sizes = { small: '200px', medium: '400px', large: '600px' };
+      img.style.width = sizes[size];
+      img.style.height = 'auto';
     };
 
-    // Clean up image toolbar when clicking elsewhere
+    window.positionImageTo = (button, position) => {
+      const img = button.closest('.image-toolbar').previousElementSibling;
+      img.style.display = 'block';
+      img.style.margin = position === 'left' ? '0 auto 0 0' : 
+                        position === 'center' ? '0 auto' : 
+                        '0 0 0 auto';
+    };
+
+    const handleContentChange = () => {
+      const images = editorRef.current?.querySelectorAll('img') || [];
+      const toolbars = document.querySelectorAll('.image-toolbar');
+      
+      toolbars.forEach(toolbar => {
+        const img = toolbar.previousElementSibling;
+        if (!img || img.tagName !== 'IMG' || !editorRef.current?.contains(img)) {
+          toolbar.remove();
+        }
+      });
+    };
+
     useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (!event.target.closest('.selected-image') && !event.target.closest('.image-toolbar')) {
-          // Remove all toolbars and handles
-          document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-          document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+      const handleClickOutside = (e) => {
+        if (editorRef.current && !editorRef.current.contains(e.target) && 
+            !e.target.closest('.image-toolbar') && !e.target.closest('.resize-handle')) {
           document.querySelectorAll('.selected-image').forEach(el => {
             el.classList.remove('selected-image');
             el.style.border = '2px solid transparent';
             el.style.boxShadow = 'none';
           });
-          setSelectedImageId(null);
+          document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+          document.querySelectorAll('.resize-handle').forEach(el => el.remove());
         }
       };
 
@@ -1195,206 +646,141 @@ const MainApp = () => {
       return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+      return () => {
+        document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+        document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+        document.querySelectorAll('.selected-image').forEach(el => {
+          el.classList.remove('selected-image');
+          el.style.border = '2px solid transparent';
+          el.style.boxShadow = 'none';
+        });
+      };
+    }, []);
+
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Create Blog Post</h2>
-          <div className="flex gap-2">
-            <button onClick={() => {
-              // Clean up image toolbars before canceling
-              document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-              document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-              document.querySelectorAll('.selected-image').forEach(el => {
-                el.classList.remove('selected-image');
-                el.style.border = '2px solid transparent';
-                el.style.boxShadow = 'none';
-              });
-              onCancel();
-            }} className="px-4 py-2 border rounded hover:bg-gray-50">
-              Cancel
-            </button>
-            <button 
-              onClick={() => {
-                // Clean up image toolbars before saving
-                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-                document.querySelectorAll('.selected-image').forEach(el => {
-                  el.classList.remove('selected-image');
-                  el.style.border = '2px solid transparent';
-                  el.style.boxShadow = 'none';
-                });
-                onSave({ title, content, isDraft: true });
-              }}
-              className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-            >
-              Save Draft
-            </button>
-            <button 
-              onClick={() => {
-                // Clean up image toolbars before publishing
-                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-                document.querySelectorAll('.selected-image').forEach(el => {
-                  el.classList.remove('selected-image');
-                  el.style.border = '2px solid transparent';
-                  el.style.boxShadow = 'none';
-                });
-                onSave({ title, content, isDraft: false });
-              }}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Publish Post
-            </button>
-          </div>
-        </div>
-
-        {/* Title Input */}
-        <input
-          type="text"
-          className="w-full p-3 border rounded-lg mb-4"
-          placeholder="Enter post title..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-
-        {/* Complete Formatting Toolbar */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-          {/* Font Controls */}
+        <h2 className="text-2xl font-bold mb-6">Create New {contentType === 'post' ? 'Blog Post' : 'Email Campaign'}</h2>
+        
+        {/* Toolbar */}
+        <div className="border-b pb-4 mb-4">
           <div className="flex flex-wrap gap-2 mb-3">
+            {/* Font Family */}
             <select 
-              className="px-3 py-1 border rounded"
+              value={selectedFont} 
               onChange={(e) => applyFontFamily(e.target.value)}
-              defaultValue="Arial"
+              className="px-2 py-1 border rounded text-sm"
             >
               <option value="Arial">Arial</option>
-              <option value="Times New Roman">Times New Roman</option>
               <option value="Georgia">Georgia</option>
+              <option value="Times New Roman">Times New Roman</option>
               <option value="Helvetica">Helvetica</option>
               <option value="Verdana">Verdana</option>
-              <option value="Courier New">Courier New</option>
-            </select>
-            
-            <select 
-              className="px-3 py-1 border rounded"
-              onChange={(e) => applyFontSize(e.target.value)}
-              defaultValue="16px"
-            >
-              <option value="12px">12px</option>
-              <option value="14px">14px</option>
-              <option value="16px">16px</option>
-              <option value="18px">18px</option>
-              <option value="20px">20px</option>
-              <option value="24px">24px</option>
-              <option value="28px">28px</option>
-              <option value="32px">32px</option>
             </select>
 
+            {/* Font Size */}
+            <select 
+              value={selectedSize} 
+              onChange={(e) => applyFontSize(e.target.value)}
+              className="px-2 py-1 border rounded text-sm"
+            >
+              <option value="12">12px</option>
+              <option value="14">14px</option>
+              <option value="16">16px</option>
+              <option value="18">18px</option>
+              <option value="20">20px</option>
+              <option value="24">24px</option>
+            </select>
+
+            {/* Text Color */}
             <input 
               type="color" 
-              className="w-10 h-8 border rounded cursor-pointer"
+              value={selectedColor}
               onChange={(e) => applyTextColor(e.target.value)}
+              className="w-8 h-8 border rounded cursor-pointer"
               title="Text Color"
             />
           </div>
 
-          {/* Text Formatting */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            {/* Basic Formatting */}
+            <button onClick={() => applyFormat('bold')} className="p-2 border rounded hover:bg-gray-100">
               <Bold size={16} />
             </button>
-            <button onClick={() => applyFormat('italic')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyFormat('italic')} className="p-2 border rounded hover:bg-gray-100">
               <Italic size={16} />
             </button>
-            <button onClick={() => applyFormat('underline')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyFormat('underline')} className="p-2 border rounded hover:bg-gray-100">
               <Underline size={16} />
             </button>
-            
-            <div className="border-l mx-2"></div>
-            
-            <button onClick={() => applyAlignment('left')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+
+            {/* Headings */}
+            <select onChange={(e) => applyHeading(e.target.value)} className="px-2 py-1 border rounded text-sm">
+              <option value="">Heading</option>
+              <option value="1">H1</option>
+              <option value="2">H2</option>
+              <option value="3">H3</option>
+              <option value="4">H4</option>
+            </select>
+
+            {/* Alignment */}
+            <button onClick={() => applyAlignment('left')} className="p-2 border rounded hover:bg-gray-100">
               <AlignLeft size={16} />
             </button>
-            <button onClick={() => applyAlignment('center')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyAlignment('center')} className="p-2 border rounded hover:bg-gray-100">
               <AlignCenter size={16} />
             </button>
-            <button onClick={() => applyAlignment('right')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyAlignment('right')} className="p-2 border rounded hover:bg-gray-100">
               <AlignRight size={16} />
             </button>
-          </div>
 
-          {/* Headings */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            <select 
-              className="px-3 py-1 border rounded"
-              onChange={(e) => applyHeading(e.target.value)}
-              defaultValue="normal"
-            >
-              <option value="normal">Normal Text</option>
-              <option value="h1">Heading 1</option>
-              <option value="h2">Heading 2</option>
-              <option value="h3">Heading 3</option>
-            </select>
-          </div>
+            {/* Links */}
+            <button onClick={addLink} className="p-2 border rounded hover:bg-gray-100">
+              <Link size={16} />
+            </button>
+            <button onClick={removeLink} className="p-2 border rounded hover:bg-gray-100">
+              <Unlink size={16} />
+            </button>
 
-          {/* Links */}
-          <div className="flex flex-wrap gap-2">
-            <input 
-              type="url" 
-              placeholder="https://example.com"
-              className="px-3 py-1 border rounded flex-1 min-w-48"
-              id="linkUrl"
-            />
-            <button onClick={addLink} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-              Add Link
-            </button>
-            <button onClick={removeLink} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-              Remove Link
-            </button>
+            {/* Image Upload */}
+            <label className="p-2 border rounded hover:bg-gray-100 cursor-pointer">
+              <Image size={16} />
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
           </div>
         </div>
 
-        {/* Image Upload */}
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept="image/*"
-            style={{ display: 'none' }}
-          />
-          <button 
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            <Upload size={16} />
-            {isUploading ? 'Uploading...' : 'Upload Image'}
-          </button>
-          <p className="text-sm text-gray-600 mt-2">
-            Upload an image, then click on it to resize and position it.
-          </p>
-        </div>
-
-        {/* Content Editor */}
-        <div
-          ref={contentRef}
+        {/* Editor */}
+        <div 
+          ref={editorRef}
           contentEditable
-          className="min-h-96 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          style={{ lineHeight: '1.6' }}
           onInput={handleContentChange}
+          className="min-h-64 p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{ minHeight: '300px' }}
           suppressContentEditableWarning={true}
-        />
+        >
+          <p>Start writing your {contentType === 'post' ? 'blog post' : 'email campaign'} here...</p>
+        </div>
 
-        {/* Live Preview */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-3">Live Preview</h3>
-          <div className="p-4 bg-gray-50 rounded-lg border">
-            <h4 className="text-xl font-bold mb-3">{title || 'Post Title'}</h4>
-            <div 
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: content || 'Start typing to see preview...' }}
-            />
-          </div>
+        {/* Actions */}
+        <div className="flex gap-3 mt-6">
+          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            {contentType === 'post' ? 'Publish Post' : 'Send Campaign'}
+          </button>
+          <button className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+            Save Draft
+          </button>
+          <button 
+            onClick={() => setIsCreating(false)}
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     );
@@ -1402,57 +788,45 @@ const MainApp = () => {
 
   // News Feed Component
   const NewsFeed = () => {
-    const [newPost, setNewPost] = useState('');
-
-    const handleCreatePost = () => {
-      if (newPost.trim()) {
-        const post = {
-          id: Date.now(),
-          author: 'You',
-          content: newPost,
-          timestamp: 'Just now',
-          likes: 0,
-          comments: [],
-          saved: false
-        };
-        setNewsFeedPosts([post, ...newsFeedPosts]);
-        setNewPost('');
-      }
+    const handleCreatePost = (content) => {
+      const post = {
+        id: Date.now(),
+        author: 'You',
+        content,
+        timestamp: 'Just now',
+        likes: 0,
+        comments: 0,
+        isLiked: false,
+        isSaved: false
+      };
+      setNewsFeedPosts(prev => [post, ...prev]);
     };
 
     const toggleLike = (postId) => {
       setNewsFeedPosts(posts => posts.map(post => 
-        post.id === postId ? { ...post, likes: post.likes + (post.liked ? -1 : 1), liked: !post.liked } : post
+        post.id === postId ? { ...post, isLiked: !post.isLiked, likes: post.isLiked ? post.likes - 1 : post.likes + 1 } : post
       ));
     };
 
     const toggleSave = (postId) => {
       setNewsFeedPosts(posts => posts.map(post => 
-        post.id === postId ? { ...post, saved: !post.saved } : post
+        post.id === postId ? { ...post, isSaved: !post.isSaved } : post
       ));
     };
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-6">News Feed</h2>
-        
+      <div className="space-y-6">
         {/* Create Post */}
-        <div className="mb-6 p-4 border rounded-lg">
-          <textarea
-            className="w-full p-3 border rounded-lg resize-none"
-            rows="3"
-            placeholder="What's on your mind? Share with the community..."
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Share an Update</h3>
+          <textarea 
+            className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={3}
+            placeholder="What's on your mind?"
           />
           <div className="flex justify-end mt-3">
-            <button
-              onClick={handleCreatePost}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-              disabled={!newPost.trim()}
-            >
-              <Send size={16} />
-              Share
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Post Update
             </button>
           </div>
         </div>
@@ -1460,729 +834,438 @@ const MainApp = () => {
         {/* News Feed Posts */}
         <div className="space-y-4">
           {newsFeedPosts.map(post => (
-            <div key={post.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-              <div className="flex items-start gap-3">
+            <div key={post.id} className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-start space-x-3">
                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {post.author[0]}
+                  {post.author.charAt(0)}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center space-x-2 mb-2">
                     <span className="font-semibold">{post.author}</span>
                     <span className="text-sm text-gray-500">{post.timestamp}</span>
                   </div>
-                  <p className="text-gray-700 mb-3">{post.content}</p>
-                  <div className="flex items-center gap-4">
-                    <button
+                  <p className="text-gray-800 mb-3">{post.content}</p>
+                  <div className="flex items-center space-x-6 text-sm text-gray-500">
+                    <button 
                       onClick={() => toggleLike(post.id)}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-full transition ${
-                        post.liked ? 'bg-red-50 text-red-600' : 'hover:bg-gray-100'
-                      }`}
+                      className={`flex items-center space-x-1 ${post.isLiked ? 'text-red-500' : 'hover:text-red-500'}`}
                     >
-                      <Heart size={16} fill={post.liked ? 'currentColor' : 'none'} />
+                      <span>♥</span>
                       <span>{post.likes}</span>
                     </button>
-                    <button className="flex items-center gap-1 px-3 py-1 rounded-full hover:bg-gray-100">
-                      <MessageCircle size={16} />
-                      <span>{post.comments.length}</span>
+                    <button className="flex items-center space-x-1 hover:text-blue-500">
+                      <span>💬</span>
+                      <span>{post.comments}</span>
                     </button>
-                    <button
+                    <button 
                       onClick={() => toggleSave(post.id)}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-full transition ${
-                        post.saved ? 'bg-yellow-50 text-yellow-600' : 'hover:bg-gray-100'
-                      }`}
+                      className={`${post.isSaved ? 'text-yellow-500' : 'hover:text-yellow-500'}`}
                     >
-                      <Bookmark size={16} fill={post.saved ? 'currentColor' : 'none'} />
+                      <span>⭐</span>
                     </button>
                   </div>
-                  {post.comments.length > 0 && (
-                    <div className="mt-3 pl-4 border-l-2 border-gray-200">
-                      {post.comments.map((comment, idx) => (
-                        <div key={idx} className="mb-2">
-                          <span className="font-medium text-sm">{comment.author}</span>
-                          <span className="text-xs text-gray-500 ml-2">{comment.timestamp}</span>
-                          <p className="text-sm text-gray-700">{comment.content}</p>
-                        </div>
-                      ))}
-                      
-                      {/* Empty State */}
-                      {members.filter(member => {
-                        if (memberFilter === 'all') return true;
-                        if (memberFilter === 'pending') return member.status === 'pending';
-                        return member.role === memberFilter;
-                      }).length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Members Sidebar */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Community Members</h3>
+          <div className="space-y-3">
+            {members.filter(member => member.status === 'active').slice(0, 5).map(member => (
+              <div key={member.id} className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  {member.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="font-medium text-sm">{member.name}</div>
+                  <div className="text-xs text-gray-500">{member.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   };
 
   // Dashboard Component
-  const Dashboard = () => (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Social Engagement Hub</h2>
-      
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <button
-          onClick={() => { setContentType('post'); setIsCreating(true); }}
-          className="p-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-3"
-        >
-          <Plus size={24} />
-          Create Post
-        </button>
-        <button
-          onClick={() => { setContentType('email'); setIsCreating(true); }}
-          className="p-6 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-3"
-        >
-          <Send size={24} />
-          Send Campaign
-        </button>
-        <button
-          onClick={() => { setContentType('schedule'); setIsCreating(true); }}
-          className="p-6 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-3"
-        >
-          <Clock size={24} />
-          Schedule Content
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-600">Total Posts</h3>
-          <p className="text-2xl font-bold text-blue-600">{posts.length}</p>
-        </div>
-        <div className="bg-orange-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-600">Featured Posts</h3>
-          <p className="text-2xl font-bold text-orange-600">{posts.filter(p => p.featured).length}</p>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-600">Total Members</h3>
-          <p className="text-2xl font-bold text-purple-600">{members.length}</p>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-600">Total Comments</h3>
-          <p className="text-2xl font-bold text-green-600">0</p>
-        </div>
-      </div>
-
-      {/* Featured Posts */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          ⭐ Featured Posts
-        </h3>
-        {posts.filter(post => post.featured).map(post => (
-          <div key={post.id} className="border rounded-lg p-4 mb-4 bg-orange-50">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded-full font-medium">
-                👑 FEATURED POST
-              </span>
-            </div>
-            <h4 className="font-semibold text-lg mb-1">{post.title}</h4>
-            <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-            <p className="text-gray-700">{post.content}</p>
-            <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
-              <MessageCircle size={16} />
-              <span>0 Comments</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Recent Posts */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Recent Posts</h3>
-        {posts.filter(post => !post.featured).map(post => (
-          <div key={post.id} className="flex justify-between items-center p-3 border rounded mb-2 hover:bg-gray-50">
-            <div>
-              <h4 className="font-medium">{post.title}</h4>
-              <p className="text-sm text-gray-500">{post.date}</p>
-            </div>
-            <div className="flex gap-2">
-              <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                <Edit size={16} />
-              </button>
-              <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Content Editor Router
-  const ContentEditor = () => {
-    if (contentType === 'post') {
-      return (
-        <RichBlogEditor
-          onSave={(postData) => {
-            const newPost = {
-              id: Date.now(),
-              title: postData.title,
-              content: postData.content,
-              date: new Date().toLocaleDateString(),
-              featured: false,
-              published: !postData.isDraft
-            };
-            
-            if (postData.isDraft) {
-              setDrafts(prev => [...prev, newPost]);
-              alert('Draft saved successfully! You can find it in the Drafts section.');
-            } else {
-              setPosts(prev => [...prev, newPost]);
-              alert('Post published successfully!');
-            }
-            
-            setIsCreating(false);
-          }}
-          onCancel={() => setIsCreating(false)}
-        />
-      );
-    } else if (contentType === 'email') {
-      return (
-        <RichBlogEditor
-          onSave={(postData) => {
-            const newCampaign = {
-              id: Date.now(),
-              title: postData.title,
-              content: postData.content,
-              date: new Date().toLocaleDateString(),
-              type: 'email'
-            };
-            
-            setCampaigns(prev => [...prev, newCampaign]);
-            alert('Email campaign created successfully!');
-            setIsCreating(false);
-          }}
-          onCancel={() => setIsCreating(false)}
-        />
-      );
-    } else if (contentType === 'schedule') {
-      return (
-        <RichBlogEditor
-          onSave={(postData) => {
-            const scheduledPost = {
-              id: Date.now(),
-              title: postData.title,
-              content: postData.content,
-              date: new Date().toLocaleDateString(),
-              scheduled: true,
-              published: false
-            };
-            
-            setPosts(prev => [...prev, scheduledPost]);
-            alert('Content scheduled successfully!');
-            setIsCreating(false);
-          }}
-          onCancel={() => setIsCreating(false)}
-        />
-      );
-    }
-    
+  const Dashboard = () => {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-4">Content Editor</h2>
-        <p>Please select a content type to continue.</p>
-        <button
-          onClick={() => setIsCreating(false)}
-          className="mt-4 px-4 py-2 border rounded hover:bg-gray-50"
-        >
-          Back to Dashboard
-        </button>
-      </div>
-    );
-  };
-
-  // Post Component
-  const PostCard = ({ post }) => (
-    <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <h3 className="font-semibold">{post.title}</h3>
-          <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-          <p className="text-gray-700">{post.content}</p>
-        </div>
-        <div className="flex gap-2 ml-4">
-          <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-            <Edit size={16} />
-          </button>
-          <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Widget state
-  const [activeWidget, setActiveWidget] = useState('blog');
-  const [widgetSettings, setWidgetSettings] = useState({
-    blog: { primaryColor: '#3b82f6', showImages: true, maxPosts: 3 },
-    newsfeed: { primaryColor: '#10b981', showReplies: true, maxPosts: 5 },
-    signup: { primaryColor: '#8b5cf6', buttonText: 'Join Our Community', placeholder: 'Enter your email' },
-    featured: { primaryColor: '#f59e0b', showImage: true },
-    stats: { primaryColor: '#ef4444', showGrowth: true },
-    poll: { primaryColor: '#06b6d4', question: 'What\'s your favorite feature?' },
-    activity: { primaryColor: '#84cc16', showTimestamps: true },
-    calendar: { primaryColor: '#8b5cf6', showTime: true, maxEvents: 5 }
-  });
-  const [copiedWidget, setCopiedWidget] = useState('');
-
-  // Widget definitions
-  const widgets = [
-    {
-      id: 'blog',
-      name: 'Blog Widget',
-      description: 'Display recent blog posts with images and excerpts',
-      icon: FileText,
-      category: 'Content'
-    },
-    {
-      id: 'newsfeed',
-      name: 'News Feed Widget',
-      description: 'Live community posts with engagement features',
-      icon: MessageSquare,
-      category: 'Community'
-    },
-    {
-      id: 'signup',
-      name: 'Signup Widget',
-      description: 'Email capture form for growing your community',
-      icon: Mail,
-      category: 'Growth'
-    },
-    {
-      id: 'featured',
-      name: 'Featured Post Widget',
-      description: 'Highlight your most important content',
-      icon: Star,
-      category: 'Content'
-    },
-    {
-      id: 'stats',
-      name: 'Stats Widget',
-      description: 'Show community metrics and social proof',
-      icon: TrendingUp,
-      category: 'Social Proof'
-    },
-    {
-      id: 'poll',
-      name: 'Quick Poll Widget',
-      description: 'Engage visitors with interactive surveys',
-      icon: Vote,
-      category: 'Engagement'
-    },
-    {
-      id: 'activity',
-      name: 'Recent Activity Widget',
-      description: 'Display latest community activity',
-      icon: Activity,
-      category: 'Community'
-    },
-    {
-      id: 'calendar',
-      name: 'Calendar Widget',
-      description: 'Display upcoming events and important dates',
-      icon: Calendar,
-      category: 'Content'
-    }
-  ];
-
-  const widgetCategories = ['All', 'Content', 'Community', 'Growth', 'Social Proof', 'Engagement'];
-  const [selectedCategory, setSelectedCategory] = useState('All');
-
-  const filteredWidgets = selectedCategory === 'All' 
-    ? widgets 
-    : widgets.filter(widget => widget.category === selectedCategory);
-
-  const generateEmbedCode = (widgetType, settings) => {
-    const baseUrl = window.location.origin;
-    const settingsParam = encodeURIComponent(JSON.stringify(settings));
-    return `<iframe src="${baseUrl}/widget/${widgetType}?settings=${settingsParam}" width="420" height="600" frameborder="0" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`;
-  };
-
-  const copyEmbedCode = (widgetType) => {
-    const embedCode = generateEmbedCode(widgetType, widgetSettings[widgetType]);
-    navigator.clipboard.writeText(embedCode);
-    setCopiedWidget(widgetType);
-    setTimeout(() => setCopiedWidget(''), 2000);
-  };
-
-  // Blog Widget Preview Component - ONLY BLOG POSTS
-  const BlogWidgetPreview = ({ settings, narrow = false }) => {
-    // Get only published blog posts
-    const blogPosts = posts.filter(post => post.published === true);
-    const displayPosts = blogPosts.slice(0, settings.maxPosts);
-    
-    const widgetWidth = narrow ? '280px' : '320px';
-    const widgetHeight = narrow ? '400px' : '480px';
-    const headerFontSize = narrow ? '16px' : '18px';
-    const headerPadding = narrow ? '12px' : '16px';
-    const contentPadding = narrow ? '12px' : '16px';
-    
-    return (
-      <div style={{ 
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        backgroundColor: 'transparent',
-        border: 'none',
-        borderRadius: '0',
-        overflow: 'visible',
-        width: widgetWidth,
-        height: widgetHeight,
-        boxShadow: 'none',
-        position: 'relative'
-      }}>
-        {/* Widget Header */}
-        <div style={{
-          backgroundColor: settings.primaryColor,
-          color: 'white',
-          padding: headerPadding,
-          fontWeight: '700',
-          fontSize: headerFontSize,
-          textAlign: 'center',
-          letterSpacing: '0.5px',
-          borderRadius: '8px 8px 0 0'
-        }}>
-          📝 Latest Blog Posts
-        </div>
-        
-        {/* Blog Posts Content */}
-        <div style={{ 
-          height: narrow ? '336px' : '416px', 
-          overflowY: 'auto',
-          backgroundColor: 'transparent',
-          padding: '0'
-        }}>
-          {displayPosts.length > 0 ? displayPosts.map((post, index) => (
-            <article key={post.id} style={{
-              padding: contentPadding,
-              borderBottom: index < displayPosts.length - 1 ? `2px solid ${settings.primaryColor}20` : 'none',
-              backgroundColor: 'transparent'
-            }}>
-              {/* Post Title */}
-              <h3 style={{
-                margin: '0 0 10px 0',
-                fontSize: narrow ? '16px' : '18px',
-                fontWeight: '700',
-                color: '#1a1a1a',
-                lineHeight: '1.3',
-                cursor: 'pointer'
-              }}>
-                {post.title}
-              </h3>
-              
-              {/* Post Date */}
-              <div style={{
-                color: '#666',
-                fontSize: narrow ? '12px' : '13px',
-                marginBottom: narrow ? '8px' : '12px',
-                fontWeight: '500'
-              }}>
-                📅 {post.date}
-              </div>
-              
-              {/* Post Content */}
-              <div style={{
-                color: '#333',
-                fontSize: narrow ? '14px' : '15px',
-                lineHeight: '1.6',
-                marginBottom: narrow ? '8px' : '12px'
-              }}>
-                {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
-              </div>
-              
-              {/* Featured Badge */}
-              {post.featured && (
-                <div style={{
-                  display: 'inline-block',
-                  backgroundColor: '#ff6b35',
-                  color: 'white',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  ⭐ Featured
-                </div>
-              )}
-              
-              {/* Read More Link */}
-              <div style={{
-                marginTop: '12px'
-              }}>
-                <a href="#" style={{
-                  color: settings.primaryColor,
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  textDecoration: 'none',
-                  borderBottom: `2px solid ${settings.primaryColor}40`
-                }}>
-                  Read More →
-                </a>
-              </div>
-            </article>
-          )) : (
-            <div style={{
-              padding: '60px 20px',
-              textAlign: 'center',
-              color: '#999',
-              fontSize: '16px',
-              backgroundColor: 'transparent'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-              <div>No blog posts yet</div>
-              <div style={{ fontSize: '14px', marginTop: '8px' }}>Check back soon for updates!</div>
-            </div>
-          )}
-        </div>
-        
-        {/* Widget Footer */}
-        <div style={{
-          backgroundColor: settings.primaryColor,
-          color: 'white',
-          padding: '8px',
-          textAlign: 'center',
-          fontSize: '12px',
-          fontWeight: '600',
-          borderRadius: '0 0 8px 8px'
-        }}>
-          Powered by Social Hub
-        </div>
-      </div>
-    );
-  };
-
-  // Settings Component - CLEAN WHITE BACKGROUNDS
-  const Settings = () => (
-    <div className="space-y-6">
-      {/* Settings Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-blue-100 rounded-lg">
-            <Settings size={24} className="text-blue-600" />
+      <div className="space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-4 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-800">Total Posts</h3>
+            <p className="text-3xl font-bold text-blue-600">{posts.length}</p>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600">Manage your widgets and platform configuration</p>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-800">Active Members</h3>
+            <p className="text-3xl font-bold text-green-600">{members.filter(m => m.status === 'active').length}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-800">Email Campaigns</h3>
+            <p className="text-3xl font-bold text-purple-600">{emails.length}</p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-800">Pending Invites</h3>
+            <p className="text-3xl font-bold text-orange-600">{members.filter(m => m.status === 'pending').length}</p>
           </div>
         </div>
-      </div>
 
-      {/* Widget Gallery Section */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">🎨 Widget Gallery</h2>
-          <p className="text-gray-600">Professional widgets to embed on your website and extend your community reach</p>
-        </div>
-
-        {/* Category Filter */}
-        <div className="mb-6">
-          <div className="flex gap-3 flex-wrap">
-            {widgetCategories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                  selectedCategory === category
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {category}
-              </button>
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Recent Posts</h3>
+          <div className="space-y-3">
+            {posts.slice(0, 3).map(post => (
+              <div key={post.id} className="border-l-4 border-blue-500 pl-4">
+                <h4 className="font-medium">{post.title}</h4>
+                <p className="text-sm text-gray-600">{post.date}</p>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Widget Grid */}
-        <div className="space-y-6">
-          {filteredWidgets.map(widget => (
-            <div key={widget.id} className="border border-gray-200 rounded-lg overflow-hidden">
-              {/* Widget Header */}
-              <div className="bg-gray-50 p-4 border-b">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded">
-                    <widget.icon size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{widget.name}</h3>
-                    <p className="text-sm text-gray-600">{widget.description}</p>
-                  </div>
-                  <span className="ml-auto px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                    {widget.category}
-                  </span>
-                </div>
-              </div>
+        {/* Quick Actions */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <button 
+              onClick={() => { setContentType('post'); setIsCreating(true); }}
+              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
+            >
+              <Plus className="mx-auto mb-2" size={24} />
+              <span className="block text-sm font-medium">New Post</span>
+            </button>
+            <button 
+              onClick={() => setEmailComposer(prev => ({ ...prev, isOpen: true }))}
+              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition"
+            >
+              <Mail className="mx-auto mb-2" size={24} />
+              <span className="block text-sm font-medium">Send Email</span>
+            </button>
+            <button 
+              onClick={() => setInviteForm(prev => ({ ...prev, isOpen: true }))}
+              className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition"
+            >
+              <UserPlus className="mx-auto mb-2" size={24} />
+              <span className="block text-sm font-medium">Invite Member</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-              {/* Widget Content */}
-              <div className="p-6 bg-white">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Live Preview */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Live Preview</h4>
-                    
-                    {widget.id === 'blog' ? (
-                      <div className="space-y-4">
-                        {/* Full Width Preview */}
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Full Width (420px)</h5>
-                          <div className="flex justify-center p-4 bg-gray-50 rounded">
-                            <BlogWidgetPreview settings={widgetSettings[widget.id]} />
-                          </div>
-                        </div>
-                        
-                        {/* Narrow Preview */}
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Narrow Width (300px)</h5>
-                          <div className="flex justify-center p-4 bg-gray-50 rounded">
-                            <div style={{ width: '300px' }}>
-                              <BlogWidgetPreview settings={widgetSettings[widget.id]} narrow={true} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-center p-4 bg-gray-50 rounded">
-                        <div className="w-80 h-96 bg-white border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500">
-                          <div className="text-center">
-                            <widget.icon size={32} className="mx-auto mb-2 text-gray-400" />
-                            <p className="text-sm">Preview for {widget.name}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+  // Content Editor Component
+  const ContentEditor = () => {
+    if (contentType === 'post') {
+      return <RichBlogEditor />;
+    } else {
+      return (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-2xl font-bold mb-6">Create Email Campaign</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Campaign Name</label>
+              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject Line</label>
+              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email Content</label>
+              <textarea rows={10} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div className="flex gap-3">
+              <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Send Campaign</button>
+              <button className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Save Draft</button>
+              <button onClick={() => setIsCreating(false)} className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  };
 
-                  {/* Settings & Embed */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Customize & Embed</h4>
-                    
-                    {/* Settings */}
-                    <div className="space-y-4 mb-6">
+  // Post Card Component
+  const PostCard = ({ post }) => (
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+      <h4 className="font-semibold text-lg mb-2">{post.title}</h4>
+      <p className="text-gray-600 text-sm mb-2">{post.content.substring(0, 100)}...</p>
+      <div className="flex justify-between items-center text-sm text-gray-500">
+        <span>{post.date}</span>
+        <div className="flex gap-2">
+          <button className="text-blue-600 hover:text-blue-800"><Edit size={16} /></button>
+          <button className="text-red-600 hover:text-red-800"><Trash2 size={16} /></button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const [widgetSettings, setWidgetSettings] = useState({
+    backgroundColor: '#ffffff',
+    textColor: '#333333',
+    accentColor: '#3b82f6',
+    showAuthor: true,
+    showDate: true,
+    showExcerpt: true,
+    maxPosts: 5
+  });
+
+  const widgets = [
+    {
+      id: 'blog',
+      name: 'Blog Posts',
+      category: 'content',
+      description: 'Display your latest blog posts',
+      component: StandaloneBlogWidget
+    },
+    {
+      id: 'newsfeed',
+      name: 'News Feed',
+      category: 'social',
+      description: 'Show community updates and posts',
+      component: StandaloneNewsFeedWidget
+    },
+    {
+      id: 'calendar',
+      name: 'Event Calendar',
+      category: 'utility',
+      description: 'Display upcoming events and meetings',
+      component: StandaloneCalendarWidget
+    }
+  ];
+
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const filteredWidgets = selectedCategory === 'all' ? widgets : widgets.filter(w => w.category === selectedCategory);
+
+  const generateEmbedCode = (widgetId) => {
+    return `<iframe src="${window.location.origin}/widget/${widgetId}" width="400" height="500" frameborder="0"></iframe>`;
+  };
+
+  const [copiedWidget, setCopiedWidget] = useState(null);
+  const copyEmbedCode = (widgetId) => {
+    const code = generateEmbedCode(widgetId);
+    navigator.clipboard.writeText(code);
+    setCopiedWidget(widgetId);
+    setTimeout(() => setCopiedWidget(null), 2000);
+  };
+
+  const BlogWidgetPreview = () => (
+    <div className="max-w-sm mx-auto bg-white rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: widgetSettings.backgroundColor }}>
+      <div className="p-4 border-b" style={{ borderColor: widgetSettings.accentColor + '20' }}>
+        <h3 className="text-lg font-semibold" style={{ color: widgetSettings.textColor }}>Latest Posts</h3>
+      </div>
+      <div className="max-h-96 overflow-y-auto">
+        {posts.slice(0, widgetSettings.maxPosts).map(post => (
+          <div key={post.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+            <h4 className="font-medium mb-2" style={{ color: widgetSettings.textColor }}>{post.title}</h4>
+            {widgetSettings.showExcerpt && (
+              <p className="text-sm text-gray-600 mb-2">{post.content.substring(0, 100)}...</p>
+            )}
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              {widgetSettings.showAuthor && <span>Admin</span>}
+              {widgetSettings.showDate && <span>{post.date}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Settings Component
+  const Settings = () => {
+    const widgetCategories = [
+      { id: 'all', name: 'All Widgets', icon: '🔧' },
+      { id: 'content', name: 'Content', icon: '📝' },
+      { id: 'social', name: 'Social', icon: '👥' },
+      { id: 'utility', name: 'Utility', icon: '⚙️' }
+    ];
+
+    return (
+      <div className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto p-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Widget Gallery & Customization</h1>
+            <p className="text-gray-600">Create, customize, and embed widgets for your website</p>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex gap-2 mb-8">
+            {widgetCategories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition ${
+                  selectedCategory === category.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <span>{category.icon}</span>
+                {category.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Widget Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Widget List */}
+            <div className="lg:col-span-2">
+              <h2 className="text-xl font-semibold mb-4">Available Widgets</h2>
+              <div className="grid gap-6">
+                {filteredWidgets.map(widget => (
+                  <div key={widget.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                    <div className="flex justify-between items-start mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Primary Color
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="color"
-                            value={widgetSettings[widget.id].primaryColor}
-                            onChange={(e) => setWidgetSettings(prev => ({
-                              ...prev,
-                              [widget.id]: { ...prev[widget.id], primaryColor: e.target.value }
-                            }))}
-                            className="w-10 h-10 border border-gray-300 rounded cursor-pointer"
-                          />
-                          <span className="text-sm text-gray-600">{widgetSettings[widget.id].primaryColor}</span>
-                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">{widget.name}</h3>
+                        <p className="text-gray-600 text-sm">{widget.description}</p>
+                        <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full mt-2">
+                          {widget.category}
+                        </span>
                       </div>
-
-                      {/* Widget-specific settings */}
-                      {widget.id === 'blog' && (
-                        <>
-                          <div>
-                            <label className="flex items-center gap-2 text-sm text-gray-700">
-                              <input
-                                type="checkbox"
-                                checked={widgetSettings[widget.id].showImages}
-                                onChange={(e) => setWidgetSettings(prev => ({
-                                  ...prev,
-                                  [widget.id]: { ...prev[widget.id], showImages: e.target.checked }
-                                }))}
-                                className="rounded"
-                              />
-                              Show Images
-                            </label>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Max Posts to Display
-                            </label>
-                            <select
-                              value={widgetSettings[widget.id].maxPosts}
-                              onChange={(e) => setWidgetSettings(prev => ({
-                                ...prev,
-                                [widget.id]: { ...prev[widget.id], maxPosts: parseInt(e.target.value) }
-                              }))}
-                              className="w-full p-2 border border-gray-300 rounded"
-                            >
-                              <option value={1}>1 Post</option>
-                              <option value={2}>2 Posts</option>
-                              <option value={3}>3 Posts</option>
-                              <option value={5}>5 Posts</option>
-                            </select>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Embed Code */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Embed Code
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          readOnly
-                          value={generateEmbedCode(widget.id, widgetSettings[widget.id])}
-                          className="w-full h-20 p-3 border border-gray-300 rounded bg-gray-50 text-xs font-mono resize-none"
-                          onClick={(e) => e.target.select()}
-                        />
+                      <div className="flex gap-2">
                         <button
                           onClick={() => copyEmbedCode(widget.id)}
-                          className={`absolute top-2 right-2 px-3 py-1 text-xs font-medium rounded transition ${
+                          className={`px-3 py-1 rounded text-sm transition ${
                             copiedWidget === widget.id
                               ? 'bg-green-600 text-white'
                               : 'bg-blue-600 text-white hover:bg-blue-700'
                           }`}
                         >
-                          {copiedWidget === widget.id ? (
-                            <>
-                              <Check size={12} className="inline mr-1" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={12} className="inline mr-1" />
-                              Copy
-                            </>
-                          )}
+                          {copiedWidget === widget.id ? 'Copied!' : 'Copy Embed'}
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Paste this code into your website's HTML where you want the widget to appear.
-                      </p>
+                    </div>
+                    
+                    {/* Widget Preview */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="scale-75 origin-top-left transform">
+                        <widget.component />
+                      </div>
+                    </div>
+                    
+                    {/* Embed Code */}
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Embed Code:</label>
+                      <div className="bg-gray-100 p-3 rounded border text-sm font-mono text-gray-800 overflow-x-auto">
+                        {generateEmbedCode(widget.id)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Customization Panel */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-8">
+                <h2 className="text-xl font-semibold mb-4">Customize Widgets</h2>
+                <div className="bg-gray-50 rounded-lg p-6 space-y-6">
+                  {/* Color Settings */}
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3">Colors</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-1">Background</label>
+                        <input
+                          type="color"
+                          value={widgetSettings.backgroundColor}
+                          onChange={(e) => setWidgetSettings(prev => ({ ...prev, backgroundColor: e.target.value }))}
+                          className="w-full h-10 rounded border"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-1">Text Color</label>
+                        <input
+                          type="color"
+                          value={widgetSettings.textColor}
+                          onChange={(e) => setWidgetSettings(prev => ({ ...prev, textColor: e.target.value }))}
+                          className="w-full h-10 rounded border"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-700 mb-1">Accent Color</label>
+                        <input
+                          type="color"
+                          value={widgetSettings.accentColor}
+                          onChange={(e) => setWidgetSettings(prev => ({ ...prev, accentColor: e.target.value }))}
+                          className="w-full h-10 rounded border"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Display Options */}
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3">Display Options</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={widgetSettings.showAuthor}
+                          onChange={(e) => setWidgetSettings(prev => ({ ...prev, showAuthor: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Show Author</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={widgetSettings.showDate}
+                          onChange={(e) => setWidgetSettings(prev => ({ ...prev, showDate: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Show Date</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={widgetSettings.showExcerpt}
+                          onChange={(e) => setWidgetSettings(prev => ({ ...prev, showExcerpt: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Show Excerpt</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Content Settings */}
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3">Content</h3>
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-1">Max Posts</label>
+                      <select
+                        value={widgetSettings.maxPosts}
+                        onChange={(e) => setWidgetSettings(prev => ({ ...prev, maxPosts: parseInt(e.target.value) }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded"
+                      >
+                        <option value={3}>3 posts</option>
+                        <option value={5}>5 posts</option>
+                        <option value={10}>10 posts</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Live Preview */}
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-3">Live Preview</h3>
+                    <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                      <BlogWidgetPreview />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
-
-      {/* Other Settings */}
-      <div className="border-t pt-6">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">General Settings</h2>
-        <p className="text-gray-600">Account preferences and platform settings coming soon...</p>
-      </div>
-    </div>
-  );
-
-
+    );
+  };
 
   // Navigation items
   const navItems = [
@@ -2196,1131 +1279,13 @@ const MainApp = () => {
     { id: 'analytics', icon: BarChart3, label: 'Analytics' }
   ];
 
+  const [memberFilter, setMemberFilter] = useState('all');
+  const [drafts, setDrafts] = useState([
+    { id: 1, title: 'Draft Post 1', content: 'This is a draft post...', date: '2024-01-16' },
+    { id: 2, title: 'Draft Post 2', content: 'Another draft post...', date: '2024-01-17' }
+  ]);
+
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-800">Social Hub</h2>
-        </div>
-        <nav className="px-4 pb-6">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => {
-                // Clean up image toolbars when switching sections
-                document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-                document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-                document.querySelectorAll('.selected-image').forEach(el => {
-                  el.classList.remove('selected-image');
-                  el.style.border = '2px solid transparent';
-                  el.style.boxShadow = 'none';
-                });
-                setActiveSection(item.id);
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                activeSection === item.id
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'hover:bg-gray-100 text-gray-700'
-              }`}
-            >
-              <item.icon size={20} />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 p-8">
-        {isCreating ? (
-          <ContentEditor />
-        ) : (
-          <>
-            {activeSection === 'dashboard' && <Dashboard />}
-            {activeSection === 'newsfeed' && <NewsFeed />}
-            {activeSection === 'settings' && <Settings />}
-            {activeSection === 'posts' && (
-              <div className="space-y-6">
-                {/* Drafts Section */}
-                {drafts.length > 0 && (
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-xl font-semibold mb-4 text-yellow-600">📝 Drafts ({drafts.length})</h3>
-                    <div className="space-y-3">
-                      {drafts.map(draft => (
-                        <div key={draft.id} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full font-medium">
-                                  DRAFT
-                                </span>
-                              </div>
-                              <h4 className="font-semibold text-lg">{draft.title}</h4>
-                              <p className="text-sm text-gray-500 mb-2">{draft.date}</p>
-                              <p className="text-gray-700">{draft.content.length > 100 ? `${draft.content.substring(0, 100)}...` : draft.content}</p>
-                            </div>
-                            <div className="flex gap-2 ml-4">
-                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                <Edit size={16} />
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  // Publish draft
-                                  const publishedPost = { ...draft, published: true };
-                                  setPosts(prev => [...prev, publishedPost]);
-                                  setDrafts(prev => prev.filter(d => d.id !== draft.id));
-                                  alert('Draft published successfully!');
-                                }}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded"
-                                title="Publish Draft"
-                              >
-                                <Eye size={16} />
-                              </button>
-                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Empty State */}
-                      {members.filter(member => {
-                        if (memberFilter === 'all') return true;
-                        if (memberFilter === 'pending') return member.status === 'pending';
-                        return member.role === memberFilter;
-                      }).length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Published Posts Section */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Published Posts ({posts.filter(p => p.published).length})</h2>
-                    <button
-                      onClick={() => { setContentType('post'); setIsCreating(true); }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <Plus size={20} /> New Post
-                    </button>
-                  </div>
-                  <div className="space-y-3">
-                    {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
-                  </div>
-                </div>
-
-                {/* Invite Member Modal */}
-                {showInviteModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
-                        <button 
-                          onClick={resetInviteForm}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
-                        {/* Name Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={inviteForm.name}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter full name"
-                            required
-                          />
-                        </div>
-
-                        {/* Email Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
-                          </label>
-                          <input
-                            type="email"
-                            value={inviteForm.email}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter email address"
-                            required
-                          />
-                        </div>
-
-                        {/* Role Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Role
-                          </label>
-                          <select
-                            value={inviteForm.role}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="member">Member - Standard access</option>
-                            <option value="moderator">Moderator - Content moderation</option>
-                            <option value="admin">Administrator - Full access</option>
-                          </select>
-                        </div>
-
-                        {/* Send Email Option */}
-                        <div className="mb-6">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={inviteForm.sendEmail}
-                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
-                              className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Send invitation email</span>
-                          </label>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {inviteForm.sendEmail 
-                              ? "An email invitation will be sent to the user" 
-                              : "User will be added directly without email notification"
-                            }
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetInviteForm}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          >
-                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {activeSection === 'campaigns' && (
-              <div className="space-y-6">
-                {/* Email Management Header */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold">📧 Email Management</h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        🚀 <strong>SendGrid Integration Active</strong> - Real email delivery with tracking
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setEmailComposer(prev => ({ ...prev, isOpen: true }))}
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-                    >
-                      <Send size={20} /> Compose Email
-                    </button>
-                  </div>
-
-                  {/* SendGrid Status */}
-                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <div>
-                        <h4 className="font-medium text-green-800">SendGrid Connected</h4>
-                        <p className="text-sm text-green-700">
-                          Ready to send emails with delivery tracking, open rates, and click analytics.
-                          <br />
-                          <strong>Next step:</strong> Add your SendGrid API key to environment variables.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Email Statistics */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="text-2xl font-bold text-green-600">{emails.filter(e => e.status === 'sent').length}</div>
-                      <div className="text-sm text-green-700">Emails Sent</div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="text-2xl font-bold text-yellow-600">{emails.filter(e => e.status === 'draft').length}</div>
-                      <div className="text-sm text-yellow-700">Draft Emails</div>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</div>
-                      <div className="text-sm text-blue-700">Active Recipients</div>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {emails.filter(e => e.openRate).length > 0 
-                          ? Math.round(emails.filter(e => e.openRate).reduce((acc, e) => acc + parseInt(e.openRate), 0) / emails.filter(e => e.openRate).length)
-                          : 0}%
-                      </div>
-                      <div className="text-sm text-purple-700">Avg Open Rate</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email List */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Email History</h3>
-                    <div className="space-y-4">
-                      {emails.map((email) => (
-                        <div key={email.id} className="border rounded-lg hover:bg-gray-50">
-                          <div className="flex items-center justify-between p-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h4 className="font-semibold text-gray-900">{email.subject}</h4>
-                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  email.status === 'sent' ? 'bg-green-100 text-green-800' :
-                                  email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {email.status.toUpperCase()}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
-                                {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
-                                {email.analytics && (
-                                  <>
-                                    <span>📊 {email.analytics.opened}/{email.analytics.totalSent} opened ({Math.round((email.analytics.opened/email.analytics.totalSent)*100)}%)</span>
-                                    <span>🖱️ {email.analytics.clicked}/{email.analytics.totalSent} clicked ({Math.round((email.analytics.clicked/email.analytics.totalSent)*100)}%)</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                <Edit size={16} />
-                              </button>
-                              <button className="p-2 text-green-600 hover:bg-green-50 rounded">
-                                <Copy size={16} />
-                              </button>
-                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Detailed Analytics (for sent emails) */}
-                          {email.status === 'sent' && email.analytics && (
-                            <div className="border-t bg-gray-50 p-4">
-                              <h5 className="font-medium mb-3">📈 Email Analytics</h5>
-                              <div className="grid grid-cols-6 gap-4 mb-4">
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-blue-600">{email.analytics.totalSent}</div>
-                                  <div className="text-xs text-gray-600">Sent</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-green-600">{email.analytics.delivered}</div>
-                                  <div className="text-xs text-gray-600">Delivered</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-purple-600">{email.analytics.opened}</div>
-                                  <div className="text-xs text-gray-600">Opened</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-orange-600">{email.analytics.clicked}</div>
-                                  <div className="text-xs text-gray-600">Clicked</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-red-600">{email.analytics.bounced}</div>
-                                  <div className="text-xs text-gray-600">Bounced</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-gray-600">{email.analytics.unsubscribed}</div>
-                                  <div className="text-xs text-gray-600">Unsubscribed</div>
-                                </div>
-                              </div>
-                              
-                              {/* Open Times */}
-                              {email.analytics.openTimes.length > 0 && (
-                                <div className="mb-3">
-                                  <h6 className="text-sm font-medium mb-2">👁️ Recent Opens</h6>
-                                  <div className="space-y-1">
-                                    {email.analytics.openTimes.slice(0, 3).map((open, idx) => (
-                                      <div key={idx} className="text-xs text-gray-600 flex justify-between">
-                                        <span>{open.recipient}</span>
-                                        <span>{open.timestamp}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Tracking URLs */}
-                              <div className="text-xs text-gray-500">
-                                <p><strong>Tracking ID:</strong> {email.analytics.trackingId}</p>
-                                {email.sendGridMessageId && (
-                                  <p><strong>SendGrid Message ID:</strong> {email.sendGridMessageId}</p>
-                                )}
-                                <p><strong>Open Tracking:</strong> {email.analytics.trackingPixelUrl}</p>
-                                <p><strong>Unsubscribe:</strong> {email.analytics.unsubscribeUrl}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Member Database Integration */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">👥 Recipient Management</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2">All Members</h4>
-                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600">Active members</p>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2">Administrators</h4>
-                      <p className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin' && m.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600">Admin users</p>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2">Moderators</h4>
-                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator' && m.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600">Moderator users</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email Composer Modal */}
-                {emailComposer.isOpen && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-                      <div className="flex justify-between items-center p-6 border-b">
-                        <h3 className="text-xl font-bold">📧 Compose Email</h3>
-                        <button 
-                          onClick={resetEmailComposer}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <div className="p-6">
-                        {/* Email Subject */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Subject *
-                          </label>
-                          <input
-                            type="text"
-                            value={emailComposer.subject}
-                            onChange={(e) => setEmailComposer(prev => ({ ...prev, subject: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                            placeholder="Enter email subject"
-                            required
-                          />
-                        </div>
-
-                        {/* Recipient Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Recipients
-                          </label>
-                          <div className="flex gap-4 mb-3">
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="recipientType"
-                                value="all"
-                                checked={emailComposer.recipientType === 'all'}
-                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
-                                className="mr-2"
-                              />
-                              All Members ({members.filter(m => m.status === 'active').length})
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="recipientType"
-                                value="role"
-                                checked={emailComposer.recipientType === 'role'}
-                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
-                                className="mr-2"
-                              />
-                              By Role
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="recipientType"
-                                value="specific"
-                                checked={emailComposer.recipientType === 'specific'}
-                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
-                                className="mr-2"
-                              />
-                              Specific Members
-                            </label>
-                          </div>
-
-                          {/* Role Selection */}
-                          {emailComposer.recipientType === 'role' && (
-                            <select
-                              value={emailComposer.selectedRole}
-                              onChange={(e) => setEmailComposer(prev => ({ ...prev, selectedRole: e.target.value }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-2"
-                            >
-                              <option value="admin">Administrators ({members.filter(m => m.role === 'admin' && m.status === 'active').length})</option>
-                              <option value="moderator">Moderators ({members.filter(m => m.role === 'moderator' && m.status === 'active').length})</option>
-                              <option value="member">Members ({members.filter(m => m.role === 'member' && m.status === 'active').length})</option>
-                            </select>
-                          )}
-
-                          {/* Specific Member Selection */}
-                          {emailComposer.recipientType === 'specific' && (
-                            <div>
-                              <div className="flex gap-2 mb-2">
-                                <select
-                                  onChange={(e) => {
-                                    if (e.target.value) {
-                                      addRecipient(e.target.value);
-                                      e.target.value = '';
-                                    }
-                                  }}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                >
-                                  <option value="">Select a member to add...</option>
-                                  {members.filter(m => m.status === 'active' && !emailComposer.recipients.includes(m.email)).map(member => (
-                                    <option key={member.id} value={member.email}>
-                                      {member.name} ({member.email}) - {member.role}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              
-                              {/* Selected Recipients */}
-                              {emailComposer.recipients.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {emailComposer.recipients.map(email => (
-                                    <span key={email} className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                                      {email}
-                                      <button
-                                        onClick={() => removeRecipient(email)}
-                                        className="ml-2 text-green-600 hover:text-green-800"
-                                      >
-                                        <X size={14} />
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Email Content */}
-                        <div className="mb-6">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Content *
-                          </label>
-                          <textarea
-                            value={emailComposer.content}
-                            onChange={(e) => setEmailComposer(prev => ({ ...prev, content: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                            rows="12"
-                            placeholder="Write your email content here..."
-                            required
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Rich text editor and templates coming soon. For now, use plain text.
-                          </p>
-                        </div>
-
-                        {/* Preview Section */}
-                        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                          <h4 className="font-medium mb-2">📋 Email Preview</h4>
-                          <div className="text-sm text-gray-600">
-                            <p><strong>Subject:</strong> {emailComposer.subject || 'No subject'}</p>
-                            <p><strong>Recipients:</strong> {
-                              emailComposer.recipientType === 'all' 
-                                ? `All ${members.filter(m => m.status === 'active').length} active members`
-                                : emailComposer.recipientType === 'role'
-                                ? `${members.filter(m => m.role === emailComposer.selectedRole && m.status === 'active').length} ${emailComposer.selectedRole}s`
-                                : `${emailComposer.recipients.length} specific members`
-                            }</p>
-                            <p><strong>Content:</strong> {emailComposer.content ? `${emailComposer.content.substring(0, 100)}...` : 'No content'}</p>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetEmailComposer}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSaveEmailDraft}
-                            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
-                          >
-                            Save Draft
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSendEmail}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                          >
-                            Send Email
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {activeSection === 'members' && (
-              <div className="space-y-6">
-                {/* Member Management Header */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">👥 Member Management ({members.length})</h2>
-                    <button 
-                      onClick={() => setShowInviteModal(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-                    >
-                      <Plus size={20} /> Invite Member
-                    </button>
-                  </div>
-
-                  {/* Member Statistics */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="text-2xl font-bold text-green-600">{members.filter(m => m.status === 'active').length}</div>
-                      <div className="text-sm text-green-700">Active Members</div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="text-2xl font-bold text-yellow-600">{members.filter(m => m.status === 'pending').length}</div>
-                      <div className="text-sm text-yellow-700">Pending Approval</div>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <div className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin').length}</div>
-                      <div className="text-sm text-purple-700">Administrators</div>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator').length}</div>
-                      <div className="text-sm text-blue-700">Moderators</div>
-                    </div>
-                  </div>
-
-                  {/* Role Filter Tabs */}
-                  <div className="flex gap-2 mb-6">
-                    <button 
-                      onClick={() => setMemberFilter('all')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'all' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      All Members
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('admin')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'admin' 
-                          ? 'bg-purple-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Admins
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('moderator')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'moderator' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Moderators
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('member')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'member' 
-                          ? 'bg-gray-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Members
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('pending')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'pending' 
-                          ? 'bg-yellow-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Pending
-                    </button>
-                  </div>
-                </div>
-
-                {/* Members List */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Member Directory</h3>
-                    <div className="space-y-4">
-                      {members
-                        .filter(member => {
-                          if (memberFilter === 'all') return true;
-                          if (memberFilter === 'pending') return member.status === 'pending';
-                          return member.role === memberFilter;
-                        })
-                        .map((member) => (
-                        <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                          <div className="flex items-center gap-4">
-                            {/* Avatar */}
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-                              member.role === 'admin' ? 'bg-purple-600' : 
-                              member.role === 'moderator' ? 'bg-blue-600' : 'bg-gray-600'
-                            }`}>
-                              {member.avatar}
-                            </div>
-                            
-                            {/* Member Info */}
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                  member.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {member.role.toUpperCase()}
-                                </span>
-                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  member.status === 'active' ? 'bg-green-100 text-green-800' :
-                                  member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {member.status.toUpperCase()}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600">{member.email}</p>
-                              <p className="text-xs text-gray-500">
-                                Joined: {member.joinDate} • Last active: {member.lastActive}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-2">
-                            {member.status === 'pending' && (
-                              <>
-                                <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                                  Approve
-                                </button>
-                                <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
-                                  Reject
-                                </button>
-                              </>
-                            )}
-                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                              <Edit size={16} />
-                            </button>
-                            <button className="p-2 text-red-600 hover:bg-red-50 rounded">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Empty State */}
-                      {members.filter(member => {
-                        if (memberFilter === 'all') return true;
-                        if (memberFilter === 'pending') return member.status === 'pending';
-                        return member.role === memberFilter;
-                      }).length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Role Management */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">🔐 Role & Permission Management</h3>
-                  
-                  <div className="grid grid-cols-3 gap-6">
-                    {/* Admin Role */}
-                    <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">A</span>
-                        </div>
-                        <h4 className="font-semibold text-purple-900">Administrator</h4>
-                      </div>
-                      <p className="text-sm text-purple-700 mb-3">Full platform access and management capabilities</p>
-                      <div className="space-y-1">
-                        <div className="text-xs text-purple-600">✓ Read all content</div>
-                        <div className="text-xs text-purple-600">✓ Write and edit content</div>
-                        <div className="text-xs text-purple-600">✓ Delete any content</div>
-                        <div className="text-xs text-purple-600">✓ Manage users and roles</div>
-                        <div className="text-xs text-purple-600">✓ Platform settings</div>
-                      </div>
-                    </div>
-
-                    {/* Moderator Role */}
-                    <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">M</span>
-                        </div>
-                        <h4 className="font-semibold text-blue-900">Moderator</h4>
-                      </div>
-                      <p className="text-sm text-blue-700 mb-3">Content moderation and community management</p>
-                      <div className="space-y-1">
-                        <div className="text-xs text-blue-600">✓ Read all content</div>
-                        <div className="text-xs text-blue-600">✓ Write and edit content</div>
-                        <div className="text-xs text-blue-600">✓ Moderate community posts</div>
-                        <div className="text-xs text-blue-600">✓ Manage member interactions</div>
-                        <div className="text-xs text-gray-400">✗ User management</div>
-                      </div>
-                    </div>
-
-                    {/* Member Role */}
-                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">U</span>
-                        </div>
-                        <h4 className="font-semibold text-gray-900">Member</h4>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3">Standard community member access</p>
-                      <div className="space-y-1">
-                        <div className="text-xs text-gray-600">✓ Read public content</div>
-                        <div className="text-xs text-gray-600">✓ Write posts and comments</div>
-                        <div className="text-xs text-gray-600">✓ Engage with community</div>
-                        <div className="text-xs text-gray-400">✗ Content moderation</div>
-                        <div className="text-xs text-gray-400">✗ User management</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Invite Member Modal */}
-                {showInviteModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
-                        <button 
-                          onClick={resetInviteForm}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
-                        {/* Name Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={inviteForm.name}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter full name"
-                            required
-                          />
-                        </div>
-
-                        {/* Email Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
-                          </label>
-                          <input
-                            type="email"
-                            value={inviteForm.email}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter email address"
-                            required
-                          />
-                        </div>
-
-                        {/* Role Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Role
-                          </label>
-                          <select
-                            value={inviteForm.role}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="member">Member - Standard access</option>
-                            <option value="moderator">Moderator - Content moderation</option>
-                            <option value="admin">Administrator - Full access</option>
-                          </select>
-                        </div>
-
-                        {/* Send Email Option */}
-                        <div className="mb-6">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={inviteForm.sendEmail}
-                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
-                              className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Send invitation email</span>
-                          </label>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {inviteForm.sendEmail 
-                              ? "An email invitation will be sent to the user" 
-                              : "User will be added directly without email notification"
-                            }
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetInviteForm}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          >
-                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {activeSection === 'calendar' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">📅 Calendar</h2>
-                  <button
-                    onClick={() => { setContentType('scheduled'); setIsCreating(true); }}
-                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-2"
-                  >
-                    <Clock size={20} /> Schedule Content
-                  </button>
-                </div>
-                
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2 mb-6">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="p-3 text-center font-semibold text-gray-600 bg-gray-50 rounded">
-                      {day}
-                    </div>
-                  ))}
-                  {Array.from({ length: 35 }, (_, i) => {
-                    const date = i - 6; // Start from previous month
-                    const isCurrentMonth = date > 0 && date <= 30;
-                    const isToday = date === 23; // Today is 23rd
-                    return (
-                      <div
-                        key={i}
-                        className={`p-3 text-center border rounded cursor-pointer hover:bg-blue-50 ${
-                          isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400'
-                        } ${isToday ? 'bg-blue-600 text-white font-bold' : ''}`}
-                      >
-                        {date > 0 ? date : date + 31}
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                {/* Upcoming Events */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">📋 Upcoming Scheduled Content</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <div>
-                        <div className="font-medium">Weekly Newsletter</div>
-                        <div className="text-sm text-gray-600">📧 Email Campaign • Tomorrow at 9:00 AM</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div>
-                        <div className="font-medium">Product Update Post</div>
-                        <div className="text-sm text-gray-600">📝 Blog Post • Friday at 2:00 PM</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Invite Member Modal */}
-                {showInviteModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
-                        <button 
-                          onClick={resetInviteForm}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
-                        {/* Name Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={inviteForm.name}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter full name"
-                            required
-                          />
-                        </div>
-
-                        {/* Email Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
-                          </label>
-                          <input
-                            type="email"
-                            value={inviteForm.email}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter email address"
-                            required
-                          />
-                        </div>
-
-                        {/* Role Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Role
-                          </label>
-                          <select
-                            value={inviteForm.role}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="member">Member - Standard access</option>
-                            <option value="moderator">Moderator - Content moderation</option>
-                            <option value="admin">Administrator - Full access</option>
-                          </select>
-                        </div>
-
-                        {/* Send Email Option */}
-                        <div className="mb-6">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={inviteForm.sendEmail}
-                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
-                              className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Send invitation email</span>
-                          </label>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {inviteForm.sendEmail 
-                              ? "An email invitation will be sent to the user" 
-                              : "User will be added directly without email notification"
-                            }
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetInviteForm}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          >
-                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {activeSection === 'analytics' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-2xl font-bold mb-6">Analytics</h2>
-                <p className="text-gray-600">Analytics dashboard coming soon...</p>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-
-
-  // Store the main app JSX
-  const mainApp = (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
@@ -3393,14 +1358,12 @@ const MainApp = () => {
                                 onClick={() => {
                                   // Publish draft
                                   const publishedPost = { ...draft, published: true };
-                                  setPosts(prev => [...prev, publishedPost]);
+                                  setPosts(prev => [publishedPost, ...prev]);
                                   setDrafts(prev => prev.filter(d => d.id !== draft.id));
-                                  alert('Draft published successfully!');
                                 }}
                                 className="p-2 text-green-600 hover:bg-green-50 rounded"
-                                title="Publish Draft"
                               >
-                                <Eye size={16} />
+                                <Send size={16} />
                               </button>
                               <button className="p-2 text-red-600 hover:bg-red-50 rounded">
                                 <Trash2 size={16} />
@@ -3409,17 +1372,6 @@ const MainApp = () => {
                           </div>
                         </div>
                       ))}
-                      
-                      {/* Empty State */}
-                      {members.filter(member => {
-                        if (memberFilter === 'all') return true;
-                        if (memberFilter === 'pending') return member.status === 'pending';
-                        return member.role === memberFilter;
-                      }).length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -3427,7 +1379,7 @@ const MainApp = () => {
                 {/* Published Posts Section */}
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Published Posts ({posts.filter(p => p.published).length})</h2>
+                    <h3 className="text-xl font-semibold">📄 Published Posts ({posts.length})</h3>
                     <button
                       onClick={() => { setContentType('post'); setIsCreating(true); }}
                       className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
@@ -3436,110 +1388,17 @@ const MainApp = () => {
                     </button>
                   </div>
                   <div className="space-y-3">
-                    {posts.filter(post => post.published).map(post => <PostCard key={post.id} post={post} />)}
+                    {posts.map(post => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                    
+                    {posts.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No published posts yet. Create your first post!</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Invite Member Modal */}
-                {showInviteModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
-                        <button 
-                          onClick={resetInviteForm}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
-                        {/* Name Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={inviteForm.name}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter full name"
-                            required
-                          />
-                        </div>
-
-                        {/* Email Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
-                          </label>
-                          <input
-                            type="email"
-                            value={inviteForm.email}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter email address"
-                            required
-                          />
-                        </div>
-
-                        {/* Role Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Role
-                          </label>
-                          <select
-                            value={inviteForm.role}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="member">Member - Standard access</option>
-                            <option value="moderator">Moderator - Content moderation</option>
-                            <option value="admin">Administrator - Full access</option>
-                          </select>
-                        </div>
-
-                        {/* Send Email Option */}
-                        <div className="mb-6">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={inviteForm.sendEmail}
-                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
-                              className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Send invitation email</span>
-                          </label>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {inviteForm.sendEmail 
-                              ? "An email invitation will be sent to the user" 
-                              : "User will be added directly without email notification"
-                            }
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetInviteForm}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          >
-                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
             {activeSection === 'campaigns' && (
@@ -3555,510 +1414,275 @@ const MainApp = () => {
                     </div>
                     <button
                       onClick={() => setEmailComposer(prev => ({ ...prev, isOpen: true }))}
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
                     >
-                      <Send size={20} /> Compose Email
+                      <Plus size={16} />
+                      New Campaign
                     </button>
                   </div>
 
-                  {/* SendGrid Status */}
-                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  {/* Quick Send Form */}
+                  <form onSubmit={handleSendEmail} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                      <input
+                        type="text"
+                        value={emailComposer.subject}
+                        onChange={(e) => setEmailComposer(prev => ({ ...prev, subject: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Enter email subject..."
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                      <textarea
+                        value={emailComposer.content}
+                        onChange={(e) => setEmailComposer(prev => ({ ...prev, content: e.target.value }))}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Enter your message..."
+                        required
+                      />
+                    </div>
+
+                    {/* Recipient Selection */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <h4 className="font-medium text-green-800">SendGrid Connected</h4>
-                        <p className="text-sm text-green-700">
-                          Ready to send emails with delivery tracking, open rates, and click analytics.
-                          <br />
-                          <strong>Next step:</strong> Add your SendGrid API key to environment variables.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Email Statistics */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="text-2xl font-bold text-green-600">{emails.filter(e => e.status === 'sent').length}</div>
-                      <div className="text-sm text-green-700">Emails Sent</div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="text-2xl font-bold text-yellow-600">{emails.filter(e => e.status === 'draft').length}</div>
-                      <div className="text-sm text-yellow-700">Draft Emails</div>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</div>
-                      <div className="text-sm text-blue-700">Active Recipients</div>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {emails.filter(e => e.openRate).length > 0 
-                          ? Math.round(emails.filter(e => e.openRate).reduce((acc, e) => acc + parseInt(e.openRate), 0) / emails.filter(e => e.openRate).length)
-                          : 0}%
-                      </div>
-                      <div className="text-sm text-purple-700">Avg Open Rate</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email List */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Email History</h3>
-                    <div className="space-y-4">
-                      {emails.map((email) => (
-                        <div key={email.id} className="border rounded-lg hover:bg-gray-50">
-                          <div className="flex items-center justify-between p-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h4 className="font-semibold text-gray-900">{email.subject}</h4>
-                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  email.status === 'sent' ? 'bg-green-100 text-green-800' :
-                                  email.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {email.status.toUpperCase()}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2">{email.content.substring(0, 100)}...</p>
-                              <div className="flex items-center gap-4 text-xs text-gray-500">
-                                <span>📧 {Array.isArray(email.recipients) ? email.recipients.length : 'All'} recipients</span>
-                                {email.sentDate && <span>📅 Sent: {email.sentDate}</span>}
-                                {email.analytics && (
-                                  <>
-                                    <span>📊 {email.analytics.opened}/{email.analytics.totalSent} opened ({Math.round((email.analytics.opened/email.analytics.totalSent)*100)}%)</span>
-                                    <span>🖱️ {email.analytics.clicked}/{email.analytics.totalSent} clicked ({Math.round((email.analytics.clicked/email.analytics.totalSent)*100)}%)</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
-                                <Edit size={16} />
-                              </button>
-                              <button className="p-2 text-green-600 hover:bg-green-50 rounded">
-                                <Copy size={16} />
-                              </button>
-                              <button className="p-2 text-red-600 hover:bg-red-50 rounded">
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Detailed Analytics (for sent emails) */}
-                          {email.status === 'sent' && email.analytics && (
-                            <div className="border-t bg-gray-50 p-4">
-                              <h5 className="font-medium mb-3">📈 Email Analytics</h5>
-                              <div className="grid grid-cols-6 gap-4 mb-4">
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-blue-600">{email.analytics.totalSent}</div>
-                                  <div className="text-xs text-gray-600">Sent</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-green-600">{email.analytics.delivered}</div>
-                                  <div className="text-xs text-gray-600">Delivered</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-purple-600">{email.analytics.opened}</div>
-                                  <div className="text-xs text-gray-600">Opened</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-orange-600">{email.analytics.clicked}</div>
-                                  <div className="text-xs text-gray-600">Clicked</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-red-600">{email.analytics.bounced}</div>
-                                  <div className="text-xs text-gray-600">Bounced</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-lg font-bold text-gray-600">{email.analytics.unsubscribed}</div>
-                                  <div className="text-xs text-gray-600">Unsubscribed</div>
-                                </div>
-                              </div>
-                              
-                              {/* Open Times */}
-                              {email.analytics.openTimes.length > 0 && (
-                                <div className="mb-3">
-                                  <h6 className="text-sm font-medium mb-2">👁️ Recent Opens</h6>
-                                  <div className="space-y-1">
-                                    {email.analytics.openTimes.slice(0, 3).map((open, idx) => (
-                                      <div key={idx} className="text-xs text-gray-600 flex justify-between">
-                                        <span>{open.recipient}</span>
-                                        <span>{open.timestamp}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Tracking URLs */}
-                              <div className="text-xs text-gray-500">
-                                <p><strong>Tracking ID:</strong> {email.analytics.trackingId}</p>
-                                {email.sendGridMessageId && (
-                                  <p><strong>SendGrid Message ID:</strong> {email.sendGridMessageId}</p>
-                                )}
-                                <p><strong>Open Tracking:</strong> {email.analytics.trackingPixelUrl}</p>
-                                <p><strong>Unsubscribe:</strong> {email.analytics.unsubscribeUrl}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Member Database Integration */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">👥 Recipient Management</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2">All Members</h4>
-                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600">Active members</p>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2">Administrators</h4>
-                      <p className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin' && m.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600">Admin users</p>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2">Moderators</h4>
-                      <p className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator' && m.status === 'active').length}</p>
-                      <p className="text-sm text-gray-600">Moderator users</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email Composer Modal */}
-                {emailComposer.isOpen && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-                      <div className="flex justify-between items-center p-6 border-b">
-                        <h3 className="text-xl font-bold">📧 Compose Email</h3>
-                        <button 
-                          onClick={resetEmailComposer}
-                          className="text-gray-400 hover:text-gray-600"
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Send To</label>
+                        <select
+                          value={emailComposer.recipientType}
+                          onChange={(e) => setEmailComposer(prev => ({ 
+                            ...prev, 
+                            recipientType: e.target.value,
+                            recipients: e.target.value === 'specific' ? prev.recipients : []
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                         >
-                          <X size={24} />
-                        </button>
+                          <option value="all">All Active Members ({members.filter(m => m.status === 'active').length})</option>
+                          <option value="role">By Role</option>
+                          <option value="specific">Specific Members</option>
+                        </select>
                       </div>
 
-                      <div className="p-6">
-                        {/* Email Subject */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Subject *
-                          </label>
-                          <input
-                            type="text"
-                            value={emailComposer.subject}
-                            onChange={(e) => setEmailComposer(prev => ({ ...prev, subject: e.target.value }))}
+                      {emailComposer.recipientType === 'role' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                          <select
+                            value={emailComposer.selectedRole}
+                            onChange={(e) => setEmailComposer(prev => ({ ...prev, selectedRole: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                            placeholder="Enter email subject"
-                            required
-                          />
-                        </div>
-
-                        {/* Recipient Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Recipients
-                          </label>
-                          <div className="flex gap-4 mb-3">
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="recipientType"
-                                value="all"
-                                checked={emailComposer.recipientType === 'all'}
-                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
-                                className="mr-2"
-                              />
-                              All Members ({members.filter(m => m.status === 'active').length})
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="recipientType"
-                                value="role"
-                                checked={emailComposer.recipientType === 'role'}
-                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
-                                className="mr-2"
-                              />
-                              By Role
-                            </label>
-                            <label className="flex items-center">
-                              <input
-                                type="radio"
-                                name="recipientType"
-                                value="specific"
-                                checked={emailComposer.recipientType === 'specific'}
-                                onChange={(e) => setEmailComposer(prev => ({ ...prev, recipientType: e.target.value }))}
-                                className="mr-2"
-                              />
-                              Specific Members
-                            </label>
-                          </div>
-
-                          {/* Role Selection */}
-                          {emailComposer.recipientType === 'role' && (
-                            <select
-                              value={emailComposer.selectedRole}
-                              onChange={(e) => setEmailComposer(prev => ({ ...prev, selectedRole: e.target.value }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 mb-2"
-                            >
-                              <option value="admin">Administrators ({members.filter(m => m.role === 'admin' && m.status === 'active').length})</option>
-                              <option value="moderator">Moderators ({members.filter(m => m.role === 'moderator' && m.status === 'active').length})</option>
-                              <option value="member">Members ({members.filter(m => m.role === 'member' && m.status === 'active').length})</option>
-                            </select>
-                          )}
-
-                          {/* Specific Member Selection */}
-                          {emailComposer.recipientType === 'specific' && (
-                            <div>
-                              <div className="flex gap-2 mb-2">
-                                <select
-                                  onChange={(e) => {
-                                    if (e.target.value) {
-                                      addRecipient(e.target.value);
-                                      e.target.value = '';
-                                    }
-                                  }}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                >
-                                  <option value="">Select a member to add...</option>
-                                  {members.filter(m => m.status === 'active' && !emailComposer.recipients.includes(m.email)).map(member => (
-                                    <option key={member.id} value={member.email}>
-                                      {member.name} ({member.email}) - {member.role}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              
-                              {/* Selected Recipients */}
-                              {emailComposer.recipients.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                  {emailComposer.recipients.map(email => (
-                                    <span key={email} className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                                      {email}
-                                      <button
-                                        onClick={() => removeRecipient(email)}
-                                        className="ml-2 text-green-600 hover:text-green-800"
-                                      >
-                                        <X size={14} />
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Email Content */}
-                        <div className="mb-6">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Content *
-                          </label>
-                          <textarea
-                            value={emailComposer.content}
-                            onChange={(e) => setEmailComposer(prev => ({ ...prev, content: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                            rows="12"
-                            placeholder="Write your email content here..."
-                            required
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Rich text editor and templates coming soon. For now, use plain text.
-                          </p>
-                        </div>
-
-                        {/* Preview Section */}
-                        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                          <h4 className="font-medium mb-2">📋 Email Preview</h4>
-                          <div className="text-sm text-gray-600">
-                            <p><strong>Subject:</strong> {emailComposer.subject || 'No subject'}</p>
-                            <p><strong>Recipients:</strong> {
-                              emailComposer.recipientType === 'all' 
-                                ? `All ${members.filter(m => m.status === 'active').length} active members`
-                                : emailComposer.recipientType === 'role'
-                                ? `${members.filter(m => m.role === emailComposer.selectedRole && m.status === 'active').length} ${emailComposer.selectedRole}s`
-                                : `${emailComposer.recipients.length} specific members`
-                            }</p>
-                            <p><strong>Content:</strong> {emailComposer.content ? `${emailComposer.content.substring(0, 100)}...` : 'No content'}</p>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetEmailComposer}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                           >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSaveEmailDraft}
-                            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
-                          >
-                            Save Draft
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSendEmail}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                          >
-                            Send Email
-                          </button>
+                            <option value="admin">Administrators ({members.filter(m => m.role === 'admin' && m.status === 'active').length})</option>
+                            <option value="moderator">Moderators ({members.filter(m => m.role === 'moderator' && m.status === 'active').length})</option>
+                            <option value="member">Members ({members.filter(m => m.role === 'member' && m.status === 'active').length})</option>
+                          </select>
                         </div>
-                      </div>
+                      )}
                     </div>
+
+                    {emailComposer.recipientType === 'specific' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Add Recipients</label>
+                        <div className="flex gap-2 mb-2">
+                          <select
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                addRecipient(e.target.value);
+                                e.target.value = '';
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                          >
+                            <option value="">Select a member to add...</option>
+                            {members.filter(m => m.status === 'active' && !emailComposer.recipients.includes(m.email)).map(member => (
+                              <option key={member.id} value={member.email}>
+                                {member.name} ({member.email}) - {member.role}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {emailComposer.recipients.length > 0 && (
+                          <div className="space-y-1">
+                            {emailComposer.recipients.map(email => {
+                              const member = members.find(m => m.email === email);
+                              return (
+                                <div key={email} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
+                                  <span className="text-sm">{member?.name || email} ({email})</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRecipient(email)}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Send Options */}
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={emailComposer.saveAsDraft}
+                          onChange={(e) => setEmailComposer(prev => ({ ...prev, saveAsDraft: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <span className="text-sm text-gray-700">Save as draft</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={emailComposer.trackOpens}
+                          onChange={(e) => setEmailComposer(prev => ({ ...prev, trackOpens: e.target.checked }))}
+                          className="rounded"
+                        />
+                        <span className="text-sm text-gray-700">Track opens</span>
+                      </label>
+                    </div>
+
+                    {/* Preview */}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Preview</h4>
+                      <p><strong>Subject:</strong> {emailComposer.subject || 'No subject'}</p>
+                      <p><strong>Recipients:</strong> {
+                        emailComposer.recipientType === 'all' 
+                          ? `All ${members.filter(m => m.status === 'active').length} active members`
+                          : emailComposer.recipientType === 'role'
+                          ? `${members.filter(m => m.role === emailComposer.selectedRole && m.status === 'active').length} ${emailComposer.selectedRole}s`
+                          : `${emailComposer.recipients.length} specific members`
+                      }</p>
+                      <p><strong>Message:</strong> {emailComposer.content || 'No message'}</p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                      >
+                        <Send size={16} />
+                        {emailComposer.saveAsDraft ? 'Save Draft' : 'Send Email'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetEmailComposer}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Email History */}
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-xl font-semibold mb-4">📬 Email History ({emails.length})</h3>
+                  <div className="space-y-3">
+                    {emails.map(email => (
+                      <div key={email.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold">{email.subject}</h4>
+                          <span className="text-sm text-gray-500">{email.date}</span>
+                        </div>
+                        <p className="text-gray-700 text-sm mb-2">{email.content}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>To: {email.recipients} recipients</span>
+                          <span>Status: {email.status}</span>
+                          {email.opens && <span>Opens: {email.opens}</span>}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {emails.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No emails sent yet. Send your first campaign!</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             )}
             {activeSection === 'members' && (
               <div className="space-y-6">
-                {/* Member Management Header */}
+                {/* Member Management */}
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">👥 Member Management ({members.length})</h2>
-                    <button 
-                      onClick={() => setShowInviteModal(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                    <h3 className="text-xl font-semibold">👥 Member Management ({members.length})</h3>
+                    <button
+                      onClick={() => setInviteForm(prev => ({ ...prev, isOpen: true }))}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                     >
-                      <Plus size={20} /> Invite Member
+                      <UserPlus size={16} />
+                      Invite Member
                     </button>
                   </div>
 
-                  {/* Member Statistics */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                      <div className="text-2xl font-bold text-green-600">{members.filter(m => m.status === 'active').length}</div>
-                      <div className="text-sm text-green-700">Active Members</div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <div className="text-2xl font-bold text-yellow-600">{members.filter(m => m.status === 'pending').length}</div>
-                      <div className="text-sm text-yellow-700">Pending Approval</div>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                      <div className="text-2xl font-bold text-purple-600">{members.filter(m => m.role === 'admin').length}</div>
-                      <div className="text-sm text-purple-700">Administrators</div>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="text-2xl font-bold text-blue-600">{members.filter(m => m.role === 'moderator').length}</div>
-                      <div className="text-sm text-blue-700">Moderators</div>
-                    </div>
-                  </div>
-
-                  {/* Role Filter Tabs */}
+                  {/* Member Filters */}
                   <div className="flex gap-2 mb-6">
-                    <button 
-                      onClick={() => setMemberFilter('all')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'all' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      All Members
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('admin')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'admin' 
-                          ? 'bg-purple-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Admins
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('moderator')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'moderator' 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Moderators
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('member')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'member' 
-                          ? 'bg-gray-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Members
-                    </button>
-                    <button 
-                      onClick={() => setMemberFilter('pending')}
-                      className={`px-4 py-2 rounded-lg font-medium ${
-                        memberFilter === 'pending' 
-                          ? 'bg-yellow-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Pending
-                    </button>
+                    {['all', 'admin', 'moderator', 'member', 'pending'].map(filter => (
+                      <button
+                        key={filter}
+                        onClick={() => setMemberFilter(filter)}
+                        className={`px-3 py-1 rounded-full text-sm ${
+                          memberFilter === filter
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        {filter !== 'all' && ` (${members.filter(m => 
+                          filter === 'pending' ? m.status === 'pending' : m.role === filter
+                        ).length})`}
+                      </button>
+                    ))}
                   </div>
-                </div>
 
-                {/* Members List */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Member Directory</h3>
-                    <div className="space-y-4">
-                      {members
-                        .filter(member => {
-                          if (memberFilter === 'all') return true;
-                          if (memberFilter === 'pending') return member.status === 'pending';
-                          return member.role === memberFilter;
-                        })
-                        .map((member) => (
-                        <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                          <div className="flex items-center gap-4">
-                            {/* Avatar */}
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
-                              member.role === 'admin' ? 'bg-purple-600' : 
-                              member.role === 'moderator' ? 'bg-blue-600' : 'bg-gray-600'
-                            }`}>
-                              {member.avatar}
-                            </div>
-                            
-                            {/* Member Info */}
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                  member.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {member.role.toUpperCase()}
-                                </span>
-                                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                  member.status === 'active' ? 'bg-green-100 text-green-800' :
-                                  member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {member.status.toUpperCase()}
-                                </span>
+                  {/* Members List */}
+                  <div className="space-y-3">
+                    {members.filter(member => {
+                      if (memberFilter === 'all') return true;
+                      if (memberFilter === 'pending') return member.status === 'pending';
+                      return member.role === memberFilter;
+                    }).map(member => (
+                      <div key={member.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                {member.name.charAt(0)}
                               </div>
-                              <p className="text-sm text-gray-600">{member.email}</p>
-                              <p className="text-xs text-gray-500">
-                                Joined: {member.joinDate} • Last active: {member.lastActive}
-                              </p>
+                              <div>
+                                <h4 className="font-semibold">{member.name}</h4>
+                                <p className="text-sm text-gray-600">{member.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                member.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                member.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {member.role}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                member.status === 'active' ? 'bg-green-100 text-green-800' :
+                                member.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {member.status}
+                              </span>
+                              <span className="text-gray-500">Joined {member.joinDate}</span>
                             </div>
                           </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex gap-2">
                             {member.status === 'pending' && (
                               <>
                                 <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
@@ -4077,19 +1701,19 @@ const MainApp = () => {
                             </button>
                           </div>
                         </div>
-                      ))}
-                      
-                      {/* Empty State */}
-                      {members.filter(member => {
-                        if (memberFilter === 'all') return true;
-                        if (memberFilter === 'pending') return member.status === 'pending';
-                        return member.role === memberFilter;
-                      }).length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
+                    
+                    {/* Empty State */}
+                    {members.filter(member => {
+                      if (memberFilter === 'all') return true;
+                      if (memberFilter === 'pending') return member.status === 'pending';
+                      return member.role === memberFilter;
+                    }).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No {memberFilter === 'all' ? 'members' : memberFilter === 'pending' ? 'pending members' : `${memberFilter}s`} found.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -4124,122 +1748,91 @@ const MainApp = () => {
                         </div>
                         <h4 className="font-semibold text-blue-900">Moderator</h4>
                       </div>
-                      <p className="text-sm text-blue-700 mb-3">Content moderation and community management</p>
+                      <p className="text-sm text-blue-700 mb-3">Content management and community moderation</p>
                       <div className="space-y-1">
                         <div className="text-xs text-blue-600">✓ Read all content</div>
                         <div className="text-xs text-blue-600">✓ Write and edit content</div>
-                        <div className="text-xs text-blue-600">✓ Moderate community posts</div>
-                        <div className="text-xs text-blue-600">✓ Manage member interactions</div>
-                        <div className="text-xs text-gray-400">✗ User management</div>
+                        <div className="text-xs text-blue-600">✓ Moderate comments</div>
+                        <div className="text-xs text-blue-600">✓ Manage member posts</div>
+                        <div className="text-xs text-gray-400">✗ Delete user accounts</div>
                       </div>
                     </div>
 
                     {/* Member Role */}
-                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="border border-green-200 rounded-lg p-4 bg-green-50">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                           <span className="text-white text-sm font-bold">U</span>
                         </div>
-                        <h4 className="font-semibold text-gray-900">Member</h4>
+                        <h4 className="font-semibold text-green-900">Member</h4>
                       </div>
-                      <p className="text-sm text-gray-700 mb-3">Standard community member access</p>
+                      <p className="text-sm text-green-700 mb-3">Standard community participation</p>
                       <div className="space-y-1">
-                        <div className="text-xs text-gray-600">✓ Read public content</div>
-                        <div className="text-xs text-gray-600">✓ Write posts and comments</div>
-                        <div className="text-xs text-gray-600">✓ Engage with community</div>
-                        <div className="text-xs text-gray-400">✗ Content moderation</div>
-                        <div className="text-xs text-gray-400">✗ User management</div>
+                        <div className="text-xs text-green-600">✓ Read public content</div>
+                        <div className="text-xs text-green-600">✓ Create posts and comments</div>
+                        <div className="text-xs text-green-600">✓ Edit own content</div>
+                        <div className="text-xs text-gray-400">✗ Moderate other users</div>
+                        <div className="text-xs text-gray-400">✗ Access admin features</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Invite Member Modal */}
-                {showInviteModal && (
+                {inviteForm.isOpen && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
-                        <button 
-                          onClick={resetInviteForm}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
-                        {/* Name Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
-                          </label>
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                      <h3 className="text-lg font-semibold mb-4">Invite New Member</h3>
+                      <form onSubmit={handleInviteMember} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                           <input
                             type="text"
                             value={inviteForm.name}
                             onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter full name"
                             required
                           />
                         </div>
-
-                        {/* Email Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
-                          </label>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                           <input
                             type="email"
                             value={inviteForm.email}
                             onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter email address"
                             required
                           />
                         </div>
-
-                        {/* Role Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Role
-                          </label>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                           <select
                             value={inviteForm.role}
                             onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
-                            <option value="member">Member - Standard access</option>
-                            <option value="moderator">Moderator - Content moderation</option>
-                            <option value="admin">Administrator - Full access</option>
+                            <option value="member">Member</option>
+                            <option value="moderator">Moderator</option>
+                            <option value="admin">Administrator</option>
                           </select>
                         </div>
-
-                        {/* Send Email Option */}
-                        <div className="mb-6">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={inviteForm.sendEmail}
-                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
-                              className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Send invitation email</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="sendEmail"
+                            checked={inviteForm.sendEmail}
+                            onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                            className="rounded"
+                          />
+                          <label htmlFor="sendEmail" className="text-sm text-gray-700">
+                            Send invitation email
                           </label>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {inviteForm.sendEmail 
-                              ? "An email invitation will be sent to the user" 
-                              : "User will be added directly without email notification"
-                            }
-                          </p>
                         </div>
-
-                        {/* Action Buttons */}
                         <div className="flex gap-3">
                           <button
                             type="button"
-                            onClick={resetInviteForm}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                            onClick={() => setInviteForm(prev => ({ ...prev, isOpen: false }))}
+                            className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                           >
                             Cancel
                           </button>
@@ -4260,174 +1853,72 @@ const MainApp = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold">📅 Calendar</h2>
-                  <button
-                    onClick={() => { setContentType('scheduled'); setIsCreating(true); }}
-                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-2"
-                  >
-                    <Clock size={20} /> Schedule Content
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                    <Plus size={16} />
+                    Add Event
                   </button>
                 </div>
                 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2 mb-6">
+                <div className="grid grid-cols-7 gap-1 mb-4">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="p-3 text-center font-semibold text-gray-600 bg-gray-50 rounded">
+                    <div key={day} className="p-2 text-center font-semibold text-gray-600 bg-gray-100">
                       {day}
                     </div>
                   ))}
+                  
+                  {/* Calendar Days */}
                   {Array.from({ length: 35 }, (_, i) => {
-                    const date = i - 6; // Start from previous month
-                    const isCurrentMonth = date > 0 && date <= 30;
-                    const isToday = date === 23; // Today is 23rd
+                    const day = i - 6; // Start from previous month
+                    const isCurrentMonth = day > 0 && day <= 31;
+                    const isToday = day === 15; // Mock today
+                    
                     return (
                       <div
                         key={i}
-                        className={`p-3 text-center border rounded cursor-pointer hover:bg-blue-50 ${
-                          isCurrentMonth ? 'bg-white text-gray-900' : 'bg-gray-100 text-gray-400'
-                        } ${isToday ? 'bg-blue-600 text-white font-bold' : ''}`}
+                        className={`p-2 h-20 border border-gray-200 ${
+                          isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                        } ${isToday ? 'bg-blue-100 border-blue-300' : ''}`}
                       >
-                        {date > 0 ? date : date + 31}
+                        <div className={`text-sm ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {isCurrentMonth ? day : ''}
+                        </div>
+                        {/* Mock events */}
+                        {day === 15 && (
+                          <div className="text-xs bg-blue-600 text-white px-1 py-0.5 rounded mt-1">
+                            Team Meeting
+                          </div>
+                        )}
+                        {day === 22 && (
+                          <div className="text-xs bg-green-600 text-white px-1 py-0.5 rounded mt-1">
+                            Launch Event
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
                 
                 {/* Upcoming Events */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">📋 Upcoming Scheduled Content</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <div>
-                        <div className="font-medium">Weekly Newsletter</div>
-                        <div className="text-sm text-gray-600">📧 Email Campaign • Tomorrow at 9:00 AM</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 size={16} />
-                        </button>
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-3">Upcoming Events</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <div className="flex-1">
+                        <div className="font-medium">Team Meeting</div>
+                        <div className="text-sm text-gray-600">Today at 2:00 PM</div>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div>
-                        <div className="font-medium">Product Update Post</div>
-                        <div className="text-sm text-gray-600">📝 Blog Post • Friday at 2:00 PM</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
-                          <Edit size={16} />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                          <Trash2 size={16} />
-                        </button>
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                      <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                      <div className="flex-1">
+                        <div className="font-medium">Product Launch Event</div>
+                        <div className="text-sm text-gray-600">Next week at 10:00 AM</div>
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Invite Member Modal */}
-                {showInviteModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">👤 Invite New Member</h3>
-                        <button 
-                          onClick={resetInviteForm}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={24} />
-                        </button>
-                      </div>
-
-                      <form onSubmit={(e) => { e.preventDefault(); handleInviteMember(); }}>
-                        {/* Name Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Full Name *
-                          </label>
-                          <input
-                            type="text"
-                            value={inviteForm.name}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter full name"
-                            required
-                          />
-                        </div>
-
-                        {/* Email Field */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Address *
-                          </label>
-                          <input
-                            type="email"
-                            value={inviteForm.email}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter email address"
-                            required
-                          />
-                        </div>
-
-                        {/* Role Selection */}
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Role
-                          </label>
-                          <select
-                            value={inviteForm.role}
-                            onChange={(e) => setInviteForm(prev => ({ ...prev, role: e.target.value }))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="member">Member - Standard access</option>
-                            <option value="moderator">Moderator - Content moderation</option>
-                            <option value="admin">Administrator - Full access</option>
-                          </select>
-                        </div>
-
-                        {/* Send Email Option */}
-                        <div className="mb-6">
-                          <label className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={inviteForm.sendEmail}
-                              onChange={(e) => setInviteForm(prev => ({ ...prev, sendEmail: e.target.checked }))}
-                              className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Send invitation email</span>
-                          </label>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {inviteForm.sendEmail 
-                              ? "An email invitation will be sent to the user" 
-                              : "User will be added directly without email notification"
-                            }
-                          </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <button
-                            type="button"
-                            onClick={resetInviteForm}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                          >
-                            {inviteForm.sendEmail ? 'Send Invitation' : 'Add Member'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
             {activeSection === 'analytics' && (
@@ -4441,9 +1932,6 @@ const MainApp = () => {
       </div>
     </div>
   );
-
-  // Return main app
-  return mainApp;
 };
 
 // App with Router
