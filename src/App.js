@@ -1703,8 +1703,8 @@ const MainApp = () => {
     { id: 'campaigns', icon: Mail, label: 'Email Campaigns' },
     { id: 'members', icon: Users, label: 'Members' },
     { id: 'calendar', icon: Calendar, label: 'Calendar' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'settings', icon: Settings, label: 'Settings' }
+    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' }
   ];
 
   return (
