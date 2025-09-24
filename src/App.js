@@ -4,7 +4,7 @@ import {
   Home, MessageSquare, FileText, Mail, Users, Calendar, BarChart3, Settings,
   Plus, Send, Clock, Edit, Trash2, Heart, MessageCircle, Bookmark,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Upload,
-  Eye, Copy, Check, Star, TrendingUp, Activity, Vote
+  Eye, Copy, Check, Star, TrendingUp, Activity, Vote, X
 } from 'lucide-react';
 
 // Standalone News Feed Widget Component
