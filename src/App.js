@@ -1623,42 +1623,7 @@ const MainApp = () => {
     </div>
   );
 
-  // ContentEditor Component - Complete Rich Text Editor
-  const ContentEditor = () => {
-    const handleSave = (postData) => {
-      if (postData.isDraft) {
-        // Save as draft
-        const draft = {
-          id: Date.now(),
-          title: postData.title,
-          content: postData.content,
-          date: new Date().toLocaleDateString(),
-          published: false
-        };
-        setDrafts(prev => [...prev, draft]);
-        alert('Draft saved successfully!');
-      } else {
-        // Publish post
-        const post = {
-          id: Date.now(),
-          title: postData.title,
-          content: postData.content,
-          date: new Date().toLocaleDateString(),
-          featured: false,
-          published: true
-        };
-        setPosts(prev => [...prev, post]);
-        alert('Post published successfully!');
-      }
-      setIsCreating(false);
-    };
 
-    const handleCancel = () => {
-      setIsCreating(false);
-    };
-
-    return <RichBlogEditor onSave={handleSave} onCancel={handleCancel} />;
-  };
 
   // Navigation items
   const navItems = [
