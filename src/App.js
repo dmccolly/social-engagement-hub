@@ -1711,7 +1711,10 @@ const MainApp = () => {
         <div className="flex-1">
           <h3 className="font-semibold">{post.title}</h3>
           <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-          <p className="text-gray-700">{post.content}</p>
+          <div 
+            className="text-gray-700 prose max-w-none"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
         </div>
         <div className="flex gap-2 ml-4">
           <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
