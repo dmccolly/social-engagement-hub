@@ -719,7 +719,30 @@ const App = () => {
     const generateEmbedCode = (type, format = 'standard') => {
       const settings = widgetSettings[type];
       const settingsParam = encodeURIComponent(JSON.stringify(settings));
-      const baseUrl = window.location.origin;
+      
+      // Use production URL - will be automatically updated when deployed
+      const baseUrl = window.location.hostname === 'localhost' 
+        ? 'https://your-netlify-app.netlify.app' 
+        : window.location.origin;
+      
+      // Special handling for full social hub embed
+      if (type === 'socialhub') {
+        switch (format) {
+          case 'standard':
+            return `<iframe src="${baseUrl}" width="100%" height="800" frameborder="0" style="border-radius: 8px; border: 1px solid #e5e7eb;"></iframe>`;
+          case 'responsive':
+            return `<div style="position: relative; width: 100%; height: 0; padding-bottom: 100%; overflow: hidden; border-radius: 8px;">
+  <iframe src="${baseUrl}" 
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #e5e7eb;" 
+          allowfullscreen>
+  </iframe>
+</div>`;
+          case 'direct':
+            return baseUrl;
+          default:
+            return '';
+        }
+      }
       
       switch (format) {
         case 'standard':
@@ -760,7 +783,8 @@ const App = () => {
     const widgets = [
       { id: 'blog', name: 'Blog Posts', icon: FileText, description: 'Display latest blog posts with rich formatting' },
       { id: 'calendar', name: 'Calendar Events', icon: Calendar, description: 'Show upcoming events and schedules' },
-      { id: 'newsfeed', name: 'News Feed', icon: MessageSquare, description: 'Community posts and engagement feed' }
+      { id: 'newsfeed', name: 'News Feed', icon: MessageSquare, description: 'Community posts and engagement feed' },
+      { id: 'socialhub', name: 'Full Social Hub', icon: Users, description: 'Embed the complete social engagement platform' }
     ];
 
     return (
@@ -838,6 +862,19 @@ const App = () => {
                   </div>
 
                   {/* Widget-specific settings */}
+                  {selectedWidget === 'socialhub' && (
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-2">Full Social Hub Embed</h4>
+                      <p className="text-sm text-blue-700 mb-3">
+                        This embeds the complete social engagement platform including dashboard, 
+                        blog posts, calendar, members area, and all interactive features.
+                      </p>
+                      <div className="text-xs text-blue-600">
+                        <strong>Recommended dimensions:</strong> 100% width × 800px height minimum
+                      </div>
+                    </div>
+                  )}
+
                   {selectedWidget === 'blog' && (
                     <>
                       <div>
