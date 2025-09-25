@@ -2879,6 +2879,7 @@ const App = () => {
 
     // Make functions globally available
     useEffect(() => {
+      console.log('Setting up global image functions...');
       window.selectImage = selectImage;
       
       window.resizeImageTo = (imageId, size) => {
@@ -2950,7 +2951,7 @@ const App = () => {
         document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
         document.querySelectorAll('.image-handle').forEach(el => el.remove());
       };
-    }, []);
+    }, [selectImage]);
 
     // Enhanced Link Dialog Functions
     const openLinkDialog = () => {
