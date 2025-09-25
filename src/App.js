@@ -144,7 +144,7 @@ const StandaloneBlogWidget = () => {
 
   return (
     <div style={{
-      fontFamily: 'Georgia, serif',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       maxWidth: '800px',
       margin: '0 auto',
       padding: '20px',
@@ -152,22 +152,18 @@ const StandaloneBlogWidget = () => {
       borderRadius: `${settings.borderRadius}px`,
       boxShadow: settings.transparent ? 'none' : '0 4px 6px rgba(0, 0, 0, 0.1)'
     }}>
-      {/* Header */}
+      {/* Header - Consistent with other widgets */}
       <div style={{
+        backgroundColor: settings.headerColor,
+        color: 'white',
+        padding: '16px 20px',
+        borderRadius: `${settings.borderRadius}px`,
+        marginBottom: '24px',
         textAlign: 'center',
-        marginBottom: '30px',
-        borderBottom: '3px solid ' + settings.headerColor,
-        paddingBottom: '15px'
+        fontWeight: '600',
+        fontSize: '18px'
       }}>
-        <h2 style={{
-          color: settings.headerColor,
-          fontSize: '28px',
-          fontWeight: 'bold',
-          margin: '0',
-          letterSpacing: '-0.5px'
-        }}>
-          {settings.headerText}
-        </h2>
+        {settings.headerText}
       </div>
 
       {/* Posts */}
@@ -243,12 +239,12 @@ const StandaloneBlogWidget = () => {
             <div style={{ padding: '25px' }}>
               {/* Title */}
               <h3 style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
+                fontSize: '20px',
+                fontWeight: '600',
                 color: '#1f2937',
                 marginBottom: '12px',
-                lineHeight: '1.3',
-                fontFamily: 'Georgia, serif'
+                lineHeight: '1.4',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
               }}>
                 {post.title}
               </h3>
@@ -272,11 +268,11 @@ const StandaloneBlogWidget = () => {
               {/* Excerpt */}
               {settings.showExcerpts && (
                 <p style={{
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  color: '#4b5563',
-                  marginBottom: '20px',
-                  fontFamily: 'Georgia, serif'
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  color: '#6b7280',
+                  marginBottom: '16px',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                 }}>
                   {post.excerpt || (post.content ? post.content.substring(0, 200) + '...' : '')}
                 </p>
@@ -2874,6 +2870,313 @@ const App = () => {
 
 
 
+  // Email Campaigns Section Component
+  const EmailCampaignsSection = () => {
+    const [emailCampaigns, setEmailCampaigns] = useState([
+      {
+        id: 1,
+        name: 'Welcome Series',
+        subject: 'Welcome to our community!',
+        status: 'Active',
+        recipients: 156,
+        sent: 142,
+        opened: 89,
+        clicked: 23,
+        created: '2025-09-20',
+        lastSent: '2025-09-25',
+        type: 'Automated'
+      },
+      {
+        id: 2,
+        name: 'Monthly Newsletter',
+        subject: 'Your monthly update is here',
+        status: 'Sent',
+        recipients: 203,
+        sent: 203,
+        opened: 156,
+        clicked: 45,
+        created: '2025-09-15',
+        lastSent: '2025-09-24',
+        type: 'Newsletter'
+      },
+      {
+        id: 3,
+        name: 'Product Launch',
+        subject: 'Exciting new features just launched!',
+        status: 'Draft',
+        recipients: 0,
+        sent: 0,
+        opened: 0,
+        clicked: 0,
+        created: '2025-09-25',
+        lastSent: null,
+        type: 'Promotional'
+      }
+    ]);
+
+    const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+    const [newCampaign, setNewCampaign] = useState({
+      name: '',
+      subject: '',
+      content: '',
+      type: 'Newsletter'
+    });
+
+    const statusColors = {
+      'Active': 'bg-green-100 text-green-800',
+      'Sent': 'bg-blue-100 text-blue-800',
+      'Draft': 'bg-yellow-100 text-yellow-800',
+      'Paused': 'bg-red-100 text-red-800'
+    };
+
+    const typeColors = {
+      'Newsletter': 'bg-purple-100 text-purple-800',
+      'Promotional': 'bg-orange-100 text-orange-800',
+      'Automated': 'bg-indigo-100 text-indigo-800'
+    };
+
+    const handleCreateCampaign = () => {
+      if (!newCampaign.name || !newCampaign.subject) return;
+      
+      const campaign = {
+        id: Date.now(),
+        ...newCampaign,
+        status: 'Draft',
+        recipients: 0,
+        sent: 0,
+        opened: 0,
+        clicked: 0,
+        created: new Date().toISOString().split('T')[0],
+        lastSent: null
+      };
+      
+      setEmailCampaigns(prev => [campaign, ...prev]);
+      setNewCampaign({ name: '', subject: '', content: '', type: 'Newsletter' });
+      setIsCreatingCampaign(false);
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <Mail className="text-green-600" />
+                Email Campaigns
+              </h1>
+              <p className="text-gray-600 mt-2">Manage and track your email marketing campaigns</p>
+            </div>
+            <button
+              onClick={() => setIsCreatingCampaign(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+            >
+              <Plus size={20} /> New Campaign
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Campaigns</p>
+                <p className="text-2xl font-bold text-gray-900">{emailCampaigns.length}</p>
+              </div>
+              <Mail className="text-blue-500" size={32} />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Sent</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {emailCampaigns.reduce((sum, c) => sum + c.sent, 0)}
+                </p>
+              </div>
+              <Send className="text-green-500" size={32} />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Opens</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {emailCampaigns.reduce((sum, c) => sum + c.opened, 0)}
+                </p>
+              </div>
+              <Eye className="text-purple-500" size={32} />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Clicks</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {emailCampaigns.reduce((sum, c) => sum + c.clicked, 0)}
+                </p>
+              </div>
+              <ExternalLink className="text-orange-500" size={32} />
+            </div>
+          </div>
+        </div>
+
+        {/* Create Campaign Modal */}
+        {isCreatingCampaign && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Create New Campaign</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
+                  <input
+                    type="text"
+                    value={newCampaign.name}
+                    onChange={(e) => setNewCampaign(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Enter campaign name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Subject</label>
+                  <input
+                    type="text"
+                    value={newCampaign.subject}
+                    onChange={(e) => setNewCampaign(prev => ({ ...prev, subject: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Enter email subject"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Type</label>
+                  <select
+                    value={newCampaign.type}
+                    onChange={(e) => setNewCampaign(prev => ({ ...prev, type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="Newsletter">Newsletter</option>
+                    <option value="Promotional">Promotional</option>
+                    <option value="Automated">Automated</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <textarea
+                    value={newCampaign.content}
+                    onChange={(e) => setNewCampaign(prev => ({ ...prev, content: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    rows={4}
+                    placeholder="Enter email content"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCreateCampaign}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Create Campaign
+                </button>
+                <button
+                  onClick={() => setIsCreatingCampaign(false)}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Campaigns List */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6">
+            <h2 className="text-xl font-bold mb-4">All Campaigns</h2>
+            
+            {emailCampaigns.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Mail size={48} className="mx-auto mb-4 text-gray-300" />
+                <p>No campaigns yet. Create your first one!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {emailCampaigns.map(campaign => (
+                  <div key={campaign.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
+                        <p className="text-sm text-gray-600">{campaign.subject}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${typeColors[campaign.type]}`}>
+                          {campaign.type}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[campaign.status]}`}>
+                          {campaign.status}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Recipients</p>
+                        <p className="font-semibold">{campaign.recipients}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Sent</p>
+                        <p className="font-semibold">{campaign.sent}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Opened</p>
+                        <p className="font-semibold">{campaign.opened}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Clicked</p>
+                        <p className="font-semibold">{campaign.clicked}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Open Rate</p>
+                        <p className="font-semibold">
+                          {campaign.sent > 0 ? Math.round((campaign.opened / campaign.sent) * 100) : 0}%
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-xs text-gray-500">
+                        Created: {campaign.created} {campaign.lastSent && `• Last sent: ${campaign.lastSent}`}
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm hover:bg-blue-100">
+                          Edit
+                        </button>
+                        <button className="px-3 py-1 bg-green-50 text-green-600 rounded text-sm hover:bg-green-100">
+                          Send
+                        </button>
+                        <button className="px-3 py-1 bg-red-50 text-red-600 rounded text-sm hover:bg-red-100">
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Dashboard Component
   const Dashboard = () => (
     <div className="space-y-6">
@@ -3089,22 +3392,7 @@ const App = () => {
                 </div>
               </div>
             )}
-            {activeSection === 'campaigns' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Email Campaigns</h2>
-                  <button
-                    onClick={() => { setContentType('email'); setIsCreating(true); }}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
-                  >
-                    <Send size={20} /> New Campaign
-                  </button>
-                </div>
-                {campaigns.length === 0 && (
-                  <p className="text-gray-500">No campaigns yet. Create your first one!</p>
-                )}
-              </div>
-            )}
+            {activeSection === 'campaigns' && <EmailCampaignsSection />}
             {activeSection === 'members' && <MembersSection />}
 
 
