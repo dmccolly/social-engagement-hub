@@ -2849,6 +2849,8 @@ const App = () => {
 
     // Make functions globally available
     useEffect(() => {
+      window.selectImage = selectImage;
+      
       window.resizeImageTo = (imageId, size) => {
         console.log('Resizing image', imageId, 'to', size);
         const img = document.getElementById(`img-${imageId}`);
@@ -2911,6 +2913,7 @@ const App = () => {
       
       // Cleanup
       return () => {
+        delete window.selectImage;
         delete window.resizeImageTo;
         delete window.positionImageTo;
         delete window.deselectImage;
