@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LocalStorage Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+    </style>
+</head>
+<body>
+    <h1>🔍 LocalStorage Debug Tool</h1>
+    
+    <div class="debug-section">
+        <h2>Current LocalStorage Contents</h2>
+        <button onclick="refreshStorage()">🔄 Refresh</button>
+        <button onclick="clearStorage()">🗑️ Clear All</button>
+        <pre id="storage-contents"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Social Hub Posts</h2>
+        <pre id="posts-contents"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Add Test Post</h2>
+        <button onclick="addTestPost()">➕ Add Test Post</button>
+        <button onclick="addFeaturedPost()">⭐ Add Featured Test Post</button>
+    </div>
+
+    <script>
+        function refreshStorage() {
+            const storageDiv = document.getElementById('storage-contents');
+            const postsDiv = document.getElementById('posts-contents');
+            
+            // Show all localStorage
+            let allStorage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allStorage[key] = localStorage.getItem(key);
+            }
+            storageDiv.textContent = JSON.stringify(allStorage, null, 2);
+            
+            // Show specific posts
+            const posts = localStorage.getItem('socialHubPosts');
+            if (posts) {
+                postsDiv.textContent = JSON.stringify(JSON.parse(posts), null, 2);
+            } else {
+                postsDiv.textContent = 'No socialHubPosts found in localStorage';
+            }
+        }
+        
+        function clearStorage() {
+            if (confirm('Clear all localStorage?')) {
+                localStorage.clear();
+                refreshStorage();
+            }
+        }
+        
+        function addTestPost() {
+            const existingPosts = JSON.parse(localStorage.getItem('socialHubPosts') || '[]');
+            const testPost = {
+                id: Date.now(),
+                title: 'Test Post ' + new Date().toLocaleTimeString(),
+                content: '<p>This is a test post created from the debug tool.</p>',
+                date: new Date().toLocaleDateString(),
+                featured: false,
+                published: true
+            };
+            
+            const updatedPosts = [...existingPosts, testPost];
+            localStorage.setItem('socialHubPosts', JSON.stringify(updatedPosts));
+            refreshStorage();
+            alert('Test post added!');
+        }
+        
+        function addFeaturedPost() {
+            const existingPosts = JSON.parse(localStorage.getItem('socialHubPosts') || '[]');
+            const testPost = {
+                id: Date.now(),
+                title: '⭐ Featured Test Post ' + new Date().toLocaleTimeString(),
+                content: '<p>This is a <strong>featured</strong> test post with gradient styling!</p>',
+                date: new Date().toLocaleDateString(),
+                featured: true,
+                published: true
+            };
+            
+            const updatedPosts = [...existingPosts, testPost];
+            localStorage.setItem('socialHubPosts', JSON.stringify(updatedPosts));
+            refreshStorage();
+            alert('Featured test post added!');
+        }
+        
+        // Auto-refresh on load
+        refreshStorage();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(refreshStorage, 5000);
+    </script>
+</body>
+</html>
