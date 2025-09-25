@@ -3219,6 +3219,46 @@ const App = () => {
             
             <div className="border-l mx-2"></div>
             
+            {/* Lists */}
+            <button onClick={() => applyFormat('insertUnorderedList')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Bullet Points">
+              <span className="text-sm font-bold">•</span>
+            </button>
+            <button onClick={() => applyFormat('insertOrderedList')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Numbered List">
+              <span className="text-sm font-bold">1.</span>
+            </button>
+            
+            <div className="border-l mx-2"></div>
+            
+            {/* Text Color */}
+            <div className="relative">
+              <input
+                type="color"
+                onChange={(e) => {
+                  document.execCommand('foreColor', false, e.target.value);
+                  if (contentRef.current) {
+                    setContent(contentRef.current.innerHTML);
+                  }
+                }}
+                className="w-8 h-8 border rounded cursor-pointer"
+                title="Text Color"
+              />
+            </div>
+            <div className="relative">
+              <input
+                type="color"
+                onChange={(e) => {
+                  document.execCommand('hiliteColor', false, e.target.value);
+                  if (contentRef.current) {
+                    setContent(contentRef.current.innerHTML);
+                  }
+                }}
+                className="w-8 h-8 border rounded cursor-pointer"
+                title="Highlight Color"
+              />
+            </div>
+            
+            <div className="border-l mx-2"></div>
+            
             {/* Alignment */}
             <button onClick={() => applyFormat('justifyLeft')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Align Left">
               <AlignLeft size={16} />
