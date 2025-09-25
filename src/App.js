@@ -7,7 +7,7 @@ import {
   Image, Film, Music, Link, Bold, Italic, Underline, Type,
   Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
   Star, Sparkles, Crown, Copy, ExternalLink, Zap, TrendingUp,
-  UserPlus, Award, Target, Activity
+  UserPlus, Award, Target, Activity, Download, Play, Shield
 } from 'lucide-react';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
