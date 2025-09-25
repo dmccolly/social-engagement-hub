@@ -126,32 +126,36 @@ const StandaloneBlogWidget = () => {
     <div style={{ 
       backgroundColor: settings.backgroundColor,
       borderRadius: `${settings.borderRadius}px`,
-      padding: '20px',
+      padding: '24px',
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      maxWidth: '400px'
+      maxWidth: '600px',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
     }}>
       {/* Widget Header */}
       <div style={{ 
         color: settings.primaryColor, 
-        fontSize: '18px', 
+        fontSize: '24px', 
         fontWeight: 'bold', 
-        marginBottom: '16px',
-        borderBottom: `2px solid ${settings.primaryColor}`,
-        paddingBottom: '8px'
+        marginBottom: '24px',
+        borderBottom: `3px solid ${settings.primaryColor}`,
+        paddingBottom: '12px',
+        textAlign: 'center'
       }}>
         {settings.headerText}
       </div>
 
       {/* Posts */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {posts.map(post => (
-          <div key={post.id} style={{
-            padding: '16px',
+          <article key={post.id} style={{
+            padding: '20px',
             border: '1px solid #e5e7eb',
-            borderRadius: '8px',
+            borderRadius: '12px',
             background: post.featured 
               ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' 
-              : '#ffffff'
+              : '#ffffff',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}>
             {/* Featured Badge */}
             {post.featured && (
@@ -161,21 +165,44 @@ const StandaloneBlogWidget = () => {
                 color: 'white',
                 fontSize: '12px',
                 fontWeight: 'bold',
-                padding: '4px 8px',
-                borderRadius: '12px',
-                marginBottom: '8px'
+                padding: '6px 12px',
+                borderRadius: '16px',
+                marginBottom: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
               }}>
                 ⭐ FEATURED
               </div>
             )}
             
+            {/* Post Image */}
+            {settings.showImages && post.image && (
+              <div style={{ marginBottom: '16px' }}>
+                <img 
+                  src={post.image} 
+                  alt={post.title}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            
             {/* Post Title */}
             <h3 style={{
-              fontSize: '16px',
+              fontSize: '20px',
               fontWeight: 'bold',
               color: '#1f2937',
-              marginBottom: '8px',
-              lineHeight: '1.4'
+              marginBottom: '12px',
+              lineHeight: '1.3',
+              fontFamily: 'Georgia, serif'
             }}>
               {post.title}
             </h3>
@@ -183,61 +210,53 @@ const StandaloneBlogWidget = () => {
             {/* Post Date */}
             {settings.showDates && (
               <div style={{
-                fontSize: '12px',
+                fontSize: '13px',
                 color: '#6b7280',
-                marginBottom: '8px'
+                marginBottom: '12px',
+                fontWeight: '500'
               }}>
                 📅 {post.date}
               </div>
             )}
             
-            {/* Post Content */}
+            {/* Post Content - Magazine Style Excerpt */}
             {settings.showExcerpts && (
-              <p style={{
-                fontSize: '14px',
-                color: '#4b5563',
-                lineHeight: '1.5',
-                marginBottom: '12px'
+              <div style={{
+                fontSize: '15px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px',
+                fontFamily: 'Georgia, serif'
               }}>
-                {post.content.length > 100 ? `${post.content.substring(0, 100)}...` : post.content}
-              </p>
+                {post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}
+              </div>
             )}
             
             {/* Read More Link */}
-            <a href="#" style={{
-              color: settings.primaryColor,
-              fontSize: '14px',
-              fontWeight: '500',
-              textDecoration: 'none'
+            <div style={{
+              borderTop: '1px solid #e5e7eb',
+              paddingTop: '12px',
+              textAlign: 'right'
             }}>
-              Read More →
-            </a>
-          </div>
+              <a 
+                href="#" 
+                style={{
+                  color: settings.primaryColor,
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+              >
+                Read Full Article →
+              </a>
+            </div>
+          </article>
         ))}
-      </div>
-
-      {/* Debug Info */}
-      {debugInfo && (
-        <div style={{
-          marginTop: '16px',
-          padding: '8px',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '4px',
-          fontSize: '11px',
-          color: '#6b7280'
-        }}>
-          Debug: {debugInfo}
-        </div>
-      )}
-
-      {/* Widget Footer */}
-      <div style={{
-        marginTop: '16px',
-        textAlign: 'center',
-        fontSize: '11px',
-        color: '#9ca3af'
-      }}>
-        Powered by Social Hub
       </div>
     </div>
   );
