@@ -2461,7 +2461,14 @@ const App = () => {
     const [content, setContent] = useState('');
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [showLinkDialog, setShowLinkDialog] = useState(false);
+    const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
+    const [showMediaDialog, setShowMediaDialog] = useState(false);
+    const [linkData, setLinkData] = useState({ text: '', url: '' });
+    const [youtubeUrl, setYoutubeUrl] = useState('');
+    const [mediaData, setMediaData] = useState({ type: 'audio', url: '', title: '' });
     const fileInputRef = useRef(null);
+    const mediaInputRef = useRef(null);
     const contentRef = useRef(null);
 
     // Handle content change - FIXED for backwards typing
@@ -2755,6 +2762,225 @@ const App = () => {
       };
     }, []);
 
+    // Enhanced Link Dialog Functions
+    const openLinkDialog = () => {
+      const selection = window.getSelection();
+      const selectedText = selection.toString();
+      setLinkData({ text: selectedText || '', url: '' });
+      setShowLinkDialog(true);
+    };
+
+    const insertLink = () => {
+      if (!linkData.text || !linkData.url) return;
+      
+      const editor = contentRef.current;
+      if (editor) {
+        const selection = window.getSelection();
+        let range;
+        
+        if (selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        
+        // Create link element
+        const link = document.createElement('a');
+        link.href = linkData.url;
+        link.textContent = linkData.text;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.color = '#2563eb';
+        link.style.textDecoration = 'underline';
+        
+        range.deleteContents();
+        range.insertNode(link);
+        
+        // Add space after link
+        const textNode = document.createTextNode(' ');
+        range.setStartAfter(link);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        setContent(editor.innerHTML);
+      }
+      
+      setShowLinkDialog(false);
+      setLinkData({ text: '', url: '' });
+    };
+
+    // YouTube Embed Functions
+    const extractYouTubeId = (url) => {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    };
+
+    const insertYouTubeVideo = () => {
+      const videoId = extractYouTubeId(youtubeUrl);
+      if (!videoId) {
+        alert('Please enter a valid YouTube URL');
+        return;
+      }
+      
+      const editor = contentRef.current;
+      if (editor) {
+        const selection = window.getSelection();
+        let range;
+        
+        if (selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        
+        // Create YouTube embed container
+        const container = document.createElement('div');
+        container.style.cssText = `
+          position: relative;
+          width: 100%;
+          height: 0;
+          padding-bottom: 56.25%;
+          margin: 20px 0;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        `;
+        
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${videoId}`;
+        iframe.style.cssText = `
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
+        `;
+        iframe.allowFullscreen = true;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        
+        container.appendChild(iframe);
+        
+        range.deleteContents();
+        range.insertNode(container);
+        
+        // Add space after video
+        const textNode = document.createTextNode('\n\n');
+        range.setStartAfter(container);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        setContent(editor.innerHTML);
+      }
+      
+      setShowYouTubeDialog(false);
+      setYoutubeUrl('');
+    };
+
+    // Media File Functions
+    const handleMediaUpload = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      
+      try {
+        const mediaUrl = URL.createObjectURL(file);
+        const isVideo = file.type.startsWith('video/');
+        const isAudio = file.type.startsWith('audio/');
+        
+        const editor = contentRef.current;
+        if (editor) {
+          const selection = window.getSelection();
+          let range;
+          
+          if (selection.rangeCount > 0) {
+            range = selection.getRangeAt(0);
+          } else {
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+          }
+          
+          // Create media container
+          const container = document.createElement('div');
+          container.style.cssText = `
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            text-align: center;
+          `;
+          
+          if (isVideo) {
+            const video = document.createElement('video');
+            video.src = mediaUrl;
+            video.controls = true;
+            video.style.cssText = `
+              max-width: 100%;
+              height: auto;
+              border-radius: 8px;
+            `;
+            container.appendChild(video);
+          } else if (isAudio) {
+            const audio = document.createElement('audio');
+            audio.src = mediaUrl;
+            audio.controls = true;
+            audio.style.cssText = `
+              width: 100%;
+              margin: 10px 0;
+            `;
+            
+            const title = document.createElement('p');
+            title.textContent = file.name;
+            title.style.cssText = `
+              margin: 10px 0 5px 0;
+              font-weight: 600;
+              color: #374151;
+            `;
+            
+            container.appendChild(title);
+            container.appendChild(audio);
+          }
+          
+          range.deleteContents();
+          range.insertNode(container);
+          
+          // Add space after media
+          const textNode = document.createTextNode('\n\n');
+          range.setStartAfter(container);
+          range.insertNode(textNode);
+          range.setStartAfter(textNode);
+          range.setEndAfter(textNode);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          setContent(editor.innerHTML);
+        }
+        
+        if (mediaInputRef.current) {
+          mediaInputRef.current.value = '';
+        }
+      } catch (error) {
+        console.error('Media upload error:', error);
+        alert('Media upload failed. Please try again.');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
     // Text formatting functions
     const applyFormat = (command) => {
       document.execCommand(command, false, null);
@@ -2785,30 +3011,47 @@ const App = () => {
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          {/* Text Formatting Toolbar */}
+          {/* Enhanced Text Formatting Toolbar */}
           <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-            <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            {/* Text Formatting */}
+            <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Bold">
               <Bold size={16} />
             </button>
-            <button onClick={() => applyFormat('italic')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyFormat('italic')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Italic">
               <Italic size={16} />
             </button>
-            <button onClick={() => applyFormat('underline')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyFormat('underline')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Underline">
               <Underline size={16} />
             </button>
+            
             <div className="border-l mx-2"></div>
-            <button onClick={() => applyFormat('justifyLeft')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            
+            {/* Alignment */}
+            <button onClick={() => applyFormat('justifyLeft')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Align Left">
               <AlignLeft size={16} />
             </button>
-            <button onClick={() => applyFormat('justifyCenter')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyFormat('justifyCenter')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Center">
               <AlignCenter size={16} />
             </button>
-            <button onClick={() => applyFormat('justifyRight')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100">
+            <button onClick={() => applyFormat('justifyRight')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Align Right">
               <AlignRight size={16} />
+            </button>
+            
+            <div className="border-l mx-2"></div>
+            
+            {/* Links and Media */}
+            <button onClick={openLinkDialog} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Link">
+              <ExternalLink size={16} />
+            </button>
+            <button onClick={() => setShowYouTubeDialog(true)} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert YouTube Video">
+              <Play size={16} />
+            </button>
+            <button onClick={() => mediaInputRef.current?.click()} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Audio/Video">
+              <Music size={16} />
             </button>
           </div>
 
-          {/* Image Upload */}
+          {/* File Upload Inputs */}
           <div className="mb-4 p-3 bg-blue-50 rounded-lg">
             <input
               type="file"
@@ -2817,8 +3060,15 @@ const App = () => {
               accept="image/*"
               style={{ display: 'none' }}
             />
+            <input
+              type="file"
+              ref={mediaInputRef}
+              onChange={handleMediaUpload}
+              accept="audio/*,video/*"
+              style={{ display: 'none' }}
+            />
             <button 
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2 mr-3"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             >
@@ -2826,7 +3076,7 @@ const App = () => {
               {isUploading ? 'Uploading...' : 'Upload Image'}
             </button>
             <p className="text-sm text-gray-600 mt-2">
-              Upload an image, then click on it to resize and position it.
+              Upload images, audio, or video files. Use the toolbar buttons for links and YouTube videos.
             </p>
           </div>
 
@@ -2845,6 +3095,94 @@ const App = () => {
               writingMode: 'horizontal-tb'
             }}
           />
+
+          {/* Link Dialog Modal */}
+          {showLinkDialog && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold mb-4">Insert Link</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Link Text</label>
+                    <input
+                      type="text"
+                      value={linkData.text}
+                      onChange={(e) => setLinkData(prev => ({ ...prev, text: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter the text to display"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                    <input
+                      type="url"
+                      value={linkData.url}
+                      onChange={(e) => setLinkData(prev => ({ ...prev, url: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={insertLink}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Insert Link
+                  </button>
+                  <button
+                    onClick={() => setShowLinkDialog(false)}
+                    className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* YouTube Dialog Modal */}
+          {showYouTubeDialog && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold mb-4">Insert YouTube Video</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">YouTube URL</label>
+                    <input
+                      type="url"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Paste any YouTube URL (watch, share, or embed format)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={insertYouTubeVideo}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Insert Video
+                  </button>
+                  <button
+                    onClick={() => setShowYouTubeDialog(false)}
+                    className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 mt-6">
