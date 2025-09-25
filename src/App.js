@@ -1453,9 +1453,137 @@ const MainApp = () => {
           </div>
         )}
         {activeSection === 'campaigns' && (
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-6">Email Campaigns</h1>
-            <p className="text-gray-600">Email campaign functionality coming soon...</p>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
+              <button
+                onClick={() => { setContentType('email'); setIsCreating(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              >
+                <Plus size={20} />
+                New Campaign
+              </button>
+            </div>
+
+            <div className="grid gap-6">
+              {/* Campaign Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Mail className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Campaigns</p>
+                      <p className="text-2xl font-bold text-gray-900">12</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Users className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Subscribers</p>
+                      <p className="text-2xl font-bold text-gray-900">1,247</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Eye className="h-6 w-6 text-yellow-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Open Rate</p>
+                      <p className="text-2xl font-bold text-gray-900">24.5%</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <BarChart3 className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Click Rate</p>
+                      <p className="text-2xl font-bold text-gray-900">3.2%</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Campaigns */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Recent Campaigns</h2>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <Mail className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Weekly Newsletter #47</h3>
+                          <p className="text-sm text-gray-600">Sent to 1,247 subscribers • 2 days ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-900">24.5% opened</p>
+                          <p className="text-sm text-gray-600">3.2% clicked</p>
+                        </div>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Sent</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Mail className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Product Update Announcement</h3>
+                          <p className="text-sm text-gray-600">Sent to 1,247 subscribers • 5 days ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-900">31.2% opened</p>
+                          <p className="text-sm text-gray-600">5.8% clicked</p>
+                        </div>
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Sent</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-yellow-100 rounded-lg">
+                          <Mail className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">Welcome Series - Part 3</h3>
+                          <p className="text-sm text-gray-600">Draft • Created 1 week ago</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-900">-</p>
+                          <p className="text-sm text-gray-600">Not sent</p>
+                        </div>
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Draft</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {activeSection === 'members' && (
