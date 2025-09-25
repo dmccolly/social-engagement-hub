@@ -1388,9 +1388,68 @@ const MainApp = () => {
         {activeSection === 'posts' && <BlogPosts />}
         {activeSection === 'settings' && <WidgetCreator />}
         {activeSection === 'newsfeed' && (
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-6">News Feed</h1>
-            <p className="text-gray-600">News feed functionality coming soon...</p>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-gray-900">News Feed</h1>
+              <button
+                onClick={() => { setContentType('newsfeed'); setIsCreating(true); }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                <Plus size={20} />
+                New Post
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Community Feed</h2>
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      JD
+                    </div>
+                    <div>
+                      <div className="font-medium">John Doe</div>
+                      <div className="text-sm text-gray-500">2 hours ago</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-3">
+                    Just launched our new feature! Check it out and let us know what you think.
+                  </p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <button className="flex items-center gap-1 hover:text-blue-600">
+                      <span>👍</span> 12 likes
+                    </button>
+                    <button className="flex items-center gap-1 hover:text-blue-600">
+                      <span>💬</span> 3 comments
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      SM
+                    </div>
+                    <div>
+                      <div className="font-medium">Sarah Miller</div>
+                      <div className="text-sm text-gray-500">5 hours ago</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 mb-3">
+                    Great community event yesterday! Thanks to everyone who participated.
+                  </p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <button className="flex items-center gap-1 hover:text-blue-600">
+                      <span>👍</span> 8 likes
+                    </button>
+                    <button className="flex items-center gap-1 hover:text-blue-600">
+                      <span>💬</span> 5 comments
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {activeSection === 'campaigns' && (
