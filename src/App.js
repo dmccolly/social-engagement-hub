@@ -3189,10 +3189,10 @@ const App = () => {
     };
 
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-full mx-auto p-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Editor Panel */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 min-h-screen">
             <h2 className="text-2xl font-bold mb-6">Create Blog Post</h2>
           
           <input
@@ -3277,7 +3277,7 @@ const App = () => {
           {/* Content Editor */}
           <div
             ref={contentRef}
-            className="w-full min-h-96 p-4 border rounded-lg bg-white focus:border-blue-500 transition-colors"
+            className="w-full min-h-[600px] p-6 border rounded-lg bg-white focus:border-blue-500 transition-colors text-base leading-relaxed"
             contentEditable
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
@@ -3429,7 +3429,7 @@ const App = () => {
         </div>
 
         {/* Live Preview Panel */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6 min-h-screen">
           <h3 className="text-xl font-bold mb-4">Live Preview</h3>
           
           {/* Preview Size Controls */}
@@ -3455,7 +3455,7 @@ const App = () => {
           </div>
 
           {/* Preview Content */}
-          <div className={`border rounded-lg p-4 bg-gray-50 min-h-96 transition-all duration-200 ${
+          <div className={`border rounded-lg p-6 bg-gray-50 min-h-[500px] transition-all duration-200 ${
             previewSize === 'mobile' ? 'max-w-sm mx-auto' : 
             previewSize === 'tablet' ? 'max-w-2xl mx-auto' : 
             'max-w-full'
