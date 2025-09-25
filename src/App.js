@@ -644,6 +644,115 @@ const StandaloneNewsFeedWidget = () => {
   );
 };
 
+// Standalone Social Hub Widget for Embedding
+const StandaloneSocialHubWidget = () => {
+  // State Management (simplified for embed)
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [posts, setPosts] = useState([
+    {
+      title: 'Welcome to Our Platform',
+      content: 'This is a featured post showcasing our latest updates and news. We\'re excited to share our journey with you and provide valuable insights...',
+      date: '2025-09-24',
+      author: 'Editorial Team',
+      readTime: '3 min read',
+      isFeatured: true,
+      image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=400&fit=crop'
+    },
+    {
+      title: 'Community Spotlight',
+      content: 'Highlighting amazing contributions from our community members and their innovative projects...',
+      date: '2025-09-23',
+      author: 'Community Team',
+      readTime: '2 min read',
+      isFeatured: false,
+      image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=400&fit=crop'
+    }
+  ]);
+
+  // Navigation items for embed version
+  const navigationItems = [
+    { id: 'dashboard', icon: Home, label: 'Dashboard' },
+    { id: 'newsfeed', icon: MessageSquare, label: 'News Feed' },
+    { id: 'posts', icon: FileText, label: 'Blog Posts' },
+    { id: 'members', icon: Users, label: 'Members' },
+    { id: 'calendar', icon: Calendar, label: 'Calendar' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      {/* Compact Header for Embed */}
+      <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Users className="text-blue-600" size={20} />
+            Social Hub
+          </h1>
+          <div className="text-xs text-gray-500">
+            Powered by Social Engagement Platform
+          </div>
+        </div>
+      </div>
+
+      <div className="flex h-[calc(100vh-60px)]">
+        {/* Compact Sidebar */}
+        <div className="w-48 bg-white shadow-sm border-r border-gray-200">
+          <nav className="p-3 space-y-1">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
+                  activeSection === item.id
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    : 'hover:bg-gray-100 text-gray-700'
+                }`}
+              >
+                <item.icon size={16} />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 p-4 overflow-auto">
+          {activeSection === 'dashboard' && <Dashboard />}
+          {activeSection === 'newsfeed' && <NewsFeed />}
+          {activeSection === 'posts' && (
+            <div className="bg-white rounded-lg shadow p-4">
+              <h2 className="text-xl font-bold mb-4">Blog Posts</h2>
+              <div className="space-y-3">
+                {posts.map((post, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex gap-4">
+                      {post.image && (
+                        <img src={post.image} alt={post.title} className="w-20 h-20 object-cover rounded" />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">{post.title}</h3>
+                        <p className="text-sm text-gray-600 mb-2">{post.content}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>{post.author}</span>
+                          <span>{post.date}</span>
+                          <span>{post.readTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeSection === 'members' && <MembersSection />}
+          {activeSection === 'calendar' && <CalendarSection />}
+          {activeSection === 'analytics' && <AnalyticsSection />}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   // Check if this is a widget route
   const currentPath = window.location.pathname;
@@ -657,6 +766,9 @@ const App = () => {
   }
   if (currentPath === '/widget/newsfeed') {
     return <StandaloneNewsFeedWidget />;
+  }
+  if (currentPath === '/widget/socialhub') {
+    return <StandaloneSocialHubWidget />;
   }
 
   // State Management
