@@ -825,6 +825,14 @@ const App = () => {
         showLikes: true,
         borderRadius: 8,
         transparent: true
+      },
+      socialhub: {
+        headerColor: '#1f2937',
+        headerText: '🌐 Social Hub',
+        borderRadius: 8,
+        transparent: false,
+        showBranding: true,
+        compactMode: false
       }
     });
 
