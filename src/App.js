@@ -2691,61 +2691,88 @@ const App = () => {
     const insertImageIntoContent = (image) => {
       console.log('Inserting image into content:', image.id);
       const editor = contentRef.current;
-      if (editor) {
-        const selection = window.getSelection();
-        let range;
-        
-        if (selection.rangeCount > 0) {
-          range = selection.getRangeAt(0);
-        } else {
-          range = document.createRange();
-          range.selectNodeContents(editor);
-          range.collapse(false);
-        }
-        
-        // Create image element
-        const img = document.createElement('img');
-        img.id = `img-${image.id}`;
-        img.src = image.src;
-        img.alt = image.alt;
-        img.className = `editor-image size-${image.size} position-${image.position}`;
-        img.setAttribute('data-size', image.size);
-        img.setAttribute('data-position', image.position);
-        img.style.cssText = `
-          cursor: pointer; 
-          border-radius: 8px; 
-          max-width: 100%; 
-          height: auto;
-          border: 2px solid transparent;
-          transition: all 0.2s ease;
-          width: 400px;
-        `;
-        
-        // Add click handler for selection
-        img.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('Image clicked! ID:', image.id);
-          selectImage(image.id);
-          return false;
-        };
-        
-        // Insert image
-        range.deleteContents();
-        range.insertNode(img);
-        
-        // Add space after image
-        const textNode = document.createTextNode(' ');
-        range.setStartAfter(img);
-        range.insertNode(textNode);
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        setContent(editor.innerHTML);
-        console.log('Image inserted successfully');
+      if (!editor) {
+        console.error('Editor not found!');
+        return;
       }
+      
+      console.log('Editor element:', editor);
+      console.log('Editor innerHTML before:', editor.innerHTML);
+      
+      // Focus the editor first
+      editor.focus();
+      
+      // Get current selection or create one at the end
+      const selection = window.getSelection();
+      let range;
+      
+      if (selection.rangeCount > 0 && editor.contains(selection.anchorNode)) {
+        range = selection.getRangeAt(0);
+        console.log('Using existing selection');
+      } else {
+        // Create range at end of editor content
+        range = document.createRange();
+        const lastChild = editor.lastChild;
+        if (lastChild) {
+          if (lastChild.nodeType === Node.TEXT_NODE) {
+            range.setStart(lastChild, lastChild.textContent.length);
+          } else {
+            range.setStartAfter(lastChild);
+          }
+        } else {
+          range.selectNodeContents(editor);
+        }
+        range.collapse(true);
+        console.log('Created new range at end');
+      }
+      
+      // Create image element
+      const img = document.createElement('img');
+      img.id = `img-${image.id}`;
+      img.src = image.src;
+      img.alt = image.alt;
+      img.className = `editor-image size-${image.size} position-${image.position}`;
+      img.setAttribute('data-size', image.size);
+      img.setAttribute('data-position', image.position);
+      img.style.cssText = `
+        cursor: pointer; 
+        border-radius: 8px; 
+        max-width: 100%; 
+        height: auto;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+        width: 400px;
+        display: block;
+        margin: 10px 0;
+      `;
+      
+      // Add click handler for selection
+      img.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Image clicked! ID:', image.id);
+        selectImage(image.id);
+        return false;
+      };
+      
+      // Insert image and line breaks
+      const br1 = document.createElement('br');
+      const br2 = document.createElement('br');
+      
+      range.insertNode(br2);
+      range.insertNode(img);
+      range.insertNode(br1);
+      
+      // Move cursor after image
+      range.setStartAfter(br2);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Update content state
+      setContent(editor.innerHTML);
+      console.log('Image inserted successfully');
+      console.log('Editor innerHTML after:', editor.innerHTML);
     };
 
     // Select image - WORKING VERSION
