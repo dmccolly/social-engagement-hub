@@ -790,6 +790,7 @@ const App = () => {
   const [campaigns, setCampaigns] = useState([]);
   const [members, setMembers] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [contentType, setContentType] = useState('post');
   const [currentUser] = useState({ name: 'Admin User', email: 'admin@example.com' });
 
@@ -2613,14 +2614,16 @@ const App = () => {
   };
 
   // Rich Blog Editor Component
-  const RichBlogEditor = ({ onSave, onCancel }) => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+  const RichBlogEditor = ({ onSave, onCancel, editingPost = null }) => {
+    const [title, setTitle] = useState(editingPost?.title || '');
+    const [content, setContent] = useState(editingPost?.content || '');
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [showLinkDialog, setShowLinkDialog] = useState(false);
     const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
     const [showMediaDialog, setShowMediaDialog] = useState(false);
+    const [showToolbar, setShowToolbar] = useState(false);
+    const [previewSize, setPreviewSize] = useState('mobile');
     const [linkData, setLinkData] = useState({ text: '', url: '' });
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [mediaData, setMediaData] = useState({ type: 'audio', url: '', title: '' });
@@ -3186,9 +3189,11 @@ const App = () => {
     };
 
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-6">Create Blog Post</h2>
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Editor Panel */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6">Create Blog Post</h2>
           
           <input
             type="text"
@@ -3198,8 +3203,9 @@ const App = () => {
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          {/* Enhanced Text Formatting Toolbar */}
-          <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+          {/* Enhanced Text Formatting Toolbar - Auto-hide */}
+          {showToolbar && (
+            <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500 transition-all duration-200">
             {/* Text Formatting */}
             <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Bold">
               <Bold size={16} />
@@ -3236,7 +3242,8 @@ const App = () => {
             <button onClick={() => mediaInputRef.current?.click()} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Audio/Video">
               <Music size={16} />
             </button>
-          </div>
+            </div>
+          )}
 
           {/* File Upload Inputs */}
           <div className="mb-4 p-3 bg-blue-50 rounded-lg">
@@ -3270,10 +3277,19 @@ const App = () => {
           {/* Content Editor */}
           <div
             ref={contentRef}
-            className="w-full min-h-96 p-4 border rounded-lg bg-white"
+            className="w-full min-h-96 p-4 border rounded-lg bg-white focus:border-blue-500 transition-colors"
             contentEditable
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
+            onFocus={() => setShowToolbar(true)}
+            onBlur={(e) => {
+              // Only hide toolbar if not clicking on toolbar buttons
+              setTimeout(() => {
+                if (!e.relatedTarget || !e.relatedTarget.closest('.toolbar-area')) {
+                  setShowToolbar(false);
+                }
+              }, 100);
+            }}
             dangerouslySetInnerHTML={{ __html: content || '<p>Start writing your blog post here...</p>' }}
             style={{
               direction: 'ltr',
@@ -3374,19 +3390,103 @@ const App = () => {
           {/* Actions */}
           <div className="flex gap-3 mt-6">
             <button 
-              onClick={handleSave}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => {
+                const postData = {
+                  title,
+                  content: contentRef.current?.innerHTML || content,
+                  isFeatured: false,
+                  status: 'draft'
+                };
+                onSave?.(postData);
+              }}
+              className="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
             >
-              Save Post
+              <Edit size={16} />
+              Save Draft
+            </button>
+            <button 
+              onClick={() => {
+                const postData = {
+                  title,
+                  content: contentRef.current?.innerHTML || content,
+                  isFeatured: false,
+                  status: 'published'
+                };
+                onSave?.(postData);
+              }}
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+            >
+              <Send size={16} />
+              Publish Post
             </button>
             <button 
               onClick={onCancel}
-              className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600"
             >
               Cancel
             </button>
           </div>
         </div>
+
+        {/* Live Preview Panel */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h3 className="text-xl font-bold mb-4">Live Preview</h3>
+          
+          {/* Preview Size Controls */}
+          <div className="flex gap-2 mb-4">
+            <button 
+              onClick={() => setPreviewSize('mobile')}
+              className={`px-3 py-1 text-xs rounded ${previewSize === 'mobile' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              Mobile
+            </button>
+            <button 
+              onClick={() => setPreviewSize('tablet')}
+              className={`px-3 py-1 text-xs rounded ${previewSize === 'tablet' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              Tablet
+            </button>
+            <button 
+              onClick={() => setPreviewSize('desktop')}
+              className={`px-3 py-1 text-xs rounded ${previewSize === 'desktop' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              Desktop
+            </button>
+          </div>
+
+          {/* Preview Content */}
+          <div className={`border rounded-lg p-4 bg-gray-50 min-h-96 transition-all duration-200 ${
+            previewSize === 'mobile' ? 'max-w-sm mx-auto' : 
+            previewSize === 'tablet' ? 'max-w-2xl mx-auto' : 
+            'max-w-full'
+          }`}>
+            {title && (
+              <h1 className={`font-bold mb-4 text-gray-900 ${
+                previewSize === 'mobile' ? 'text-xl' : 
+                previewSize === 'tablet' ? 'text-2xl' : 
+                'text-3xl'
+              }`}>{title}</h1>
+            )}
+            <div 
+              className={`prose max-w-none ${
+                previewSize === 'mobile' ? 'prose-sm' : 
+                previewSize === 'tablet' ? 'prose-base' : 
+                'prose-lg'
+              }`}
+              dangerouslySetInnerHTML={{ 
+                __html: content || '<p class="text-gray-500">Start writing to see preview...</p>' 
+              }}
+            />
+          </div>
+
+          {/* Preview Stats */}
+          <div className="mt-4 text-sm text-gray-600 space-y-1">
+            <div>Word count: {content ? content.replace(/<[^>]*>/g, '').split(' ').filter(word => word.length > 0).length : 0}</div>
+            <div>Character count: {content ? content.replace(/<[^>]*>/g, '').length : 0}</div>
+            <div>Estimated read time: {Math.max(1, Math.ceil((content ? content.replace(/<[^>]*>/g, '').split(' ').filter(word => word.length > 0).length : 0) / 200))} min</div>
+          </div>
+        </div>
+      </div>
       </div>
     );
   };
@@ -3814,11 +3914,30 @@ const App = () => {
     if (contentType === 'post') {
       return (
         <RichBlogEditor
+          editingPost={editingPost}
           onSave={(postData) => {
-            setPosts(prev => [{ ...postData, date: new Date().toLocaleDateString() }, ...prev]);
+            if (editingPost) {
+              // Update existing post
+              setPosts(prev => prev.map(post => 
+                post === editingPost 
+                  ? { ...postData, date: editingPost.date, id: editingPost.id }
+                  : post
+              ));
+              setEditingPost(null);
+            } else {
+              // Create new post
+              setPosts(prev => [{ 
+                ...postData, 
+                date: new Date().toLocaleDateString(),
+                id: Date.now()
+              }, ...prev]);
+            }
             setIsCreating(false);
           }}
-          onCancel={() => setIsCreating(false)}
+          onCancel={() => {
+            setIsCreating(false);
+            setEditingPost(null);
+          }}
         />
       );
     }
@@ -3834,19 +3953,39 @@ const App = () => {
   };
 
   // Post Card Component
-  const PostCard = ({ post }) => (
+  const PostCard = ({ post, onEdit, onDelete }) => (
     <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h3 className="font-semibold">{post.title}</h3>
-          <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-          <p className="text-gray-700">{post.content}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="font-semibold text-lg">{post.title}</h3>
+            {post.status === 'draft' && (
+              <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded">Draft</span>
+            )}
+            {post.status === 'published' && (
+              <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">Published</span>
+            )}
+          </div>
+          <div className="text-gray-600 text-sm mb-2" dangerouslySetInnerHTML={{ __html: post.content?.substring(0, 150) + '...' }} />
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span>{post.date}</span>
+            <span>{post.author || 'Admin'}</span>
+            <span>{Math.max(1, Math.ceil((post.content ? post.content.replace(/<[^>]*>/g, '').split(' ').filter(word => word.length > 0).length : 0) / 200))} min read</span>
+          </div>
         </div>
         <div className="flex gap-2 ml-4">
-          <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+          <button 
+            onClick={() => onEdit?.(post)}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+            title="Edit Post"
+          >
             <Edit size={16} />
           </button>
-          <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+          <button 
+            onClick={() => onDelete?.(post)}
+            className="p-2 text-red-600 hover:bg-red-50 rounded"
+            title="Delete Post"
+          >
             <Trash2 size={16} />
           </button>
         </div>
@@ -3910,9 +4049,21 @@ const App = () => {
                     <Plus size={20} /> New Post
                   </button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {posts.map((post, index) => (
-                    <PostCard key={index} post={post} />
+                    <PostCard 
+                      key={post.id || index} 
+                      post={post} 
+                      onEdit={(post) => {
+                        setEditingPost(post);
+                        setIsCreating(true);
+                      }}
+                      onDelete={(post) => {
+                        if (confirm('Are you sure you want to delete this post?')) {
+                          setPosts(prev => prev.filter(p => p !== post));
+                        }
+                      }}
+                    />
                   ))}
                 </div>
               </div>
