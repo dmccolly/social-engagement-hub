@@ -1488,7 +1488,6 @@ const MainApp = () => {
             <p className="text-gray-600">Analytics functionality coming soon...</p>
           </div>
         )}
-        {activeSection === 'settings' && <WidgetCreator />}
         {(isCreating || isEditing) && (
           <PostEditor 
             post={isEditing ? editingPost : null}
