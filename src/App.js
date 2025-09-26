@@ -2749,13 +2749,10 @@ const App = () => {
         margin: 10px 0;
       `;
       
-      // Add click handler for selection
+      // Add click handler for selection - call selectImage directly
       img.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
         console.log('Image clicked! ID:', image.id);
         selectImage(image.id);
-        return false;
       };
       
       // Insert image and line breaks
@@ -3318,7 +3315,7 @@ const App = () => {
           {/* Content Editor */}
           <div
             ref={contentRef}
-            className="w-full min-h-[600px] p-6 border rounded-lg bg-white focus:border-blue-500 transition-colors text-base leading-relaxed"
+            className="w-full min-h-[800px] p-8 border rounded-lg bg-white focus:border-blue-500 transition-colors text-lg leading-relaxed"
             contentEditable
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
