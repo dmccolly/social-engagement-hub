@@ -2730,11 +2730,11 @@ const App = () => {
       }
       
       // Create image element with unique ID
-      const imageId = Date.now() + Math.random();
+      const imageId = image.id;
       const img = document.createElement('img');
-      img.src = url;
+      img.src = image.src;
       img.id = `img-${imageId}`;
-      img.alt = 'Uploaded image';
+      img.alt = image.alt || 'Uploaded image';
       img.style.cssText = `
         max-width: 100%;
         height: auto;
