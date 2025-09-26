@@ -2750,27 +2750,19 @@ const App = () => {
       console.log('Image ID:', imageId);
       console.log('Image element:', img);
       
-      // Add click handler for selection - call selectImage directly
-      img.addEventListener('click', function(e) {
-        console.log('=== IMAGE CLICK EVENT TRIGGERED ===');
+      // Add simple click handler
+      img.onclick = function() {
         console.log('Image clicked! ID:', imageId);
-        console.log('selectImage function exists:', typeof selectImage);
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          selectImage(imageId);
-          console.log('selectImage called successfully');
-        } catch (error) {
-          console.error('Error calling selectImage:', error);
-        }
-      });
-      
-      // Also add onclick as backup
-      img.onclick = function(e) {
-        console.log('=== IMAGE ONCLICK BACKUP TRIGGERED ===');
-        console.log('Image clicked via onclick! ID:', imageId);
-        selectImage(imageId);
-        return false;
+        
+        // Simple selection - just add blue border
+        document.querySelectorAll('img').forEach(i => {
+          i.style.border = '2px solid transparent';
+        });
+        
+        img.style.border = '3px solid #3b82f6';
+        img.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)';
+        
+        console.log('Image selected with blue border');
       };
       
       console.log('Added click handlers to image:', imageId);
