@@ -2750,19 +2750,13 @@ const App = () => {
       console.log('Image ID:', imageId);
       console.log('Image element:', img);
       
-      // Add simple click handler
-      img.onclick = function() {
+      // Add click handler for selection - WORKING VERSION FROM BACKUP
+      img.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         console.log('Image clicked! ID:', imageId);
-        
-        // Simple selection - just add blue border
-        document.querySelectorAll('img').forEach(i => {
-          i.style.border = '2px solid transparent';
-        });
-        
-        img.style.border = '3px solid #3b82f6';
-        img.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)';
-        
-        console.log('Image selected with blue border');
+        selectImage(imageId);
+        return false;
       };
       
       console.log('Added click handlers to image:', imageId);
