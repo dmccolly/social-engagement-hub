@@ -2751,9 +2751,20 @@ const App = () => {
       
       // Add click handler for selection - call selectImage directly
       img.onclick = function(e) {
+        console.log('=== IMAGE ONCLICK TRIGGERED ===');
         console.log('Image clicked! ID:', image.id);
-        selectImage(image.id);
+        console.log('selectImage function exists:', typeof selectImage);
+        try {
+          selectImage(image.id);
+          console.log('selectImage called successfully');
+        } catch (error) {
+          console.error('Error calling selectImage:', error);
+        }
       };
+      
+      // Add debugging to the image element
+      img.style.cursor = 'pointer';
+      console.log('Added click handler to image:', image.id);
       
       // Insert image and line breaks
       const br1 = document.createElement('br');
