@@ -2729,42 +2729,51 @@ const App = () => {
         console.log('Created new range at end');
       }
       
-      // Create image element
+      // Create image element with unique ID
+      const imageId = Date.now() + Math.random();
       const img = document.createElement('img');
-      img.id = `img-${image.id}`;
-      img.src = image.src;
-      img.alt = image.alt;
-      img.className = `editor-image size-${image.size} position-${image.position}`;
-      img.setAttribute('data-size', image.size);
-      img.setAttribute('data-position', image.position);
+      img.src = url;
+      img.id = `img-${imageId}`;
+      img.alt = 'Uploaded image';
       img.style.cssText = `
-        cursor: pointer; 
-        border-radius: 8px; 
-        max-width: 100%; 
+        max-width: 100%;
         height: auto;
-        border: 2px solid transparent;
-        transition: all 0.2s ease;
-        width: 400px;
+        border-radius: 8px;
         display: block;
         margin: 10px 0;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
       `;
       
+      console.log('=== CREATING IMAGE ===');
+      console.log('Image ID:', imageId);
+      console.log('Image element:', img);
+      
       // Add click handler for selection - call selectImage directly
-      img.onclick = function(e) {
-        console.log('=== IMAGE ONCLICK TRIGGERED ===');
-        console.log('Image clicked! ID:', image.id);
+      img.addEventListener('click', function(e) {
+        console.log('=== IMAGE CLICK EVENT TRIGGERED ===');
+        console.log('Image clicked! ID:', imageId);
         console.log('selectImage function exists:', typeof selectImage);
+        e.preventDefault();
+        e.stopPropagation();
         try {
-          selectImage(image.id);
+          selectImage(imageId);
           console.log('selectImage called successfully');
         } catch (error) {
           console.error('Error calling selectImage:', error);
         }
+      });
+      
+      // Also add onclick as backup
+      img.onclick = function(e) {
+        console.log('=== IMAGE ONCLICK BACKUP TRIGGERED ===');
+        console.log('Image clicked via onclick! ID:', imageId);
+        selectImage(imageId);
+        return false;
       };
       
-      // Add debugging to the image element
-      img.style.cursor = 'pointer';
-      console.log('Added click handler to image:', image.id);
+      console.log('Added click handlers to image:', imageId);
       
       // Insert image and line breaks
       const br1 = document.createElement('br');
