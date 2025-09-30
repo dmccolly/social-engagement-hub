@@ -788,6 +788,34 @@ const App = () => {
     }
   ]);
   const [campaigns, setCampaigns] = useState([]);
+  // Sync blog posts to localStorage so the /widget/blog iframe can read them
+  const mapPostsForWidget = (list) =>
+    (list || []).map((p, idx) => {
+      const plainText = (p?.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      const words = plainText ? plainText.split(' ').filter(Boolean).length : 0;
+      const readTime = `${Math.max(1, Math.ceil(words / 200))} min read`;
+      return {
+        id: p?.id ?? idx + 1,
+        title: p?.title || 'Untitled',
+        content: p?.content || '',
+        excerpt: p?.excerpt || (plainText ? `${plainText.slice(0, 200)}...` : ''),
+        date: p?.date || new Date().toLocaleDateString(),
+        isFeatured: !!p?.isFeatured,
+        imageUrl: p?.imageUrl || p?.image || null,
+        author: p?.author || 'Editorial Team',
+        readTime: p?.readTime || readTime,
+      };
+    });
+
+  useEffect(() => {
+    try {
+      const mapped = mapPostsForWidget(posts);
+      localStorage.setItem('socialHubPosts', JSON.stringify(mapped));
+    } catch (err) {
+      console.error('Failed to sync posts to localStorage', err);
+    }
+  }, [posts]);
+
   const [members, setMembers] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
