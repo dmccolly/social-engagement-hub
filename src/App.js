@@ -4086,18 +4086,8 @@ const App = () => {
             { id: 'analytics', icon: BarChart3, label: 'Analytics' },
             { id: 'settings', icon: Settings, label: 'Settings' }
           ].map((item) => (
-            <button
-                    onClick={() => { 
-                      setContentType('post'); 
-                      setIsCreating(true); 
-                      // Ensure latest posts are synced for widget previews
-                      try {
-                        const mapped = mapPostsForWidget(posts);
-                        localStorage.setItem('socialHubPosts', JSON.stringify(mapped));
-                      } catch (e) {}
-                    }}
-
-              key={item.id}
+               <button
+                 key={item.id}
               onClick={() => setActiveSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                 activeSection === item.id 
