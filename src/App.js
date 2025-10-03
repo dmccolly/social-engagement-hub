@@ -2778,16 +2778,10 @@ const App = () => {
       console.log('Image ID:', imageId);
       console.log('Image element:', img);
       
-      // Add click handler for selection - WORKING VERSION FROM BACKUP
-      img.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Image clicked! ID:', imageId);
-        selectImage(imageId);
-        return false;
-      };
-      
-      console.log('Added click handlers to image:', imageId);
+         
+         // Click handler will be attached via event delegation in useEffect
+         console.log('Image created with ID:', imageId);
+         
       
       // Insert image and line breaks
       const br1 = document.createElement('br');
@@ -2975,81 +2969,111 @@ const App = () => {
       console.log('=== SELECT IMAGE COMPLETE ===');
     };
 
-    // Make functions globally available
-    useEffect(() => {
-      console.log('Setting up global image functions...');
-      window.selectImage = selectImage;
-      
-      window.resizeImageTo = (imageId, size) => {
-        console.log('Resizing image', imageId, 'to', size);
-        const img = document.getElementById(`img-${imageId}`);
-        if (img) {
-          const sizeMap = {
-            small: '200px',
-            medium: '400px', 
-            large: '600px',
-            full: '100%'
-          };
-          img.style.width = sizeMap[size];
-          
-          if (contentRef.current) {
-            setContent(contentRef.current.innerHTML);
-          }
-          
-          // Refresh selection
-          setTimeout(() => selectImage(imageId), 10);
-        }
-      };
-      
-      window.positionImageTo = (imageId, position) => {
-        console.log('Positioning image', imageId, 'to', position);
-        const img = document.getElementById(`img-${imageId}`);
-        if (img) {
-          if (position === 'left') {
-            img.style.float = 'left';
-            img.style.margin = '0 15px 15px 0';
-            img.style.display = 'block';
-          } else if (position === 'right') {
-            img.style.float = 'right';
-            img.style.margin = '0 0 15px 15px';
-            img.style.display = 'block';
-          } else {
-            img.style.float = 'none';
-            img.style.margin = '15px auto';
-            img.style.display = 'block';
-          }
-          
-          if (contentRef.current) {
-            setContent(contentRef.current.innerHTML);
-          }
-          
-          // Refresh selection
-          setTimeout(() => selectImage(imageId), 10);
-        }
-      };
-      
-      window.deselectImage = () => {
-        console.log('Deselecting image');
-        setSelectedImageId(null);
-        document.querySelectorAll('.selected-image').forEach(el => {
-          el.classList.remove('selected-image');
-          el.style.border = '2px solid transparent';
-          el.style.boxShadow = 'none';
-        });
-        document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-        document.querySelectorAll('.image-handle').forEach(el => el.remove());
-      };
-      
-      // Cleanup
-      return () => {
-        delete window.selectImage;
-        delete window.resizeImageTo;
-        delete window.positionImageTo;
-        delete window.deselectImage;
-        document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
-        document.querySelectorAll('.image-handle').forEach(el => el.remove());
-      };
-    }, [selectImage]);
+       // Make functions globally available and set up event delegation
+       useEffect(() => {
+         console.log('Setting up global image functions and event delegation...');
+         
+         // Event delegation for image clicks
+         const editor = contentRef.current;
+         let handleImageClick = null;
+         
+         if (editor) {
+           handleImageClick = (e) => {
+             // Check if clicked element is an image with our ID format
+             if (e.target.tagName === 'IMG' && e.target.id && e.target.id.startsWith('img-')) {
+               e.preventDefault();
+               e.stopPropagation();
+               const imageId = e.target.id.replace('img-', '');
+               console.log('Image clicked via delegation! ID:', imageId);
+               selectImage(parseInt(imageId));
+             }
+           };
+           
+           editor.addEventListener('click', handleImageClick);
+           console.log('Event delegation set up for image clicks');
+         }
+         
+         // Set up global functions
+         window.selectImage = selectImage;
+         
+         window.resizeImageTo = (imageId, size) => {
+           console.log('Resizing image', imageId, 'to', size);
+           const img = document.getElementById(`img-${imageId}`);
+           if (img) {
+             const sizeMap = {
+               small: '200px',
+               medium: '400px', 
+               large: '600px',
+               full: '100%'
+             };
+             img.style.width = sizeMap[size];
+             
+             if (contentRef.current) {
+               setContent(contentRef.current.innerHTML);
+             }
+             
+             // Refresh selection
+             setTimeout(() => selectImage(imageId), 10);
+           }
+         };
+         
+         window.positionImageTo = (imageId, position) => {
+           console.log('Positioning image', imageId, 'to', position);
+           const img = document.getElementById(`img-${imageId}`);
+           if (img) {
+             if (position === 'left') {
+               img.style.float = 'left';
+               img.style.margin = '0 15px 15px 0';
+               img.style.display = 'block';
+             } else if (position === 'right') {
+               img.style.float = 'right';
+               img.style.margin = '0 0 15px 15px';
+               img.style.display = 'block';
+             } else {
+               img.style.float = 'none';
+               img.style.margin = '15px auto';
+               img.style.display = 'block';
+             }
+             
+             if (contentRef.current) {
+               setContent(contentRef.current.innerHTML);
+             }
+             
+             // Refresh selection
+             setTimeout(() => selectImage(imageId), 10);
+           }
+         };
+         
+         window.deselectImage = () => {
+           console.log('Deselecting image');
+           setSelectedImageId(null);
+           document.querySelectorAll('.selected-image').forEach(el => {
+             el.classList.remove('selected-image');
+             el.style.border = '2px solid transparent';
+             el.style.boxShadow = 'none';
+           });
+           document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+           document.querySelectorAll('.image-handle').forEach(el => el.remove());
+         };
+         
+         // Cleanup function
+         return () => {
+           // Remove event delegation listener
+           if (editor && handleImageClick) {
+             editor.removeEventListener('click', handleImageClick);
+           }
+           
+           // Clean up global functions
+           delete window.selectImage;
+           delete window.resizeImageTo;
+           delete window.positionImageTo;
+           delete window.deselectImage;
+           
+           // Clean up any leftover UI elements
+           document.querySelectorAll('.image-toolbar').forEach(el => el.remove());
+           document.querySelectorAll('.image-handle').forEach(el => el.remove());
+         };
+       }, [selectImage]);
 
     // Enhanced Link Dialog Functions
     const openLinkDialog = () => {
