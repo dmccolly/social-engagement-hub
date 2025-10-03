@@ -3054,19 +3054,22 @@ const App = () => {
            console.log('Positioning image', imageId, 'to', position);
            const img = document.getElementById(`img-${imageId}`);
            if (img) {
-             if (position === 'left') {
-               img.style.float = 'left';
-               img.style.margin = '0 15px 15px 0';
-               img.style.display = 'block';
-             } else if (position === 'right') {
-               img.style.float = 'right';
-               img.style.margin = '0 0 15px 15px';
-               img.style.display = 'block';
-             } else {
-               img.style.float = 'none';
-               img.style.margin = '15px auto';
-               img.style.display = 'block';
-             }
+                if (position === 'left') {
+                  img.style.float = 'left';
+                  img.style.margin = '0 15px 15px 0';
+                  img.style.display = 'inline-block';
+                  img.style.clear = 'left';
+                } else if (position === 'right') {
+                  img.style.float = 'right';
+                  img.style.margin = '0 0 15px 15px';
+                  img.style.display = 'inline-block';
+                  img.style.clear = 'right';
+                } else {
+                  img.style.float = 'none';
+                  img.style.margin = '15px auto';
+                  img.style.display = 'block';
+                  img.style.clear = 'both';
+                }
              
              if (contentRef.current) {
                setContent(contentRef.current.innerHTML);
