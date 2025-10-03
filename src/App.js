@@ -605,7 +605,7 @@ const StandaloneNewsFeedWidget = () => {
                   <span className="text-sm text-gray-500">{post.timestamp}</span>
                 </div>
                 
-                <p className="text-gray-700 mb-3 leading-relaxed">{post.content}</p>
+                <div className="text-gray-700 mb-3 leading-relaxed" dangerouslySetInnerHTML={{ __html: post.content }} />
                 
                 {showInteractions && (
                   <div className="flex items-center gap-6 text-sm text-gray-600">
@@ -731,7 +731,7 @@ const StandaloneSocialHubWidget = () => {
                       )}
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 mb-1">{post.title}</h3>
-                        <p className="text-sm text-gray-600 mb-2">{post.content}</p>
+                        <div className="text-sm text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: post.content }} />
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>{post.author}</span>
                           <span>{post.date}</span>
@@ -2595,7 +2595,7 @@ const App = () => {
                   </div>
                 </div>
                 
-                <p className="mb-3 leading-relaxed">{post.content}</p>
+                <div className="mb-3 leading-relaxed" dangerouslySetInnerHTML={{ __html: post.content }} />
                 
                 <div className="flex items-center gap-4 text-sm">
                   <button
@@ -2683,6 +2683,21 @@ const App = () => {
         }
       }, 0);
     };
+
+       // Set initial content only once
+       useEffect(() => {
+         if (contentRef.current && !contentRef.current.innerHTML) {
+           contentRef.current.innerHTML = content || '<p>Start writing your blog post here...</p>';
+         }
+       }, []);
+       
+       // Update content only when editing post
+       useEffect(() => {
+         if (editingPost && contentRef.current) {
+           contentRef.current.innerHTML = content || '<p>Start writing your blog post here...</p>';
+         }
+       }, [editingPost]);
+
 
     // Handle file upload
     const handleFileUpload = async (event) => {
@@ -3440,7 +3455,7 @@ const App = () => {
           {/* Content Editor */}
           <div
             ref={contentRef}
-            className="w-full min-h-[800px] p-8 border rounded-lg bg-white focus:border-blue-500 transition-colors text-lg leading-relaxed"
+            className="w-full max-w-6xl min-h-[800px] p-8 border rounded-lg bg-white focus:border-blue-500 transition-colors text-lg leading-relaxed"
             contentEditable
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
@@ -3453,7 +3468,6 @@ const App = () => {
                 }
               }, 100);
             }}
-            dangerouslySetInnerHTML={{ __html: content || '<p>Start writing your blog post here...</p>' }}
             style={{
               direction: 'ltr',
               textAlign: 'left',
@@ -4052,7 +4066,7 @@ const App = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold">{post.title}</h3>
                       <p className="text-sm text-gray-500 mb-2">{post.date}</p>
-                      <p className="text-gray-700">{post.content}</p>
+                      <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
                     <div className="flex gap-2 ml-4">
                       <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
