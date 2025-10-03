@@ -773,20 +773,38 @@ const App = () => {
 
   // State Management
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [posts, setPosts] = useState([
-    {
-      title: 'Welcome to Our Platform',
-      content: 'This is a featured post!',
-      date: '9/23/2025',
-      isFeatured: true
-    },
-    {
-      title: 'Latest Updates',
-      content: 'Check out our new features',
-      date: '9/23/2025',
-      isFeatured: false
-    }
-  ]);
+     // Load posts from localStorage or use default posts
+     const loadPostsFromStorage = () => {
+       try {
+         const stored = localStorage.getItem('socialHubPosts');
+         if (stored) {
+           const parsed = JSON.parse(stored);
+           if (Array.isArray(parsed) &amp;&amp; parsed.length > 0) {
+             return parsed;
+           }
+         }
+       } catch (err) {
+         console.error('Failed to load posts from localStorage', err);
+       }
+       
+       // Return default posts if nothing in storage
+       return [
+         {
+           title: 'Welcome to Our Platform',
+           content: 'This is a featured post!',
+           date: '9/23/2025',
+           isFeatured: true
+         },
+         {
+           title: 'Latest Updates',
+           content: 'Check out our new features',
+           date: '9/23/2025',
+           isFeatured: false
+         }
+       ];
+     };
+     
+     const [posts, setPosts] = useState(loadPostsFromStorage());
   const [campaigns, setCampaigns] = useState([]);
   // Sync blog posts to localStorage so the /widget/blog iframe can read them
   const mapPostsForWidget = (list) =>
