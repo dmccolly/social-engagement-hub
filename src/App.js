@@ -779,7 +779,7 @@ const App = () => {
          const stored = localStorage.getItem('socialHubPosts');
          if (stored) {
            const parsed = JSON.parse(stored);
-           if (Array.isArray(parsed) &amp;&amp; parsed.length > 0) {
+           if (Array.isArray(parsed) && parsed.length > 0) {
              return parsed;
            }
          }
