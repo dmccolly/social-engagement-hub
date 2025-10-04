@@ -2710,7 +2710,9 @@ const App = () => {
     const [showLinkDialog, setShowLinkDialog] = useState(false);
     const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
     const [showMediaDialog, setShowMediaDialog] = useState(false);
-    const [showToolbar, setShowToolbar] = useState(false);
+    const [showToolbar, setShowToolbar] = useState(true); // Always visible now
+    const [showVimeoDialog, setShowVimeoDialog] = useState(false);
+    const [vimeoUrl, setVimeoUrl] = useState('');
     const [previewSize, setPreviewSize] = useState('mobile');
     const [linkData, setLinkData] = useState({ text: '', url: '' });
     const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -3338,6 +3340,80 @@ const App = () => {
       setYoutubeUrl('');
     };
 
+    // Extract Vimeo video ID from URL
+    const extractVimeoId = (url) => {
+      const regExp = /(?:vimeo)\.com.*(?:videos|video|channels|)\/([\d]+)/i;
+      const match = url.match(regExp);
+      return match ? match[1] : null;
+    };
+
+    const insertVimeoVideo = () => {
+      const videoId = extractVimeoId(vimeoUrl);
+      if (!videoId) {
+        alert('Please enter a valid Vimeo URL');
+        return;
+      }
+      
+      const editor = contentRef.current;
+      if (editor) {
+        const selection = window.getSelection();
+        let range;
+        
+        if (selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        
+        // Create Vimeo embed container
+        const container = document.createElement('div');
+        container.style.cssText = `
+          position: relative;
+          width: 100%;
+          height: 0;
+          padding-bottom: 56.25%;
+          margin: 20px 0;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        `;
+        
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vimeo.com/video/${videoId}`;
+        iframe.style.cssText = `
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
+        `;
+        iframe.allowFullscreen = true;
+        iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+        
+        container.appendChild(iframe);
+        
+        range.deleteContents();
+        range.insertNode(container);
+        
+        // Add space after video
+        const textNode = document.createTextNode('\n\n');
+        range.setStartAfter(container);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.setEndAfter(textNode);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        setContent(editor.innerHTML);
+      }
+      
+      setShowVimeoDialog(false);
+      setVimeoUrl('');
+    };
+
     // Media File Functions
     const handleMediaUpload = async (event) => {
       const file = event.target.files[0];
@@ -3550,9 +3626,50 @@ const App = () => {
             </label>
           </div>
 
-          {/* Enhanced Text Formatting Toolbar - Auto-hide */}
-          {showToolbar && (
-            <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500 transition-all duration-200">
+          {/* Enhanced Text Formatting Toolbar - Always Visible */}
+          <div className="flex flex-wrap gap-2 mb-4 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500 transition-all duration-200 toolbar-area">
+            {/* Font Controls */}
+            <select 
+              onChange={(e) => {
+                document.execCommand('fontName', false, e.target.value);
+                if (contentRef.current) {
+                  setContent(contentRef.current.innerHTML);
+                }
+              }}
+              className="px-2 py-1 bg-white border rounded text-sm"
+              title="Font Family"
+            >
+              <option value="Arial">Arial</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Times New Roman">Times</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Courier New">Courier</option>
+              <option value="Impact">Impact</option>
+              <option value="Comic Sans MS">Comic Sans</option>
+            </select>
+            
+            <select 
+              onChange={(e) => {
+                document.execCommand('fontSize', false, e.target.value);
+                if (contentRef.current) {
+                  setContent(contentRef.current.innerHTML);
+                }
+              }}
+              className="px-2 py-1 bg-white border rounded text-sm"
+              title="Font Size"
+            >
+              <option value="1">8pt</option>
+              <option value="2">10pt</option>
+              <option value="3" selected>12pt</option>
+              <option value="4">14pt</option>
+              <option value="5">18pt</option>
+              <option value="6">24pt</option>
+              <option value="7">36pt</option>
+            </select>
+            
+            <div className="border-l mx-2"></div>
+            
             {/* Text Formatting */}
             <button onClick={() => applyFormat('bold')} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Bold">
               <Bold size={16} />
@@ -3626,7 +3743,10 @@ const App = () => {
             <button onClick={() => setShowYouTubeDialog(true)} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert YouTube Video">
               <Play size={16} />
             </button>
-            <button onClick={() => mediaInputRef.current?.click()} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Audio/Video">
+            <button onClick={() => setShowVimeoDialog(true)} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Vimeo Video">
+              <Film size={16} />
+            </button>
+            <button onClick={() => mediaInputRef.current?.click()} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Audio/Video File">
               <Music size={16} />
             </button>
             </div>
@@ -3646,7 +3766,7 @@ const App = () => {
               type="file"
               ref={mediaInputRef}
               onChange={handleMediaUpload}
-              accept="audio/*,video/*"
+              accept="audio/*,video/*,.mp4,.mp3,.wav,.avi,.mov,.wmv,.flv,.webm,.ogg"
               style={{ display: 'none' }}
             />
             <button 
@@ -3670,20 +3790,11 @@ const App = () => {
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
             onFocus={() => {
-              setShowToolbar(true);
               // Remove placeholder on focus
               const placeholderElement = contentRef.current?.querySelector('.placeholder-text');
               if (placeholderElement) {
                 placeholderElement.remove();
               }
-            }}
-            onBlur={(e) => {
-              // Only hide toolbar if not clicking on toolbar buttons
-              setTimeout(() => {
-                if (!e.relatedTarget || !e.relatedTarget.closest('.toolbar-area')) {
-                  setShowToolbar(false);
-                }
-              }, 100);
             }}
             style={{
               direction: 'ltr',
@@ -3772,6 +3883,46 @@ const App = () => {
                   </button>
                   <button
                     onClick={() => setShowYouTubeDialog(false)}
+                    className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Vimeo Video Dialog */}
+          {showVimeoDialog && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <h3 className="text-lg font-semibold mb-4">Insert Vimeo Video</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Vimeo URL</label>
+                    <input
+                      type="url"
+                      value={vimeoUrl}
+                      onChange={(e) => setVimeoUrl(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://vimeo.com/123456789"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Paste any Vimeo URL
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={insertVimeoVideo}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Insert Video
+                  </button>
+                  <button
+                    onClick={() => setShowVimeoDialog(false)}
                     className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                   >
                     Cancel
