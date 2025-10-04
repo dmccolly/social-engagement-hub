@@ -33,6 +33,7 @@ const StandaloneBlogWidget = () => {
     const loadPosts = () => {
       try {
         setDebugInfo('Loading posts...');
+           console.log('Widget: Loading posts from localStorage...');
         
         // Try multiple localStorage keys for compatibility
         const possibleKeys = ['socialHubPosts', 'blogPosts', 'posts'];
@@ -116,12 +117,24 @@ const StandaloneBlogWidget = () => {
 
     window.addEventListener('storage', handleStorageChange);
     
-    // Refresh every 5 seconds
-    const interval = setInterval(loadPosts, 5000);
+    // Refresh every 2 seconds
+       
+       // Refresh when page becomes visible
+       const handleVisibilityChange = () => {
+         if (!document.hidden) {
+           console.log('Widget: Page visible, refreshing posts...');
+           loadPosts();
+         }
+       };
+       
+       document.addEventListener('visibilitychange', handleVisibilityChange);
+       
+    const interval = setInterval(loadPosts, 2000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+         clearInterval(interval);
     };
   }, [settings.postCount]);
 
