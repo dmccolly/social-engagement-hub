@@ -2834,24 +2834,6 @@ const App = () => {
       } finally {
         setIsUploading(false);
       }
-          width: result.width,
-          height: result.height,
-        };
-        
-        console.log('Created image object:', newImage);
-        insertImageIntoContent(newImage);
-        
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-
-        console.log('Image uploaded successfully to Cloudinary!');
-      } catch (error) {
-        console.error('Upload error:', error);
-        alert(`Upload failed: ${error.message}`);
-      } finally {
-        setIsUploading(false);
-      }
     };
 
     // Insert image into content
