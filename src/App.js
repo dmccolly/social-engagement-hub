@@ -2703,6 +2703,8 @@ const App = () => {
   const RichBlogEditor = ({ onSave, onCancel, editingPost = null }) => {
     const [title, setTitle] = useState(editingPost?.title || '');
     const [content, setContent] = useState(editingPost?.content || '');
+    const [isFeatured, setIsFeatured] = useState(editingPost?.isFeatured || false);
+    const [isPinned, setIsPinned] = useState(editingPost?.isPinned || false);
     const [selectedImageId, setSelectedImageId] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -2719,6 +2721,12 @@ const App = () => {
 
     // Handle content change - FIXED for backwards typing
     const handleContentChange = (e) => {
+      // Remove placeholder when user starts typing
+      const placeholderElement = e.target.querySelector('.placeholder-text');
+      if (placeholderElement) {
+        placeholderElement.remove();
+      }
+      
       const selection = window.getSelection();
       const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
       const startOffset = range ? range.startOffset : 0;
@@ -2745,57 +2753,85 @@ const App = () => {
        // Set initial content only once
        useEffect(() => {
          if (contentRef.current && !contentRef.current.innerHTML) {
-           contentRef.current.innerHTML = content || '<p>Start writing your blog post here...</p>';
+           contentRef.current.innerHTML = content || '<p class="placeholder-text" style="color: #9ca3af; font-style: italic;">Start writing your blog post here...</p>';
          }
        }, []);
        
        // Update content only when editing post
        useEffect(() => {
          if (editingPost && contentRef.current) {
-           contentRef.current.innerHTML = content || '<p>Start writing your blog post here...</p>';
+           contentRef.current.innerHTML = content || '<p class="placeholder-text" style="color: #9ca3af; font-style: italic;">Start writing your blog post here...</p>';
          }
        }, [editingPost]);
 
 
     // Handle file upload with Cloudinary
     const handleFileUpload = async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
 
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid image file (JPG, PNG, GIF, or WEBP)');
-        return;
-      }
-
-      // Validate file size (5MB max)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (file.size > maxSize) {
-        alert('Image size must be less than 5MB');
-        return;
-      }
-
-      console.log('Starting file upload:', file.name);
+      console.log(`Uploading ${files.length} file(s)`);
       setIsUploading(true);
-      
-      try {
-        // Upload to Cloudinary
-        const result = await uploadImageToCloudinary(file);
 
-        if (!result.success) {
-          throw new Error(result.error || 'Upload failed');
+      // Validate file types and sizes
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+
+      for (const file of files) {
+        if (!validTypes.includes(file.type)) {
+          alert(`${file.name}: Please upload a valid image file (JPG, PNG, GIF, or WEBP)`);
+          setIsUploading(false);
+          return;
         }
 
-        console.log('Upload successful:', result);
+        if (file.size > maxSize) {
+          alert(`${file.name}: Image size must be less than 5MB`);
+          setIsUploading(false);
+          return;
+        }
+      }
 
-        // Create image object with Cloudinary URL
-        const newImage = {
-          id: Date.now(),
-          src: result.url, // Permanent Cloudinary URL
-          alt: file.name,
-          size: 'medium',
-          position: 'center',
+      try {
+        // Upload files sequentially
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          console.log(`Uploading file ${i + 1}/${files.length}: ${file.name}`);
+          
+          // Upload to Cloudinary
+          const result = await uploadImageToCloudinary(file);
+
+          if (!result.success) {
+            throw new Error(result.error || 'Upload failed');
+          }
+
+          console.log('Upload successful:', result);
+
+          // Create image object with Cloudinary URL
+          const newImage = {
+            id: Date.now() + i, // Unique ID for each image
+            src: result.url, // Permanent Cloudinary URL
+            alt: file.name,
+            size: 'medium',
+            position: 'center',
+            width: result.width,
+            height: result.height,
+          };
+          
+          console.log('Created image object:', newImage);
+          insertImageIntoContent(newImage);
+        }
+        
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+
+        console.log(`${files.length} image(s) uploaded successfully to Cloudinary!`);
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert(`Upload failed: ${error.message}`);
+      } finally {
+        setIsUploading(false);
+      }
           width: result.width,
           height: result.height,
         };
@@ -3415,26 +3451,38 @@ const App = () => {
         tags: '',
         image_url: '', // Add featured image if needed
         status: status,
+        featured: isFeatured,
+        isPinned: isPinned,
       };
 
       try {
+        let result;
         if (editingPost && editingPost.id) {
           // Update existing post
-          const result = await updateBlogPost(editingPost.id, postData);
+          result = await updateBlogPost(editingPost.id, postData);
           console.log('Post updated:', result);
-          alert('Post updated successfully!');
         } else {
           // Create new post
-          const result = await createBlogPost(postData);
+          result = await createBlogPost(postData);
           console.log('Post created:', result);
+        }
+        
+        // Check if the operation was successful
+        if (result && result.success) {
           alert('Post saved successfully!');
+        } else {
+          // Handle XANO service error
+          const errorMessage = result?.error || 'Unknown error occurred';
+          console.error('XANO service error:', errorMessage);
+          throw new Error(errorMessage);
         }
         
         // Call the original onSave callback
         onSave?.({
           title,
           content: contentRef.current?.innerHTML || content,
-          isFeatured: false,
+          isFeatured: isFeatured,
+          isPinned: isPinned,
           status: status
         });
       } catch (error) {
@@ -3445,7 +3493,8 @@ const App = () => {
         onSave?.({
           title,
           content: contentRef.current?.innerHTML || content,
-          isFeatured: false,
+          isFeatured: isFeatured,
+          isPinned: isPinned,
           status: status
         });
       }
@@ -3469,6 +3518,30 @@ const App = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+
+          {/* Featured Post Toggle */}
+          <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="w-4 h-4 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500"
+              />
+              <Star className={`w-5 h-5 ${isFeatured ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+              <span className="text-sm font-medium text-gray-700">Featured Post</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPinned}
+                onChange={(e) => setIsPinned(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <Crown className={`w-5 h-5 ${isPinned ? 'text-blue-500 fill-current' : 'text-gray-400'}`} />
+              <span className="text-sm font-medium text-gray-700">Pin to Top</span>
+            </label>
+          </div>
 
           {/* Enhanced Text Formatting Toolbar - Auto-hide */}
           {showToolbar && (
@@ -3559,6 +3632,7 @@ const App = () => {
               ref={fileInputRef}
               onChange={handleFileUpload}
               accept="image/*"
+              multiple
               style={{ display: 'none' }}
             />
             <input
@@ -3588,7 +3662,14 @@ const App = () => {
             contentEditable
             suppressContentEditableWarning={true}
             onInput={handleContentChange}
-            onFocus={() => setShowToolbar(true)}
+            onFocus={() => {
+              setShowToolbar(true);
+              // Remove placeholder on focus
+              const placeholderElement = contentRef.current?.querySelector('.placeholder-text');
+              if (placeholderElement) {
+                placeholderElement.remove();
+              }
+            }}
             onBlur={(e) => {
               // Only hide toolbar if not clicking on toolbar buttons
               setTimeout(() => {

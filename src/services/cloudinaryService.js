@@ -11,22 +11,44 @@ const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOU
  * @returns {Promise<Object>} Cloudinary response with image URL
  */
 export const uploadImageToCloudinary = async (file, onProgress = null) => {
+  console.log('Starting Cloudinary upload for:', file.name, 'Size:', file.size);
+  console.log('CLOUDINARY_CLOUD_NAME:', CLOUDINARY_CLOUD_NAME);
+  console.log('CLOUDINARY_UPLOAD_PRESET:', CLOUDINARY_UPLOAD_PRESET);
+  console.log('CLOUDINARY_UPLOAD_URL:', CLOUDINARY_UPLOAD_URL);
+
+  // Check if environment variables are set
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+    const error = 'Cloudinary environment variables not set';
+    console.error(error);
+    return {
+      success: false,
+      error: error,
+    };
+  }
+
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
   formData.append('folder', 'blog'); // Organize images in 'blog' folder
 
   try {
+    console.log('Sending request to Cloudinary...');
     const response = await fetch(CLOUDINARY_UPLOAD_URL, {
       method: 'POST',
       body: formData,
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Cloudinary error response:', errorText);
+      throw new Error(`Upload failed: ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('Cloudinary response:', data);
     
     return {
       success: true,
