@@ -2775,7 +2775,7 @@ const App = () => {
 
       // Validate file types and sizes
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
 
       for (const file of files) {
         if (!validTypes.includes(file.type)) {
@@ -2785,7 +2785,7 @@ const App = () => {
         }
 
         if (file.size > maxSize) {
-          alert(`${file.name}: Image size must be less than 5MB`);
+          alert(`${file.name}: File size must be less than 50MB`);
           setIsUploading(false);
           return;
         }
@@ -3342,6 +3342,13 @@ const App = () => {
     const handleMediaUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
+
+      // Validate file size (50MB max)
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+      if (file.size > maxSize) {
+        alert(`${file.name}: File size must be less than 50MB`);
+        return;
+      }
 
       setIsUploading(true);
       
