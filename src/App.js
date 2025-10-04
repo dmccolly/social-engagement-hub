@@ -9,6 +9,8 @@ import {
   Star, Sparkles, Crown, Copy, ExternalLink, Zap, TrendingUp,
   UserPlus, Award, Target, Activity, Download, Play, Shield
 } from 'lucide-react';
+import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
+import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost } from './services/xanoService';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {
@@ -30,12 +32,38 @@ const StandaloneBlogWidget = () => {
   };
 
   useEffect(() => {
-    const loadPosts = () => {
+    const loadPosts = async () => {
       try {
-        setDebugInfo('Loading posts...');
-           console.log('Widget: Loading posts from localStorage...');
+        setDebugInfo('Loading posts from XANO...');
+        console.log('Widget: Loading posts from XANO...');
         
-        // Try multiple localStorage keys for compatibility
+        // Try to fetch from XANO first
+        try {
+          const result = await getPublishedPosts(settings.postCount, 0);
+          if (result.success && result.posts && result.posts.length > 0) {
+            const formattedPosts = result.posts.map(post => ({
+              id: post.id,
+              title: post.title,
+              content: post.content,
+              excerpt: post.excerpt || post.content.substring(0, 200) + '...',
+              date: new Date(post.published_at || post.created_at).toLocaleDateString(),
+              isFeatured: post.featured || false,
+              imageUrl: post.image_url,
+              author: post.author,
+              readTime: post.read_time || '3 min read'
+            }));
+            
+            setPosts(formattedPosts);
+            setDebugInfo(`Loaded ${formattedPosts.length} posts from XANO`);
+            setIsLoading(false);
+            return;
+          }
+        } catch (xanoError) {
+          console.log('XANO fetch failed, falling back to localStorage:', xanoError);
+        }
+        
+        // Fallback to localStorage
+        console.log('Widget: Falling back to localStorage...');
         const possibleKeys = ['socialHubPosts', 'blogPosts', 'posts'];
         let foundPosts = [];
         
@@ -108,7 +136,7 @@ const StandaloneBlogWidget = () => {
 
     loadPosts();
 
-    // Listen for storage changes
+    // Listen for storage changes (fallback)
     const handleStorageChange = (e) => {
       if (e.key && ['socialHubPosts', 'blogPosts', 'posts'].includes(e.key)) {
         loadPosts();
@@ -117,24 +145,23 @@ const StandaloneBlogWidget = () => {
 
     window.addEventListener('storage', handleStorageChange);
     
-    // Refresh every 2 seconds
-       
-       // Refresh when page becomes visible
-       const handleVisibilityChange = () => {
-         if (!document.hidden) {
-           console.log('Widget: Page visible, refreshing posts...');
-           loadPosts();
-         }
-       };
-       
-       document.addEventListener('visibilitychange', handleVisibilityChange);
-       
-    const interval = setInterval(loadPosts, 2000);
+    // Refresh when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Widget: Page visible, refreshing posts...');
+        loadPosts();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Refresh every 5 seconds
+    const interval = setInterval(loadPosts, 5000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-         clearInterval(interval);
+      clearInterval(interval);
     };
   }, [settings.postCount]);
 
@@ -2730,24 +2757,47 @@ const App = () => {
        }, [editingPost]);
 
 
-    // Handle file upload
+    // Handle file upload with Cloudinary
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
+
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a valid image file (JPG, PNG, GIF, or WEBP)');
+        return;
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
 
       console.log('Starting file upload:', file.name);
       setIsUploading(true);
       
       try {
-        // For demo purposes, create a local URL
-        const imageUrl = URL.createObjectURL(file);
-        
+        // Upload to Cloudinary
+        const result = await uploadImageToCloudinary(file);
+
+        if (!result.success) {
+          throw new Error(result.error || 'Upload failed');
+        }
+
+        console.log('Upload successful:', result);
+
+        // Create image object with Cloudinary URL
         const newImage = {
           id: Date.now(),
-          src: imageUrl,
+          src: result.url, // Permanent Cloudinary URL
           alt: file.name,
           size: 'medium',
-          position: 'center'
+          position: 'center',
+          width: result.width,
+          height: result.height,
         };
         
         console.log('Created image object:', newImage);
@@ -2756,9 +2806,11 @@ const App = () => {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+
+        console.log('Image uploaded successfully to Cloudinary!');
       } catch (error) {
         console.error('Upload error:', error);
-        alert('Upload failed. Please try again.');
+        alert(`Upload failed: ${error.message}`);
       } finally {
         setIsUploading(false);
       }
@@ -3351,13 +3403,56 @@ const App = () => {
       }
     };
 
-    const handleSave = () => {
+    const handleSave = async (status = 'draft') => {
       console.log('Saving post...');
-      onSave?.({
+      
+      const postData = {
         title,
         content: contentRef.current?.innerHTML || content,
-        isFeatured: false
-      });
+        author: 'Admin User', // Replace with actual user
+        author_avatar: '', // Replace with actual avatar
+        category: 'General',
+        tags: '',
+        image_url: '', // Add featured image if needed
+        status: status,
+      };
+
+      try {
+        if (editingPost && editingPost.id) {
+          // Update existing post
+          const result = await updateBlogPost(editingPost.id, postData);
+          console.log('Post updated:', result);
+          alert('Post updated successfully!');
+        } else {
+          // Create new post
+          const result = await createBlogPost(postData);
+          console.log('Post created:', result);
+          alert('Post saved successfully!');
+        }
+        
+        // Call the original onSave callback
+        onSave?.({
+          title,
+          content: contentRef.current?.innerHTML || content,
+          isFeatured: false,
+          status: status
+        });
+      } catch (error) {
+        console.error('Save error:', error);
+        alert('Failed to save post. Saving locally instead.');
+        
+        // Fallback to local save
+        onSave?.({
+          title,
+          content: contentRef.current?.innerHTML || content,
+          isFeatured: false,
+          status: status
+        });
+      }
+    };
+
+    const handlePublish = async () => {
+      await handleSave('published');
     };
 
     return (
@@ -3601,30 +3696,14 @@ const App = () => {
           {/* Actions */}
           <div className="flex gap-3 mt-6">
             <button 
-              onClick={() => {
-                const postData = {
-                  title,
-                  content: contentRef.current?.innerHTML || content,
-                  isFeatured: false,
-                  status: 'draft'
-                };
-                onSave?.(postData);
-              }}
+              onClick={() => handleSave('draft')}
               className="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
             >
               <Edit size={16} />
               Save Draft
             </button>
             <button 
-              onClick={() => {
-                const postData = {
-                  title,
-                  content: contentRef.current?.innerHTML || content,
-                  isFeatured: false,
-                  status: 'published'
-                };
-                onSave?.(postData);
-              }}
+              onClick={handlePublish}
               className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
             >
               <Send size={16} />
