@@ -3,6 +3,19 @@
 A complete social media and engagement platform for Webflow integration.
 
 ## Features
+
+## 🚨 IMPORTANT: Setup Required
+
+**If posts aren't saving or widgets aren't populating, you need to configure XANO:**
+
+👉 **[START HERE - Quick Fix Guide](START_HERE.md)** 👈
+
+Or see:
+- [QUICK_FIX.md](QUICK_FIX.md) - 2-minute setup
+- [SETUP_INSTRUCTIONS.md](SETUP_INSTRUCTIONS.md) - Detailed guide
+- [BUGFIX_REPORT.md](BUGFIX_REPORT.md) - Technical details
+
+## Features
 - **Fixed Rich Blog Editor**: A robust and reliable rich text editor that resolves the backwards typing issue and provides enhanced image management capabilities.
 - Rich media blog posts (YouTube, video, audio embedding)
 - Email campaign management
