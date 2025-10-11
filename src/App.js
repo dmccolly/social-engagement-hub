@@ -316,7 +316,7 @@ const StandaloneBlogWidget = () => {
                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                      }}
                      dangerouslySetInnerHTML={{
-                       __html: post.excerpt || (post.content ? post.content.substring(0, 200) + '...' : '')
+                          __html: post.excerpt || ''
                      }}
                    />
                  )}
