@@ -305,18 +305,21 @@ const StandaloneBlogWidget = () => {
                 </div>
               )}
 
-              {/* Excerpt */}
-              {settings.showExcerpts && (
-                <p style={{
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                  color: '#6b7280',
-                  marginBottom: '16px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-                }}>
-                  {post.excerpt || (post.content ? post.content.substring(0, 200) + '...' : '')}
-                </p>
-              )}
+                 {/* Excerpt */}
+                 {settings.showExcerpts && (
+                   <div 
+                     style={{
+                       fontSize: '14px',
+                       lineHeight: '1.5',
+                       color: '#6b7280',
+                       marginBottom: '16px',
+                       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                     }}
+                     dangerouslySetInnerHTML={{
+                       __html: post.excerpt || (post.content ? post.content.substring(0, 200) + '...' : '')
+                     }}
+                   />
+                 )}
 
               {/* Read More Link */}
               <div style={{
