@@ -12,6 +12,11 @@ import {
 import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
 import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost } from './services/xanoService';
 
+// Email System Components (isolated)
+import EmailDashboard from './components/email/EmailDashboard';
+import ContactManagement from './components/email/ContactManagement';
+import ContactForm from './components/email/ContactForm';
+
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {
   const [posts, setPosts] = useState([]);
