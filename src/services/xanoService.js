@@ -44,10 +44,13 @@ export const createBlogPost = async (postData) => {
       throw new Error('XANO_BASE_URL is not defined. Check environment variables.');
     }
 
-    // Use minimal required fields that worked in our curl test
+    // CORRECTED DATA MAPPING - Now matches the asset table structure and updateBlogPost format
     const assetData = {
       title: postData.title || 'Untitled Blog Post',
       description: postData.content || '',
+      submitted_by: postData.author || 'Blog Editor',
+      tags: postData.tags || '',
+      is_featured: postData.featured || false,
       original_creation_date: new Date().toISOString().split('T')[0] // YYYY-MM-DD format
     };
 
