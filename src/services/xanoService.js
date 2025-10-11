@@ -156,6 +156,8 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
 
     const assets = await response.json();
     
+    console.log('Raw assets from Xano:', assets);
+    
     // Helper function to strip HTML tags
     const stripHtml = (html) => {
       if (typeof document !== 'undefined') {
@@ -170,7 +172,9 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     // Convert assets to blog post format and sort by creation date
     const posts = assets
       .map(asset => {
+        console.log('Asset description:', asset.description);
         const plainText = stripHtml(asset.description || '');
+        console.log('Plain text excerpt:', plainText.substring(0, 200));
         
         return {
           id: asset.id,
