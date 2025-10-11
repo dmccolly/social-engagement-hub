@@ -327,7 +327,7 @@ const StandaloneBlogWidget = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center'
               }}>
-                <a href="#" style={{
+                <a href={post.url || `https://gleaming-cendol-417bf3.netlify.app/post/${post.id}`} target="_blank" rel="noopener noreferrer" style={{
                   color: settings.headerColor,
                   textDecoration: 'none',
                   fontWeight: 'bold',

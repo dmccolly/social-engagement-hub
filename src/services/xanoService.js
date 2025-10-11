@@ -158,29 +158,39 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     
     console.log('Raw assets from Xano:', assets);
     
-    // Helper function to strip HTML tags
-    const stripHtml = (html) => {
-      if (typeof document !== 'undefined') {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = html;
-        return tmp.textContent || tmp.innerText || '';
+    // Helper function to create excerpt - keep images but limit text
+    const createExcerpt = (html, maxLength = 400) => {
+      if (!html) return '';
+      
+      // For excerpt, keep the HTML (including images) but limit length
+      if (html.length <= maxLength) {
+        return html;
       }
-      // Fallback for server-side: simple regex strip
-      return html.replace(/<[^>]*>/g, '');
+      
+      // Cut at a reasonable point
+      let excerpt = html.substring(0, maxLength);
+      
+      // Find the last complete tag
+      const lastTagEnd = excerpt.lastIndexOf('>');
+      if (lastTagEnd > 0) {
+        excerpt = excerpt.substring(0, lastTagEnd + 1);
+      }
+      
+      return excerpt + '...';
     };
     
     // Convert assets to blog post format and sort by creation date
     const posts = assets
       .map(asset => {
         console.log('Asset description:', asset.description);
-        const plainText = stripHtml(asset.description || '');
-        console.log('Plain text excerpt:', plainText.substring(0, 200));
+        const excerpt = createExcerpt(asset.description || '', 400);
+        console.log('HTML excerpt:', excerpt.substring(0, 100));
         
         return {
           id: asset.id,
           title: asset.title || 'Untitled',
           content: asset.description || '',
-          excerpt: plainText.substring(0, 200) + '...',
+          excerpt: excerpt,
           author: asset.submitted_by || 'Unknown',
           created_at: asset.created_at,
           published_at: asset.created_at,
