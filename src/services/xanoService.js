@@ -156,19 +156,34 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
 
     const assets = await response.json();
     
+    // Helper function to strip HTML tags
+    const stripHtml = (html) => {
+      if (typeof document !== 'undefined') {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+      }
+      // Fallback for server-side: simple regex strip
+      return html.replace(/<[^>]*>/g, '');
+    };
+    
     // Convert assets to blog post format and sort by creation date
     const posts = assets
-      .map(asset => ({
-        id: asset.id,
-        title: asset.title || 'Untitled',
-        content: asset.description || '',
-        excerpt: (asset.description || '').substring(0, 200) + '...',
-        author: asset.submitted_by || 'Unknown',
-        created_at: asset.created_at,
-        published_at: asset.created_at,
-        featured: asset.is_featured || false,
-        status: 'published'
-      }))
+      .map(asset => {
+        const plainText = stripHtml(asset.description || '');
+        
+        return {
+          id: asset.id,
+          title: asset.title || 'Untitled',
+          content: asset.description || '',
+          excerpt: plainText.substring(0, 200) + '...',
+          author: asset.submitted_by || 'Unknown',
+          created_at: asset.created_at,
+          published_at: asset.created_at,
+          featured: asset.is_featured || false,
+          status: 'published'
+        };
+      })
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(offset, offset + limit);
 
