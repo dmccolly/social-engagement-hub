@@ -699,26 +699,39 @@ const StandaloneNewsFeedWidget = () => {
 const StandaloneSocialHubWidget = () => {
   // State Management (simplified for embed)
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [posts, setPosts] = useState([
-    {
-      title: 'Welcome to Our Platform',
-      content: 'This is a featured post showcasing our latest updates and news. We\'re excited to share our journey with you and provide valuable insights...',
-      date: '2025-09-24',
-      author: 'Editorial Team',
-      readTime: '3 min read',
-      isFeatured: true,
-      image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=400&fit=crop'
-    },
-    {
-      title: 'Community Spotlight',
-      content: 'Highlighting amazing contributions from our community members and their innovative projects...',
-      date: '2025-09-23',
-      author: 'Community Team',
-      readTime: '2 min read',
-      isFeatured: false,
-      image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=400&fit=crop'
-    }
-  ]);
+    const [posts, setPosts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Load posts from XANO
+    useEffect(() => {
+      const loadPosts = async () => {
+        try {
+          const result = await getPublishedPosts(10, 0);
+          if (result.success && result.posts && result.posts.length > 0) {
+            const formattedPosts = result.posts.map(post => ({
+              id: post.id,
+              title: post.title,
+              content: post.content,
+              excerpt: post.excerpt || (post.content ? post.content.substring(0, 200) + '...' : ''),
+              date: new Date(post.published_at || post.created_at).toLocaleDateString(),
+              author: post.author || 'Admin User',
+              readTime: post.read_time || '3 min read',
+              isFeatured: post.featured || false,
+              image: post.image_url || 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&h=400&fit=crop'
+            }));
+            setPosts(formattedPosts);
+          }
+        } catch (error) {
+          console.error('Error loading posts for embedded hub:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadPosts();
+      const interval = setInterval(loadPosts, 30000);
+      return () => clearInterval(interval);
+    }, []);
 
   // Navigation items for embed version
   const navigationItems = [
