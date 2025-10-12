@@ -4390,7 +4390,7 @@ const App = () => {
                   </div>
                   <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
                   <p className="text-sm text-gray-600 mb-2">{post.date}</p>
-                  <p className="text-gray-700">{post.content}</p>
+                  <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: post.content }} />
                   <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                     <span className="flex items-center gap-1">
                       <MessageSquare size={14} />
