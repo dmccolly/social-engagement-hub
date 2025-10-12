@@ -87,44 +87,11 @@ const StandaloneBlogWidget = () => {
           }
         }
 
-        // If no posts found, create sample posts with images
-        if (foundPosts.length === 0) {
-          foundPosts = [
-            {
-              id: 1,
-              title: 'Welcome to Our Blog',
-              content: 'This is a featured post showcasing our latest updates and news. We\'re excited to share our journey with you and provide valuable insights into our industry. Stay tuned for more exciting content, tutorials, and behind-the-scenes stories that will help you grow and succeed.',
-              excerpt: 'This is a featured post showcasing our latest updates and news. We\'re excited to share our journey with you and provide valuable insights...',
-              date: '9/24/2025',
-              isFeatured: true,
-              imageUrl: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&h=200&fit=crop',
-              author: 'Editorial Team',
-              readTime: '3 min read'
-            },
-            {
-              id: 2,
-              title: 'Getting Started Guide',
-              content: 'Learn how to make the most of our platform with this comprehensive getting started guide. We\'ll walk you through all the essential features, best practices, and pro tips that will help you achieve your goals faster and more efficiently.',
-              excerpt: 'Learn how to make the most of our platform with this comprehensive getting started guide. We\'ll walk you through all the essential features...',
-              date: '9/23/2025',
-              isFeatured: false,
-              imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=200&fit=crop',
-              author: 'Support Team',
-              readTime: '5 min read'
-            },
-            {
-              id: 3,
-              title: 'Industry Insights & Trends',
-              content: 'Discover the latest trends and insights in our industry. Our expert analysis covers emerging technologies, market shifts, and opportunities that could impact your business. Stay ahead of the curve with our in-depth research and actionable recommendations.',
-              excerpt: 'Discover the latest trends and insights in our industry. Our expert analysis covers emerging technologies, market shifts, and opportunities...',
-              date: '9/22/2025',
-              isFeatured: false,
-              imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=200&fit=crop',
-              author: 'Research Team',
-              readTime: '7 min read'
-            }
-          ];
-          setDebugInfo('Created sample posts with rich content');
+          // If no posts found, show empty state (removed sample posts fallback)
+          if (foundPosts.length === 0) {
+            setDebugInfo('No posts found - Check XANO connection or add posts in dashboard');
+            foundPosts = [];
+          }
         }
 
         // Sort by featured first, then by date
