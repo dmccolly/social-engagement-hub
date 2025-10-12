@@ -80,10 +80,10 @@
 
 ### Next Actions Required
 
-1. **Create API Endpoints** (15-30 minutes)
-   - Follow: docs/setup/XANO_ENDPOINTS_NEEDED.md
-   - Use Xano AI prompt provided in the guide
-   - OR create manually using implementation code
+1. **Create API Endpoints** (30-45 minutes)
+   - **SIMPLE GUIDE**: docs/setup/XANO_SIMPLE_GUIDE.md ⭐ (No code, just clicks!)
+   - OR Advanced: docs/setup/XANO_ENDPOINTS_NEEDED.md (With code)
+   - Create 11 endpoints using visual interface
 
 2. **Test Endpoints in Xano** (5 minutes)
    - Create test contact
