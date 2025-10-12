@@ -45,7 +45,15 @@ const StandaloneBlogWidget = () => {
               id: post.id,
               title: post.title,
               content: post.content,
-              excerpt: post.excerpt || post.content.substring(0, 200) + '...',
+              excerpt: (() => {
+                   if (post.excerpt) return post.excerpt;
+                   if (!post.content) return 'Read more to discover the full story...';
+                   // Strip HTML tags and get first 300 characters
+                   const tempDiv = document.createElement('div');
+                   tempDiv.innerHTML = post.content;
+                   const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                   return textContent.substring(0, 300).trim() + '...';
+                 })(),
               date: new Date(post.published_at || post.created_at).toLocaleDateString(),
               isFeatured: post.featured || false,
               imageUrl: post.image_url,
@@ -210,7 +218,7 @@ const StandaloneBlogWidget = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
         {posts.map((post, index) => (
           <article key={post.id || index} style={{
-            backgroundColor: settings.transparent ? 'rgba(255, 255, 255, 0.95)' : '#ffffff',
+            background: settings.transparent ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(249, 250, 251, 0.95))' : 'linear-gradient(135deg, #ffffff, #f9fafb)',
             borderRadius: `${settings.borderRadius}px`,
             overflow: 'hidden',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
@@ -296,7 +304,7 @@ const StandaloneBlogWidget = () => {
                   alignItems: 'center',
                   gap: '15px',
                   marginBottom: '15px',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   color: '#6b7280'
                 }}>
                   <span>📅 {post.date}</span>
@@ -309,9 +317,9 @@ const StandaloneBlogWidget = () => {
                  {settings.showExcerpts && (
                    <div 
                      style={{
-                       fontSize: '14px',
-                       lineHeight: '1.5',
-                       color: '#6b7280',
+                       fontSize: '15px',
+                       lineHeight: '1.7',
+                       color: '#4b5563',
                        marginBottom: '16px',
                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                      }}
@@ -345,7 +353,7 @@ const StandaloneBlogWidget = () => {
                     alignItems: 'center',
                     gap: '5px',
                     color: '#f59e0b',
-                    fontSize: '14px',
+                    fontSize: '15px',
                     fontWeight: 'bold'
                   }}>
                     <span>⭐</span>
@@ -366,7 +374,7 @@ const StandaloneBlogWidget = () => {
           backgroundColor: '#f3f4f6',
           borderRadius: '6px',
           fontSize: '12px',
-          color: '#6b7280',
+          color: '#4b5563',
           fontFamily: 'monospace'
         }}>
           Debug: {debugInfo}
