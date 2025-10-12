@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .widget-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .widget-header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .posts-container {
+            background: white;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+        }
+        
+        .post {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 0;
+        }
+        
+        .post:last-child {
+            border-bottom: none;
+        }
+        
+        .post-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .post-meta {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
+        .post-excerpt {
+            font-size: 16px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc2626;
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            📝 Latest Blog Posts
+        </div>
+        <div class="posts-container" id="posts">
+            <div class="loading">Loading posts...</div>
+        </div>
+    </div>
+
+    <script>
+        const XANO_URL = 'https://x8ki-letl-twmt.n7.xano.io/api:LKKAJQwu/asset';
+        
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+        
+        function createExcerpt(content, maxLength = 300) {
+            const text = stripHtml(content);
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength).trim() + '...';
+        }
+        
+        async function loadPosts() {
+            const container = document.getElementById('posts');
+            
+            try {
+                const response = await fetch(XANO_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const assets = await response.json();
+                
+                if (!assets || assets.length === 0) {
+                    container.innerHTML = '<div class="error">No blog posts found.</div>';
+                    return;
+                }
+                
+                // Sort by creation date and take top 3
+                const posts = assets
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 3);
+                
+                container.innerHTML = posts.map(post => `
+                    <div class="post">
+                        <div class="post-title">${post.title || 'Untitled'}</div>
+                        <div class="post-meta">
+                            ${post.submitted_by || 'Unknown'} • ${new Date(post.created_at).toLocaleDateString()}
+                        </div>
+                        <div class="post-excerpt">
+                            ${createExcerpt(post.description || '', 300)}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading posts:', error);
+                container.innerHTML = `<div class="error">Error loading posts: ${error.message}</div>`;
+            }
+        }
+        
+        // Load posts when page loads
+        loadPosts();
+    </script>
+</body>
+</html>
