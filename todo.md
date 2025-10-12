@@ -19,29 +19,50 @@
 - **Email System URL**: https://deploy-preview-15--gleaming-cendol-417bf3.netlify.app/email
 - **Status**: ✅ Successfully Deployed
 
-## Testing Phase - Current Status
-- [x] Preview deployment is live and accessible
-- [x] Site returns HTTP 200 status
-- [ ] Need to verify Xano connection
-- [ ] Need to test contact management features
-- [ ] Need to verify CORS configuration
+## Xano Setup Phase - Current Status
+- [x] Created complete Xano setup guide
+- [x] Provided step-by-step instructions for tables
+- [x] Provided step-by-step instructions for endpoints
+- [x] Included verification checklist
+- [x] Included troubleshooting guide
 
-## Critical Next Steps for User
-1. **Add Environment Variable to Netlify:**
-   - Go to: https://app.netlify.com
-   - Site: gleaming-cendol-417bf3
-   - Settings → Environment variables
-   - Add: `REACT_APP_XANO_BASE_URL` = [Your Xano API URL]
-   - Trigger new deploy
+## User Action Required - Complete Xano Setup
 
-2. **Verify CORS in Xano:**
-   - Add: `https://deploy-preview-15--gleaming-cendol-417bf3.netlify.app`
-   - Enable all HTTP methods
+### Step 1: Use Xano AI to Create Tables (5 minutes)
+- [ ] Copy prompt from XANO_COMPLETE_SETUP.md (Step 1)
+- [ ] Paste into Xano AI
+- [ ] Verify 5 tables created
 
-3. **Test the System:**
-   - Navigate to: https://deploy-preview-15--gleaming-cendol-417bf3.netlify.app/email
-   - Try adding a contact
-   - Report any errors
+### Step 2: Use Xano AI to Create Endpoints (5 minutes)
+- [ ] Copy prompt from XANO_COMPLETE_SETUP.md (Step 2)
+- [ ] Paste into Xano AI
+- [ ] Verify 11 endpoints created
+
+### Step 3: Test in Xano (5 minutes)
+- [ ] Test POST /email_contacts
+- [ ] Test GET /email_contacts
+- [ ] Test POST /email_groups
+- [ ] Add 3-4 sample contacts
+
+### Step 4: Configure CORS (2 minutes)
+- [ ] Add preview URL to CORS
+- [ ] Add production URL to CORS
+- [ ] Enable all HTTP methods
+
+### Step 5: Get API URL (1 minute)
+- [ ] Copy Xano API Base URL
+- [ ] Save for Netlify configuration
+
+### Step 6: Configure Netlify (3 minutes)
+- [ ] Add REACT_APP_XANO_BASE_URL to Netlify
+- [ ] Trigger new deploy
+- [ ] Wait for deployment
+
+### Step 7: Test Email System (5 minutes)
+- [ ] Navigate to /email dashboard
+- [ ] Try adding a contact
+- [ ] Verify it works
+- [ ] Report results
 
 ## Completion Status
 - [x] Identified deployment issue (no PR)
