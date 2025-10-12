@@ -92,9 +92,8 @@ const StandaloneBlogWidget = () => {
             setDebugInfo('No posts found - Check XANO connection or add posts in dashboard');
             foundPosts = [];
           }
-        }
 
-        // Sort by featured first, then by date
+          // Sort by featured first, then by date
         foundPosts.sort((a, b) => {
           if (a.isFeatured && !b.isFeatured) return -1;
           if (!a.isFeatured && b.isFeatured) return 1;
