@@ -174,23 +174,60 @@
                 maxLength = maxLength || 300;
                 if (!content) return '';
                 
-                // Remove images from excerpt but keep other HTML formatting
+                // Remove images from excerpt but keep ALL other HTML formatting
                 let html = content.replace(/<img[^>]*>/gi, '');
                 
-                // Get plain text length for truncation
+                // Get plain text length for truncation check
                 const plainText = stripHtml(html);
                 
                 if (plainText.length <= maxLength) {
-                    // Return HTML with formatting preserved
+                    // Return full HTML with all formatting preserved
                     return html;
                 }
                 
-                // Truncate HTML while preserving tags
+                // Need to truncate - keep HTML up to maxLength characters of text
                 const tmp = document.createElement('div');
                 tmp.innerHTML = html;
-                const truncated = tmp.textContent.substring(0, maxLength).trim() + '...';
                 
-                // Return truncated text (we lose some formatting here, but keep length)
+                // Walk through text nodes and truncate
+                let charCount = 0;
+                let truncated = '';
+                
+                function walkNodes(node) {
+                    if (charCount >= maxLength) return;
+                    
+                    if (node.nodeType === 3) { // Text node
+                        const remaining = maxLength - charCount;
+                        const text = node.textContent;
+                        if (text.length <= remaining) {
+                            truncated += text;
+                            charCount += text.length;
+                        } else {
+                            truncated += text.substring(0, remaining) + '...';
+                            charCount = maxLength;
+                        }
+                    } else if (node.nodeType === 1) { // Element node
+                        const tag = node.tagName.toLowerCase();
+                        const attrs = Array.from(node.attributes)
+                            .map(attr => attr.name + '="' + attr.value + '"')
+                            .join(' ');
+                        
+                        truncated += '<' + tag + (attrs ? ' ' + attrs : '') + '>';
+                        
+                        for (let child of node.childNodes) {
+                            walkNodes(child);
+                            if (charCount >= maxLength) break;
+                        }
+                        
+                        truncated += '</' + tag + '>';
+                    }
+                }
+                
+                for (let child of tmp.childNodes) {
+                    walkNodes(child);
+                    if (charCount >= maxLength) break;
+                }
+                
                 return truncated;
             }
             
