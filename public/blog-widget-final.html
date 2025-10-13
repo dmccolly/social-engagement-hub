@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .widget-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .widget-header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .posts-container {
+            background: white;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+        }
+        
+        .post {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 0;
+            overflow: hidden;
+        }
+        
+        .post:last-child {
+            border-bottom: none;
+        }
+        
+        .post-image {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            float: left;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .post-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .post-meta {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
+        .post-excerpt {
+            font-size: 16px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc2626;
+        }
+
+        .featured-badge {
+            display: inline-block;
+            background: #fbbf24;
+            color: #78350f;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            📝 Latest Blog Posts
+        </div>
+        <div class="posts-container" id="posts">
+            <div class="loading">Loading posts...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const XANO_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:pYeQctVX/asset';
+            
+            function extractImage(html) {
+                if (!html) return null;
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    const img = tmp.querySelector('img');
+                    return img ? img.src : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            function stripHtml(html) {
+                if (!html) return '';
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    return tmp.textContent || tmp.innerText || '';
+                } catch (e) {
+                    return '';
+                }
+            }
+            
+            function createExcerpt(content, maxLength) {
+                maxLength = maxLength || 300;
+                const text = stripHtml(content);
+                if (text.length <= maxLength) return text;
+                return text.substring(0, maxLength).trim() + '...';
+            }
+            
+            function displayPosts(posts) {
+                const container = document.getElementById('posts');
+                
+                if (!posts || posts.length === 0) {
+                    container.innerHTML = '<div class="error">No blog posts found.</div>';
+                    return;
+                }
+                
+                const sortedPosts = posts
+                    .sort(function(a, b) { return b.created_at - a.created_at; })
+                    .slice(0, 3);
+                
+                const html = sortedPosts.map(function(post) {
+                    const imageUrl = extractImage(post.description);
+                    const imageHtml = imageUrl ? '<img src="' + imageUrl + '" alt="' + (post.title || 'Post image') + '" class="post-image">' : '';
+                    const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
+                    const date = new Date(post.created_at).toLocaleDateString();
+                    
+                    return '<div class="post">' +
+                        imageHtml +
+                        '<div class="post-title">' + (post.title || 'Untitled') + featuredBadge + '</div>' +
+                        '<div class="post-meta">' + (post.submitted_by || 'Unknown') + ' • ' + date + '</div>' +
+                        '<div class="post-excerpt">' + createExcerpt(post.description, 300) + '</div>' +
+                        '<div style="clear: both;"></div>' +
+                        '</div>';
+                }).join('');
+                
+                container.innerHTML = html;
+            }
+            
+            function loadPosts() {
+                const container = document.getElementById('posts');
+                
+                fetch(XANO_URL)
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(assets) {
+                        displayPosts(assets);
+                    })
+                    .catch(function(error) {
+                        console.error('Error loading posts:', error);
+                        container.innerHTML = '<div class="error">Error loading posts: ' + error.message + '</div>';
+                    });
+            }
+            
+            // Load posts when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadPosts);
+            } else {
+                loadPosts();
+            }
+        })();
+    </script>
+</body>
+</html>
