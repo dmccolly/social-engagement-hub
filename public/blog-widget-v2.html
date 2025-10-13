@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .widget-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .widget-header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .posts-container {
+            background: white;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+        }
+        
+        .post {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 0;
+        }
+        
+        .post:last-child {
+            border-bottom: none;
+        }
+        
+        .post-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .post-meta {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
+        .post-excerpt {
+            font-size: 16px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc2626;
+        }
+
+        .featured-badge {
+            display: inline-block;
+            background: #fbbf24;
+            color: #78350f;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            📝 Latest Blog Posts
+        </div>
+        <div class="posts-container" id="posts">
+            <div class="loading">Loading posts...</div>
+        </div>
+    </div>
+
+    <script>
+        // Hardcoded blog posts from your XANO data
+        const posts = [
+            {
+                id: 77,
+                title: "And now for something completely different .....",
+                description: "Welcome to this. It's a shiny new website, built on scalable modern platforms...",
+                submitted_by: "Admin User",
+                created_at: 1760212308898,
+                is_featured: true
+            },
+            {
+                id: 73,
+                title: "And now for something completely different ...",
+                description: "Welcome to this. It's a shiny new website, built on scalable modern platforms...",
+                submitted_by: "Admin User",
+                created_at: 1760206030189,
+                is_featured: true
+            },
+            {
+                id: 54,
+                title: "KJOT - Variety Rock comp/demo",
+                description: "Not all ideas are created equal - and this was one of them. Okay for a while, but eventually succumbed to the fact that NOBODY would call it Variety Rock. J105 was like a tardigrade; you couldn't kill the thing. Well, I guess JACK could, but it took a while.",
+                submitted_by: "dm",
+                created_at: 1756610948612,
+                is_featured: false
+            }
+        ];
+        
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+        
+        function createExcerpt(content, maxLength = 300) {
+            const text = stripHtml(content);
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength).trim() + '...';
+        }
+        
+        function displayPosts() {
+            const container = document.getElementById('posts');
+            
+            const sortedPosts = posts
+                .sort((a, b) => b.created_at - a.created_at)
+                .slice(0, 3);
+            
+            container.innerHTML = sortedPosts.map(post => `
+                <div class="post">
+                    <div class="post-title">
+                        ${post.title || 'Untitled'}
+                        ${post.is_featured ? '<span class="featured-badge">FEATURED</span>' : ''}
+                    </div>
+                    <div class="post-meta">
+                        ${post.submitted_by || 'Unknown'} • ${new Date(post.created_at).toLocaleDateString()}
+                    </div>
+                    <div class="post-excerpt">
+                        ${createExcerpt(post.description || '', 300)}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Display posts immediately
+        displayPosts();
+    </script>
+</body>
+</html>
