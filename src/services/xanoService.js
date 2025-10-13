@@ -1,7 +1,7 @@
 // src/services/xanoService.js
 
 // Hardcode XANO URL as fallback for embedded widgets where env vars may not be available
-const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://x8ki-letl-twmt.n7.xano.io/api:LKKAJQwu';
+const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
 /**
  * Upload image via XANO (which then uploads to Cloudinary)
