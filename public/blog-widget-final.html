@@ -206,24 +206,52 @@
                     .sort(function(a, b) { return b.created_at - a.created_at; })
                     .slice(0, 3);
                 
-                const html = sortedPosts.map(function(post) {
+                container.innerHTML = '';
+                sortedPosts.forEach(function(post) {
                     const imageUrl = extractImage(post.description);
-                    const imageHtml = imageUrl ? '<img src="' + imageUrl + '" alt="' + (post.title || 'Post image') + '" class="post-image">' : '';
                     const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
                     const date = new Date(post.created_at).toLocaleDateString();
                     const readMoreUrl = 'https://history-of-idaho-broadcasting--717ea2.webflow.io/post/' + post.id;
                     
-                    return '<div class="post">' +
-                        imageHtml +
-                        '<div class="post-title">' + (post.title || 'Untitled') + featuredBadge + '</div>' +
-                        '<div class="post-meta">' + (post.submitted_by || 'Unknown') + ' • ' + date + '</div>' +
-                        '<div class="post-excerpt">' + createExcerpt(post.description, 300) + '</div>' +
-                        '<a href="' + readMoreUrl + '" class="read-more-btn" target="_blank">Read More</a>' +
-                        '<div style="clear: both;"></div>' +
-                        '</div>';
-                }).join('');
-                
-                container.innerHTML = html;
+                    const postDiv = document.createElement('div');
+                    postDiv.className = 'post';
+                    
+                    if (imageUrl) {
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.alt = post.title || 'Post image';
+                        img.className = 'post-image';
+                        postDiv.appendChild(img);
+                    }
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'post-title';
+                    titleDiv.innerHTML = (post.title || 'Untitled') + featuredBadge;
+                    postDiv.appendChild(titleDiv);
+                    
+                    const metaDiv = document.createElement('div');
+                    metaDiv.className = 'post-meta';
+                    metaDiv.textContent = (post.submitted_by || 'Unknown') + ' • ' + date;
+                    postDiv.appendChild(metaDiv);
+                    
+                    const excerptDiv = document.createElement('div');
+                    excerptDiv.className = 'post-excerpt';
+                    excerptDiv.innerHTML = createExcerpt(post.description, 300);
+                    postDiv.appendChild(excerptDiv);
+                    
+                    const readMoreLink = document.createElement('a');
+                    readMoreLink.href = readMoreUrl;
+                    readMoreLink.className = 'read-more-btn';
+                    readMoreLink.target = '_blank';
+                    readMoreLink.textContent = 'Read More';
+                    postDiv.appendChild(readMoreLink);
+                    
+                    const clearDiv = document.createElement('div');
+                    clearDiv.style.clear = 'both';
+                    postDiv.appendChild(clearDiv);
+                    
+                    container.appendChild(postDiv);
+                });
             }
             
             function loadPosts() {
