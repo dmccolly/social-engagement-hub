@@ -2869,6 +2869,7 @@ const App = () => {
     const fileInputRef = useRef(null);
     const mediaInputRef = useRef(null);
     const contentRef = useRef(null);
+    const savedRangeRef = useRef(null); // Store the selection range
 
     // Handle content change - FIXED for backwards typing
     const handleContentChange = (e) => {
@@ -3349,6 +3350,12 @@ const App = () => {
     const openLinkDialog = () => {
       const selection = window.getSelection();
       const selectedText = selection.toString();
+      
+      // Save the current range so we can restore it when inserting the link
+      if (selection.rangeCount > 0) {
+        savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+      }
+      
       setLinkData({ text: selectedText || '', url: '' });
       setShowLinkDialog(true);
     };
@@ -3361,7 +3368,12 @@ const App = () => {
         const selection = window.getSelection();
         let range;
         
-        if (selection.rangeCount > 0) {
+        // Use the saved range if available, otherwise create a new one
+        if (savedRangeRef.current) {
+          range = savedRangeRef.current;
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else if (selection.rangeCount > 0) {
           range = selection.getRangeAt(0);
         } else {
           range = document.createRange();
@@ -3391,6 +3403,9 @@ const App = () => {
         selection.addRange(range);
         
         setContent(editor.innerHTML);
+        
+        // Clear the saved range
+        savedRangeRef.current = null;
       }
       
       setShowLinkDialog(false);
@@ -3416,7 +3431,12 @@ const App = () => {
         const selection = window.getSelection();
         let range;
         
-        if (selection.rangeCount > 0) {
+        // Use the saved range if available
+        if (savedRangeRef.current) {
+          range = savedRangeRef.current;
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else if (selection.rangeCount > 0) {
           range = selection.getRangeAt(0);
         } else {
           range = document.createRange();
@@ -3469,6 +3489,7 @@ const App = () => {
       
       setShowYouTubeDialog(false);
       setYoutubeUrl('');
+      savedRangeRef.current = null;
     };
 
     // Extract Vimeo video ID from URL
@@ -3490,7 +3511,12 @@ const App = () => {
         const selection = window.getSelection();
         let range;
         
-        if (selection.rangeCount > 0) {
+        // Use the saved range if available
+        if (savedRangeRef.current) {
+          range = savedRangeRef.current;
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else if (selection.rangeCount > 0) {
           range = selection.getRangeAt(0);
         } else {
           range = document.createRange();
@@ -3543,6 +3569,7 @@ const App = () => {
       
       setShowVimeoDialog(false);
       setVimeoUrl('');
+      savedRangeRef.current = null;
     };
 
     // Media File Functions
@@ -3871,10 +3898,22 @@ const App = () => {
             <button onClick={openLinkDialog} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Link">
               <ExternalLink size={16} />
             </button>
-            <button onClick={() => setShowYouTubeDialog(true)} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert YouTube Video">
+            <button onClick={() => {
+             const selection = window.getSelection();
+             if (selection.rangeCount > 0) {
+               savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+             }
+             setShowYouTubeDialog(true);
+           }} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert YouTube Video">
               <Play size={16} />
             </button>
-            <button onClick={() => setShowVimeoDialog(true)} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Vimeo Video">
+            <button onClick={() => {
+             const selection = window.getSelection();
+             if (selection.rangeCount > 0) {
+               savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+             }
+             setShowVimeoDialog(true);
+           }} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Vimeo Video">
               <Film size={16} />
             </button>
             <button onClick={() => mediaInputRef.current?.click()} className="px-3 py-1 bg-white border rounded hover:bg-gray-100" title="Insert Audio/Video File">
