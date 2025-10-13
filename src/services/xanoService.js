@@ -52,7 +52,8 @@ export const createBlogPost = async (postData) => {
       submitted_by: postData.author || 'Blog Editor',
       tags: postData.tags || '',
       is_featured: postData.featured || false,
-      original_creation_date: new Date().toISOString().split('T')[0] // YYYY-MM-DD format
+        original_creation_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+        category_id: 11 // Blog Posts category
     };
 
     console.log('Sending to XANO:', assetData);
@@ -109,6 +110,7 @@ export const updateBlogPost = async (postId, postData) => {
       submitted_by: postData.author || 'Blog Editor',
       tags: postData.tags || '',
       is_featured: postData.featured || false,
+        category_id: 11 // Blog Posts category
     };
 
     const response = await fetch(`${XANO_BASE_URL}/asset/${postId}`, {
@@ -180,8 +182,9 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
       return excerpt + '...';
     };
     
-    // Convert assets to blog post format and sort by creation date
+       // Filter to only blog posts (empty file_type) and convert to blog post format
     const posts = assets
+         .filter(asset => asset.category_id === 11) // Only Blog Posts category
       .map(asset => {
         console.log('Asset description:', asset.description);
         const excerpt = createExcerpt(asset.description || '', 400);
