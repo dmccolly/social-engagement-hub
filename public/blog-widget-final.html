@@ -177,6 +177,19 @@
                 // Remove images from excerpt but keep ALL other HTML formatting
                 let html = content.replace(/<img[^>]*>/gi, '');
                 
+                // Remove empty paragraphs that cause excessive spacing
+                // This handles complex nested structures like <p><font><span><br></span></font></p>
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const paragraphs = tempDiv.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    const text = p.textContent.trim();
+                    if (!text || text === '' || /^\s*$/.test(text)) {
+                        p.remove();
+                    }
+                });
+                html = tempDiv.innerHTML;
+                
                 // Get plain text length for truncation check
                 const plainText = stripHtml(html);
                 
@@ -248,7 +261,7 @@
                     const imageUrl = extractImage(post.description);
                     const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
                     const date = new Date(post.created_at).toLocaleDateString();
-                    const readMoreUrl = 'https://history-of-idaho-broadcasting--717ea2.webflow.io/post/' + post.id;
+                    const readMoreUrl = 'https://gleaming-cendol-417bf3.netlify.app/post/' + post.id;
                     
                     const postDiv = document.createElement('div');
                     postDiv.className = 'post';
