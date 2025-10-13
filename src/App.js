@@ -994,6 +994,24 @@ const App = () => {
      };
      
      const [posts, setPosts] = useState(loadPostsFromStorage());
+
+    // Load posts from XANO on mount
+    useEffect(() => {
+      const loadPostsFromXano = async () => {
+        try {
+          const result = await getPublishedPosts(50, 0);
+          if (result.success && result.posts && result.posts.length > 0) {
+            console.log('Loaded posts from XANO:', result.posts);
+            setPosts(result.posts);
+          }
+        } catch (error) {
+          console.error('Failed to load posts from XANO:', error);
+        }
+      };
+      
+      loadPostsFromXano();
+    }, []);
+
   const [campaigns, setCampaigns] = useState([]);
   // Sync blog posts to localStorage so the /widget/blog iframe can read them
   const mapPostsForWidget = (list) =>
