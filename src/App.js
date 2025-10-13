@@ -817,10 +817,135 @@ const StandaloneSocialHubWidget = () => {
   );
 };
 
+
+// Single Post View Component - displays individual blog post
+const SinglePostView = () => {
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    // Get post ID from URL path
+    const pathParts = window.location.pathname.split('/');
+    const postId = pathParts[pathParts.length - 1];
+    
+    if (!postId || postId === 'post') {
+      setError('No post ID provided');
+      setLoading(false);
+      return;
+    }
+    
+    // Fetch post from XANO
+    const XANO_BASE_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:pYeQctVX';
+    
+    fetch(`${XANO_BASE_URL}/asset/${postId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Post not found');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setPost(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading post:', err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl text-gray-600">Loading post...</div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error || !post) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-xl text-red-600 mb-4">
+            {error || 'Post not found'}
+          </div>
+          <a 
+            href="https://gleaming-cendol-417bf3.netlify.app/"
+            className="text-blue-600 hover:underline"
+          >
+            ← Back to Social Hub
+          </a>
+        </div>
+      </div>
+    );
+  }
+  
+  const date = new Date(post.created_at).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        {/* Header with back link */}
+        <div className="mb-6">
+          <a 
+            href="https://gleaming-cendol-417bf3.netlify.app/"
+            className="text-blue-600 hover:underline flex items-center gap-2"
+          >
+            ← Back to Social Hub
+          </a>
+        </div>
+        
+        {/* Post content */}
+        <article className="bg-white rounded-lg shadow-lg p-8">
+          {/* Title and meta */}
+          <header className="mb-6">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              {post.title}
+              {post.is_featured && (
+                <span className="ml-3 inline-block bg-yellow-400 text-yellow-900 px-3 py-1 rounded text-sm font-semibold">
+                  FEATURED
+                </span>
+              )}
+            </h1>
+            <div className="flex items-center gap-4 text-gray-600">
+              <span>{post.submitted_by || 'Editorial Team'}</span>
+              <span>•</span>
+              <span>{date}</span>
+            </div>
+          </header>
+          
+          {/* Post body with HTML formatting preserved */}
+          <div 
+            className="prose prose-lg max-w-none"
+            dangerouslySetInnerHTML={{ __html: post.description }}
+            style={{
+              lineHeight: '1.8',
+              fontSize: '16px'
+            }}
+          />
+        </article>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   // Check if this is a widget route
   const currentPath = window.location.pathname;
   
+    // Individual post routing
+    if (currentPath.startsWith('/post/')) {
+      return <SinglePostView />;
+    }
+    
   // Widget routing - render standalone widgets
   if (currentPath === '/widget/blog') {
     return <StandaloneBlogWidget />;
