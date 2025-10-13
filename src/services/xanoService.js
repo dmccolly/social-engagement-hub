@@ -180,8 +180,9 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
       return excerpt + '...';
     };
     
-    // Convert assets to blog post format and sort by creation date
+       // Filter to only blog posts (empty file_type) and convert to blog post format
     const posts = assets
+         .filter(asset => !asset.file_type || asset.file_type === '')
       .map(asset => {
         console.log('Asset description:', asset.description);
         const excerpt = createExcerpt(asset.description || '', 400);
