@@ -91,6 +91,26 @@
             text-decoration: underline;
         }
         
+           
+           /* Preserve XANO HTML formatting */
+           .post-excerpt font {
+               /* Allow font tags to use their color and face attributes */
+           }
+           
+           .post-excerpt span[style*="font-weight: 700"],
+           .post-excerpt span[style*="font-weight:700"] {
+               font-weight: 700 !important;
+           }
+           
+           .post-excerpt span[style*="font-style: italic"],
+           .post-excerpt span[style*="font-style:italic"] {
+               font-style: italic !important;
+           }
+           
+           /* Ensure inline styles are respected */
+           .post-excerpt [style] {
+               /* Inline styles will be applied naturally */
+           }
         .loading {
             text-align: center;
             padding: 40px;
@@ -252,8 +272,20 @@
                     return;
                 }
                 
-                const sortedPosts = posts
-                    .sort(function(a, b) { return b.created_at - a.created_at; })
+                   // Filter for blog posts only (category_id === 11)
+                   const blogPosts = posts.filter(function(post) {
+                       return post.category_id === 11;
+                   });
+                   
+                   // Sort: featured posts first, then by date (newest first)
+                   const sortedPosts = blogPosts
+                       .sort(function(a, b) {
+                           // First, sort by featured status (featured = true comes first)
+                           if (a.is_featured && !b.is_featured) return -1;
+                           if (!a.is_featured && b.is_featured) return 1;
+                           // Then sort by date (newest first)
+                           return b.created_at - a.created_at;
+                       })
                     .slice(0, 3);
                 
                 container.innerHTML = '';
