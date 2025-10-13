@@ -65,6 +65,16 @@
             color: #4b5563;
             line-height: 1.6;
         }
+
+        .post-image {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            float: left;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
         
         .loading {
             text-align: center;
@@ -102,23 +112,25 @@
     </div>
 
     <script>
-        // Hardcoded blog posts from your XANO data
+        // Hardcoded blog posts from your XANO data with images
         const posts = [
             {
                 id: 77,
                 title: "And now for something completely different .....",
-                description: "Welcome to this. It's a shiny new website, built on scalable modern platforms...",
+                description: "Welcome to this. It's a shiny new website, built on scalable modern platforms. This is the Q104 Broadcasting Industry News Aggregator - your one-stop source for all the latest news and updates from the broadcasting world.",
                 submitted_by: "Admin User",
                 created_at: 1760212308898,
-                is_featured: true
+                is_featured: true,
+                image: "https://res.cloudinary.com/dzrw8nopf/image/upload/v1760212093/blog/seyusw2faahej20stwek.webp"
             },
             {
                 id: 73,
                 title: "And now for something completely different ...",
-                description: "Welcome to this. It's a shiny new website, built on scalable modern platforms...",
+                description: "Welcome to this. It's a shiny new website, built on scalable modern platforms. Discover the latest in broadcasting technology and industry insights.",
                 submitted_by: "Admin User",
                 created_at: 1760206030189,
-                is_featured: true
+                is_featured: true,
+                image: "https://res.cloudinary.com/dzrw8nopf/image/upload/v1760205920/blog/ir8ecynudlat0tjk8kvi.png"
             },
             {
                 id: 54,
@@ -126,7 +138,8 @@
                 description: "Not all ideas are created equal - and this was one of them. Okay for a while, but eventually succumbed to the fact that NOBODY would call it Variety Rock. J105 was like a tardigrade; you couldn't kill the thing. Well, I guess JACK could, but it took a while.",
                 submitted_by: "dm",
                 created_at: 1756610948612,
-                is_featured: false
+                is_featured: false,
+                image: "https://res.cloudinary.com/dzrw8nopf/video/upload/w_200,h_200,c_fill,g_auto/v1756610946/jtjoxj8r1tvsugbrzoou.mp4"
             }
         ];
         
@@ -151,6 +164,7 @@
             
             container.innerHTML = sortedPosts.map(post => `
                 <div class="post">
+                    ${post.image ? `<img src="${post.image}" alt="${post.title}" class="post-image">` : ''}
                     <div class="post-title">
                         ${post.title || 'Untitled'}
                         ${post.is_featured ? '<span class="featured-badge">FEATURED</span>' : ''}
@@ -161,6 +175,7 @@
                     <div class="post-excerpt">
                         ${createExcerpt(post.description || '', 300)}
                     </div>
+                    <div style="clear: both;"></div>
                 </div>
             `).join('');
         }
