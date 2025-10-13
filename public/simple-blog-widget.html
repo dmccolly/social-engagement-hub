@@ -117,6 +117,7 @@
             const container = document.getElementById('posts');
             
             try {
+                console.log('Fetching from:', XANO_URL);
                 const response = await fetch(XANO_URL);
                 
                 if (!response.ok) {
@@ -124,6 +125,7 @@
                 }
                 
                 const assets = await response.json();
+                console.log('Loaded assets:', assets.length);
                 
                 if (!assets || assets.length === 0) {
                     container.innerHTML = '<div class="error">No blog posts found.</div>';
@@ -157,7 +159,7 @@
                 
             } catch (error) {
                 console.error('Error loading posts:', error);
-                container.innerHTML = `<div class="error">Error loading posts: ${error.message}</div>`;
+                container.innerHTML = `<div class="error">Error loading posts: ${error.message}<br><br>Check browser console for details.</div>`;
             }
         }
         
