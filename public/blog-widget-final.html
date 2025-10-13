@@ -69,7 +69,8 @@
         .post-excerpt {
             font-size: 16px;
             color: #4b5563;
-            line-height: 1.6;
+            line-height: 1.8;
+            white-space: pre-line;
         }
         
         .loading {
@@ -154,13 +155,23 @@
             function createExcerpt(content, maxLength) {
                 maxLength = maxLength || 300;
                 if (!content) return '';
-                // Keep some HTML formatting but limit length
-                let text = content;
+                
                 // Remove images from excerpt
-                text = text.replace(/<img[^>]*>/gi, '');
-                // Strip other HTML for length calculation
+                let text = content.replace(/<img[^>]*>/gi, '');
+                
+                // Convert common HTML tags to preserve formatting
+                text = text.replace(/<\/p>/gi, '</p> ');
+                text = text.replace(/<br\s*\/?>/gi, ' ');
+                text = text.replace(/<\/div>/gi, '</div> ');
+                
+                // Strip HTML for length calculation
                 const plainText = stripHtml(text);
-                if (plainText.length <= maxLength) return plainText;
+                
+                if (plainText.length <= maxLength) {
+                    return plainText;
+                }
+                
+                // Truncate and add ellipsis
                 return plainText.substring(0, maxLength).trim() + '...';
             }
             
