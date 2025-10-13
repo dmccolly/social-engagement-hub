@@ -202,7 +202,12 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
           status: 'published'
         };
       })
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+         .sort((a, b) => {
+           // Featured posts first, then sort by date
+           if (a.featured && !b.featured) return -1;
+           if (!a.featured && b.featured) return 1;
+           return new Date(b.created_at) - new Date(a.created_at);
+         })
       .slice(offset, offset + limit);
 
     return {
