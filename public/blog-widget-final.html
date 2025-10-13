@@ -24,18 +24,12 @@
         }
         
         .widget-header {
-            background: #2563eb;
-            color: white;
-            padding: 20px;
-            border-radius: 8px 8px 0 0;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
+            display: none;
         }
         
         .posts-container {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 0 0 8px 8px;
+            background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(233, 236, 239, 0.5) 100%);
+            border-radius: 8px;
             padding: 20px;
         }
         
@@ -99,6 +93,23 @@
             font-size: 12px;
             font-weight: 600;
             margin-left: 10px;
+        }
+
+        .read-more-btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .read-more-btn:hover {
+            background: #1d4ed8;
         }
     </style>
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
@@ -170,12 +181,14 @@
                     const imageHtml = imageUrl ? '<img src="' + imageUrl + '" alt="' + (post.title || 'Post image') + '" class="post-image">' : '';
                     const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
                     const date = new Date(post.created_at).toLocaleDateString();
+                    const readMoreUrl = 'https://history-of-idaho-broadcasting--717ea2.webflow.io/post/' + post.id;
                     
                     return '<div class="post">' +
                         imageHtml +
                         '<div class="post-title">' + (post.title || 'Untitled') + featuredBadge + '</div>' +
                         '<div class="post-meta">' + (post.submitted_by || 'Unknown') + ' • ' + date + '</div>' +
                         '<div class="post-excerpt">' + createExcerpt(post.description, 300) + '</div>' +
+                        '<a href="' + readMoreUrl + '" class="read-more-btn" target="_blank">Read More</a>' +
                         '<div style="clear: both;"></div>' +
                         '</div>';
                 }).join('');
