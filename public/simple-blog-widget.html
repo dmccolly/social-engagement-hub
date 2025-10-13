@@ -93,6 +93,14 @@
     <script>
         const XANO_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:pYeQctVX/asset';
         
+        function extractImage(html) {
+            if (!html) return null;
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const img = tmp.querySelector('img');
+            return img ? img.src : null;
+        }
+        
         function stripHtml(html) {
             const tmp = document.createElement('div');
             tmp.innerHTML = html;
@@ -127,17 +135,25 @@
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                     .slice(0, 3);
                 
-                container.innerHTML = posts.map(post => `
-                    <div class="post">
-                        <div class="post-title">${post.title || 'Untitled'}</div>
-                        <div class="post-meta">
-                            ${post.submitted_by || 'Unknown'} • ${new Date(post.created_at).toLocaleDateString()}
+                container.innerHTML = posts.map(post => {
+                    const imageUrl = extractImage(post.description);
+                    return `
+                        <div class="post">
+                            ${imageUrl ? `<img src="${imageUrl}" alt="${post.title}" class="post-image">` : ''}
+                            <div class="post-title">
+                                ${post.title || 'Untitled'}
+                                ${post.is_featured ? '<span class="featured-badge">FEATURED</span>' : ''}
+                            </div>
+                            <div class="post-meta">
+                                ${post.submitted_by || 'Unknown'} • ${new Date(post.created_at).toLocaleDateString()}
+                            </div>
+                            <div class="post-excerpt">
+                                ${createExcerpt(post.description || '', 300)}
+                            </div>
+                            <div style="clear: both;"></div>
                         </div>
-                        <div class="post-excerpt">
-                            ${createExcerpt(post.description || '', 300)}
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
                 
             } catch (error) {
                 console.error('Error loading posts:', error);
