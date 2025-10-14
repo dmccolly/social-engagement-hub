@@ -970,7 +970,17 @@ const App = () => {
          if (stored) {
            const parsed = JSON.parse(stored);
            if (Array.isArray(parsed) && parsed.length > 0) {
-             return parsed;
+             // Check if these are placeholder posts and clear them
+                const hasPlaceholders = parsed.some(post => 
+                  post.title === 'Welcome to Our Platform' || 
+                  post.title === 'Latest Updates'
+                );
+                if (hasPlaceholders) {
+                  console.log('Clearing placeholder posts from localStorage');
+                  localStorage.removeItem('socialHubPosts');
+                  return [];
+                }
+                return parsed;
            }
          }
        } catch (err) {
