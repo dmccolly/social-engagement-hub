@@ -41,7 +41,7 @@ const StandaloneBlogWidget = () => {
         // Try to fetch from XANO first
         try {
           const result = await getPublishedPosts(settings.postCount, 0);
-          if (result.success && result.posts && result.posts.length > 0) {
+          if (result.success && result.posts) {
             const formattedPosts = result.posts.map(post => ({
               id: post.id,
               title: post.title,
@@ -708,7 +708,7 @@ const StandaloneSocialHubWidget = () => {
       const loadPosts = async () => {
         try {
           const result = await getPublishedPosts(10, 0);
-          if (result.success && result.posts && result.posts.length > 0) {
+          if (result.success && result.posts) {
             const formattedPosts = result.posts.map(post => ({
               id: post.id,
               title: post.title,
@@ -1001,10 +1001,12 @@ const App = () => {
       const loadPostsFromXano = async () => {
         try {
           const result = await getPublishedPosts(50, 0);
-          if (result.success && result.posts && result.posts.length > 0) {
+          if (result.success && result.posts) {
             console.log('Loaded posts from XANO:', result.posts);
             setPosts(result.posts);
-          }
+          } else {
+              console.warn('Failed to load posts from XANO:', result.error || 'Unknown error');
+            }
         } catch (error) {
           console.error('Failed to load posts from XANO:', error);
         }
