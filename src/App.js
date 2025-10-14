@@ -977,21 +977,8 @@ const App = () => {
          console.error('Failed to load posts from localStorage', err);
        }
        
-       // Return default posts if nothing in storage
-       return [
-         {
-           title: 'Welcome to Our Platform',
-           content: 'This is a featured post!',
-           date: '9/23/2025',
-           isFeatured: true
-         },
-         {
-           title: 'Latest Updates',
-           content: 'Check out our new features',
-           date: '9/23/2025',
-           isFeatured: false
-         }
-       ];
+       // Return empty array - posts will be loaded from Xano
+          return [];
      };
      
      const [posts, setPosts] = useState(loadPostsFromStorage());
@@ -1000,10 +987,15 @@ const App = () => {
     useEffect(() => {
       const loadPostsFromXano = async () => {
         try {
+            console.log("🚀 [TIMESTAMP] Loading posts at:", new Date().toISOString());
           const result = await getPublishedPosts(50, 0);
-          if (result.success && result.posts && result.posts.length > 0) {
+            console.log("🔍 XANO API Response:", JSON.stringify(result, null, 2));
+            console.log("📊 Posts array:", result.posts);
+          if (result.success && result.posts) {
+            console.log("✨ Condition check - success:", result.success, "posts exists:", !!result.posts, "posts is array:", Array.isArray(result.posts));
             console.log('Loaded posts from XANO:', result.posts);
             setPosts(result.posts);
+              console.log("🎯 setPosts called with", result.posts.length, "posts");
           }
         } catch (error) {
           console.error('Failed to load posts from XANO:', error);
