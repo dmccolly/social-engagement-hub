@@ -1,6 +1,6 @@
 // src/services/email/emailContactService.js
 
-const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL;
+const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
 /**
  * Get all email contacts with optional filtering
