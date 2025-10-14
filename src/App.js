@@ -988,7 +988,8 @@ const App = () => {
       const loadPostsFromXano = async () => {
         try {
           const result = await getPublishedPosts(50, 0);
-          if (result.success && result.posts && result.posts.length > 0) {
+            console.log("🔍 XANO API Response:", JSON.stringify(result, null, 2));
+          if (result.success && result.posts) {
             console.log('Loaded posts from XANO:', result.posts);
             setPosts(result.posts);
           }
