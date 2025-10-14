@@ -977,23 +977,11 @@ const App = () => {
          console.error('Failed to load posts from localStorage', err);
        }
        
-       // Return default posts if nothing in storage
-       return [
-         {
-           title: 'Welcome to Our Platform',
-           content: 'This is a featured post!',
-           date: '9/23/2025',
-           isFeatured: true
-         },
-         {
-           title: 'Latest Updates',
-           content: 'Check out our new features',
-           date: '9/23/2025',
-           isFeatured: false
-         }
-       ];
-     };
-     
+          // Return empty array instead of placeholder posts
+          // Real posts will be loaded from Xano in useEffect
+          return [];
+       };
+       
      const [posts, setPosts] = useState(loadPostsFromStorage());
 
     // Load posts from XANO on mount
