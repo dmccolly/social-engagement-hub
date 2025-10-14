@@ -977,21 +977,8 @@ const App = () => {
          console.error('Failed to load posts from localStorage', err);
        }
        
-       // Return default posts if nothing in storage
-       return [
-         {
-           title: 'Welcome to Our Platform',
-           content: 'This is a featured post!',
-           date: '9/23/2025',
-           isFeatured: true
-         },
-         {
-           title: 'Latest Updates',
-           content: 'Check out our new features',
-           date: '9/23/2025',
-           isFeatured: false
-         }
-       ];
+       // Return empty array - posts will be loaded from Xano
+          return [];
      };
      
      const [posts, setPosts] = useState(loadPostsFromStorage());
