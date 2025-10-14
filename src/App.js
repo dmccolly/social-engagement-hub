@@ -10,7 +10,8 @@ import {
   UserPlus, Award, Target, Activity, Download, Play, Shield
 } from 'lucide-react';
 import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
-import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost } from './services/xanoService';
+import { uploadImageWithDeduplication, getImageStats } from './services/imageDeduplicationService';
+import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost, deleteBlogPost } from './services/xanoService';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {
@@ -2968,13 +2969,20 @@ const App = () => {
           console.log(`Uploading file ${i + 1}/${files.length}: ${file.name}`);
           
           // Upload to Cloudinary
-          const result = await uploadImageToCloudinary(file);
+          const result = await uploadImageWithDeduplication(file);
 
           if (!result.success) {
             throw new Error(result.error || 'Upload failed');
           }
 
-          console.log('Upload successful:', result);
+             // Log whether this was a duplicate or new upload
+             if (result.isDuplicate) {
+               console.log(`✓ Reused existing image (used ${result.useCount} times):`, result.url);
+             } else {
+               console.log('✓ New image uploaded:', result.url);
+             }
+             
+             console.log('Upload result:', result);
 
           // Create image object with Cloudinary URL
           const newImage = {
@@ -4775,11 +4783,25 @@ const App = () => {
                         setEditingPost(post);
                         setIsCreating(true);
                       }}
-                      onDelete={(post) => {
-                        if (confirm('Are you sure you want to delete this post?')) {
-                          setPosts(prev => prev.filter(p => p !== post));
-                        }
-                      }}
+                      onDelete={async (post) => {
+                           if (confirm('Are you sure you want to delete this post?')) {
+                             try {
+                               // Call API to delete from Xano
+                               const result = await deleteBlogPost(post.id);
+                               
+                               if (result.success) {
+                                 // Remove from local state only after successful API deletion
+                                 setPosts(prev => prev.filter(p => p.id !== post.id));
+                                 console.log('Post deleted successfully');
+                               } else {
+                                 throw new Error(result.error || 'Failed to delete post');
+                               }
+                             } catch (error) {
+                               console.error('Delete error:', error);
+                               alert(`Failed to delete post: ${error.message}`);
+                             }
+                           }
+                         }}
                     />
                   ))}
                 </div>
