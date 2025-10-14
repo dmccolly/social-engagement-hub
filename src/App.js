@@ -4617,10 +4617,36 @@ const App = () => {
                       <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: post.content }} />
                     </div>
                     <div className="flex gap-2 ml-4">
-                      <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                         <button 
+                           onClick={() => {
+                             setEditingPost(post);
+                             setIsCreating(true);
+                           }}
+                           className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                           title="Edit post"
+                         >
                         <Edit size={16} />
                       </button>
-                      <button className="p-1 text-red-600 hover:bg-red-50 rounded">
+                         <button 
+                           onClick={async () => {
+                             if (confirm('Are you sure you want to delete this post?')) {
+                               try {
+                                 const result = await deleteBlogPost(post.id);
+                                 if (result.success) {
+                                   setPosts(prev => prev.filter(p => p.id !== post.id));
+                                   console.log('Post deleted successfully');
+                                 } else {
+                                   throw new Error(result.error || 'Failed to delete post');
+                                 }
+                               } catch (error) {
+                                 console.error('Delete error:', error);
+                                 alert(`Failed to delete post: ${error.message}`);
+                               }
+                             }
+                           }}
+                           className="p-1 text-red-600 hover:bg-red-50 rounded"
+                           title="Delete post"
+                         >
                         <Trash2 size={16} />
                       </button>
                     </div>
