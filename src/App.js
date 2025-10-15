@@ -16,6 +16,7 @@ import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost } fr
 import EmailDashboard from './components/email/EmailDashboard';
 import ContactManagement from './components/email/ContactManagement';
 import ContactForm from './components/email/ContactForm';
+import CreateCampaignModal from './components/email/CreateCampaignModal';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {
@@ -854,6 +855,39 @@ const App = () => {
      
      const [posts, setPosts] = useState(loadPostsFromStorage());
   const [campaigns, setCampaigns] = useState([]);
+  
+  // Load email campaigns from XANO
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        const { getCampaigns } = await import('./services/email/emailCampaignService');
+        const result = await getCampaigns();
+        if (result.success && result.campaigns) {
+          setCampaigns(result.campaigns);
+        }
+      } catch (error) {
+        console.error('Failed to load campaigns:', error);
+        // Fallback to hardcoded data if API fails
+        setCampaigns([
+          {
+            id: 1,
+            name: 'Welcome Series',
+            subject: 'Welcome to our community!',
+            status: 'Active',
+            recipients: 156,
+            sent: 142,
+            opened: 89,
+            clicked: 23,
+            created: '2025-09-20',
+            lastSent: '2025-09-25'
+          }
+        ]);
+      }
+    };
+    
+    loadCampaigns();
+  }, []);
+
   // Sync blog posts to localStorage so the /widget/blog iframe can read them
   const mapPostsForWidget = (list) =>
     (list || []).map((p, idx) => {
@@ -4016,47 +4050,138 @@ const App = () => {
 
   // Email Campaigns Section Component
   const EmailCampaignsSection = () => {
-    const [emailCampaigns, setEmailCampaigns] = useState([
-      {
-        id: 1,
-        name: 'Welcome Series',
-        subject: 'Welcome to our community!',
-        status: 'Active',
-        recipients: 156,
-        sent: 142,
-        opened: 89,
-        clicked: 23,
-        created: '2025-09-20',
-        lastSent: '2025-09-25',
-        type: 'Automated'
-      },
-      {
-        id: 2,
-        name: 'Monthly Newsletter',
-        subject: 'Your monthly update is here',
-        status: 'Sent',
-        recipients: 203,
-        sent: 203,
-        opened: 156,
-        clicked: 45,
-        created: '2025-09-15',
-        lastSent: '2025-09-24',
-        type: 'Newsletter'
-      },
-      {
-        id: 3,
-        name: 'Product Launch',
-        subject: 'Exciting new features just launched!',
-        status: 'Draft',
-        recipients: 0,
-        sent: 0,
-        opened: 0,
-        clicked: 0,
-        created: '2025-09-25',
-        lastSent: null,
-        type: 'Promotional'
-      }
-    ]);
+    const [emailCampaigns, setEmailCampaigns] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [emailContacts, setEmailContacts] = useState([]);
+    const [emailGroups, setEmailGroups] = useState([]);
+
+    // Load campaigns from XANO
+    useEffect(() => {
+      const loadCampaigns = async () => {
+        try {
+          setIsLoading(true);
+          const { getCampaigns } = await import('./services/email/emailCampaignService');
+          const result = await getCampaigns();
+          
+          if (result.success && result.campaigns) {
+            setEmailCampaigns(result.campaigns);
+          } else {
+            // Fallback to sample data if API fails
+            setEmailCampaigns([
+              {
+                id: 1,
+                name: 'Welcome Series',
+                subject: 'Welcome to our community!',
+                status: 'Active',
+                recipients: 156,
+                sent: 142,
+                opened: 89,
+                clicked: 23,
+                created: '2025-09-20',
+                lastSent: '2025-09-25',
+                type: 'Automated'
+              },
+              {
+                id: 2,
+                name: 'Monthly Newsletter',
+                subject: 'Your monthly update is here',
+                status: 'Sent',
+                recipients: 203,
+                sent: 203,
+                opened: 156,
+                clicked: 45,
+                created: '2025-09-15',
+                lastSent: '2025-09-24',
+                type: 'Newsletter'
+              },
+              {
+                id: 3,
+                name: 'Product Launch',
+                subject: 'Exciting new features just launched!',
+                status: 'Draft',
+                recipients: 0,
+                sent: 0,
+                opened: 0,
+                clicked: 0,
+                created: '2025-09-25',
+                lastSent: null,
+                type: 'Promotional'
+              }
+            ]);
+          }
+        } catch (error) {
+          console.error('Failed to load campaigns:', error);
+          // Fallback to sample data
+          setEmailCampaigns([
+            {
+              id: 1,
+              name: 'Welcome Series',
+              subject: 'Welcome to our community!',
+              status: 'Active',
+              recipients: 156,
+              sent: 142,
+              opened: 89,
+              clicked: 23,
+              created: '2025-09-20',
+              lastSent: '2025-09-25',
+              type: 'Automated'
+            },
+            {
+              id: 2,
+              name: 'Monthly Newsletter',
+              subject: 'Your monthly update is here',
+              status: 'Sent',
+              recipients: 203,
+              sent: 203,
+              opened: 156,
+              clicked: 45,
+              created: '2025-09-15',
+              lastSent: '2025-09-24',
+              type: 'Newsletter'
+            },
+            {
+              id: 3,
+              name: 'Product Launch',
+              subject: 'Exciting new features just launched!',
+              status: 'Draft',
+              recipients: 0,
+              sent: 0,
+              opened: 0,
+              clicked: 0,
+              created: '2025-09-25',
+              lastSent: null,
+              type: 'Promotional'
+            }
+          ]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      loadCampaigns();
+    }, []);
+
+    // Load contacts and groups for campaign operations
+    useEffect(() => {
+      const loadContactsAndGroups = async () => {
+        try {
+          const { getContacts } = await import('./services/email/emailContactService');
+          const { getGroups } = await import('./services/email/emailGroupService');
+          
+          const [contactsResult, groupsResult] = await Promise.all([
+            getContacts(),
+            getGroups()
+          ]);
+          
+          if (contactsResult.success) setEmailContacts(contactsResult.contacts);
+          if (groupsResult.success) setEmailGroups(groupsResult.groups);
+        } catch (error) {
+          console.error('Failed to load contacts/groups:', error);
+        }
+      };
+      
+      loadContactsAndGroups();
+    }, []);
 
     const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
     const [newCampaign, setNewCampaign] = useState({
@@ -4171,74 +4296,12 @@ const App = () => {
 
         {/* Create Campaign Modal */}
         {isCreatingCampaign && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Create New Campaign</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
-                  <input
-                    type="text"
-                    value={newCampaign.name}
-                    onChange={(e) => setNewCampaign(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Enter campaign name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Subject</label>
-                  <input
-                    type="text"
-                    value={newCampaign.subject}
-                    onChange={(e) => setNewCampaign(prev => ({ ...prev, subject: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Enter email subject"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Type</label>
-                  <select
-                    value={newCampaign.type}
-                    onChange={(e) => setNewCampaign(prev => ({ ...prev, type: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="Newsletter">Newsletter</option>
-                    <option value="Promotional">Promotional</option>
-                    <option value="Automated">Automated</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                  <textarea
-                    value={newCampaign.content}
-                    onChange={(e) => setNewCampaign(prev => ({ ...prev, content: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    rows={4}
-                    placeholder="Enter email content"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={handleCreateCampaign}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  Create Campaign
-                </button>
-                <button
-                  onClick={() => setIsCreatingCampaign(false)}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+          <CreateCampaignModal
+            onCreate={handleCreateCampaign}
+            onCancel={() => setIsCreatingCampaign(false)}
+            contacts={emailContacts}
+            groups={emailGroups}
+          />
         )}
 
         {/* Campaigns List */}
