@@ -26,7 +26,7 @@ import CreateCampaignModal from './components/email/CreateCampaignModal';
 import EnhancedNewsFeedIntegration from './components/newsfeed/EnhancedNewsFeedIntegration';
 import AdminDashboardIntegration from './components/admin/AdminDashboardIntegration';
 import VisitorRegistrationForm from './components/newsfeed/VisitorRegistrationForm';
-import { VisitorSecurityService } from './services/security/visitorSecurityService';
+import VisitorSecurityService from './services/security/visitorSecurityService';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {

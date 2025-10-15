@@ -2,6 +2,13 @@
 
 const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
+// Visitor Registration API Endpoints - Email Marketing API Group
+const VISITOR_REGISTRATION_ENDPOINT = `${XANO_BASE_URL}/visitor/register`;
+const VISITOR_PROFILE_ENDPOINT = `${XANO_BASE_URL}/visitor/profile`;
+const VISITOR_POSTS_ENDPOINT = `${XANO_BASE_URL}/visitor/posts`;
+const VISITOR_REPLIES_ENDPOINT = `${XANO_BASE_URL}/visitor/replies`;
+const VISITOR_LIKES_ENDPOINT = `${XANO_BASE_URL}/visitor/likes`;
+
 /**
  * Get all newsfeed posts with optional filtering
  */
@@ -338,4 +345,120 @@ export const getSampleNewsfeedData = () => {
     total: 2,
     pagination: { limit: 20, offset: 0, has_more: false }
   };
+};
+/**
+ * Register new visitor via Email Marketing API
+ */
+export const registerVisitor = async (visitorData) => {
+  try {
+    const response = await fetch(VISITOR_REGISTRATION_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: visitorData.email,
+        first_name: visitorData.first_name,
+        last_name: visitorData.last_name,
+        name: visitorData.name,
+        source: visitorData.source || 'newsfeed',
+        ip_address: visitorData.ip_address || null,
+        user_agent: visitorData.user_agent || null,
+        referrer: visitorData.referrer || null,
+        landing_page: visitorData.landing_page || window.location.href
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to register visitor: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Register visitor error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get visitor profile
+ */
+export const getVisitorProfile = async (visitorEmail) => {
+  try {
+    const response = await fetch(`${VISITOR_PROFILE_ENDPOINT}?email=${visitorEmail}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch visitor profile: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Get visitor profile error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Create visitor post
+ */
+export const createVisitorPost = async (postData) => {
+  try {
+    const response = await fetch(VISITOR_POSTS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        visitor_email: postData.visitor_email,
+        content: postData.content,
+        session_id: postData.session_id,
+        ip_address: postData.ip_address || null,
+        user_agent: postData.user_agent || null
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create visitor post: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Create visitor post error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Toggle visitor like on post
+ */
+export const toggleVisitorLike = async (postId, visitorData) => {
+  try {
+    const response = await fetch(`${VISITOR_LIKES_ENDPOINT}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        post_id: postId,
+        visitor_email: visitorData.visitor_email,
+        session_id: visitorData.session_id
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to toggle like: ${response.statusText} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Toggle visitor like error:', error);
+    return { success: false, error: error.message };
+  }
 };

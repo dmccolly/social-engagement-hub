@@ -9,23 +9,23 @@ import {
 import { 
   getNewsfeedPosts, 
   createNewsfeedPost, 
-  toggleNewsfeedLike, 
+  toggleVisitorLike, 
   getNewsfeedReplies,
   createVisitorSession,
   getVisitorPosts 
 } from '../../services/newsfeedService';
 import { getEnhancedVisitorData } from '../../services/newsfeed/visitorRetentionService';
-import VisitorRegistrationForm from './VisitorRegistrationForm';
+import EnhancedVisitorRegistrationForm from './EnhancedVisitorRegistrationForm';
 
-const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
-  const [posts, setPosts] = useState([]);
+const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired, visitorSession: initialSession, posts: initialPosts, onPostsUpdate }) => {
+  const [posts, setPosts] = useState(initialPosts || []);
   const [replies, setReplies] = useState({});
   const [newPost, setNewPost] = useState('');
   const [replyText, setReplyText] = useState({});
   const [showReplyForm, setShowReplyForm] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialPosts);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [visitorSession, setVisitorSession] = useState(null);
+  const [visitorSession, setVisitorSession] = useState(initialSession || null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [visitorActivity, setVisitorActivity] = useState(null);
   const [draftPost, setDraftPost] = useState('');
@@ -76,14 +76,15 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
 
   const createNewVisitorSession = async (visitorData) => {
     try {
-      const sessionData = {
-        session_id: `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      // Use the new registerVisitor function for Email Marketing API
+      const registrationData = {
         email: visitorData.email,
-        name: visitorData.name,
+        first_name: visitorData.first_name || visitorData.name?.split(" ")[0] || "",
+        last_name: visitorData.last_name || visitorData.name?.split(" ").slice(1).join(" ") || "",
+        name: visitorData.name || `${visitorData.first_name || ""} ${visitorData.last_name || ""}`.trim(),
+        source: "newsfeed",
         ip_address: visitorData.ip_address || null,
         user_agent: visitorData.user_agent || null,
-        is_member: false,
-        source: 'newsfeed',
         referrer: document.referrer || null,
         landing_page: window.location.href
       };
@@ -147,7 +148,11 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
       });
 
       if (result.success) {
-        setPosts(result.posts || []);
+        const loadedPosts = result.posts || [];
+        setPosts(loadedPosts);
+        if (onPostsUpdate) {
+          onPostsUpdate(loadedPosts);
+        }
         
         // Load replies for posts
         const replyPromises = result.posts.map(post => 
@@ -199,8 +204,8 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
       // Create post data
       const postData = {
         content: newPost,
-        author_email: visitorSession.email,
-        author_name: visitorSession.name,
+        visitor_email: visitorSession.email,
+        name: visitorSession.name,
         session_id: visitorSession.id,
         type: 'visitor_post',
         ip_address: visitorSession.ip_address,
@@ -212,7 +217,11 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
 
       if (result.success) {
         // Add new post to feed
-        setPosts(prev => [result.post, ...prev]);
+        const updatedPosts = [result.post, ...prev];
+        setPosts(updatedPosts);
+        if (onPostsUpdate) {
+          onPostsUpdate(updatedPosts);
+        }
         
         // Clear form and draft
         setNewPost('');
@@ -250,9 +259,9 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
     }
 
     try {
-      const result = await toggleNewsfeedLike(postId, {
-        author_email: visitorSession.email,
-        author_id: visitorSession.id,
+      const result = await toggleVisitorLike(postId, {
+        visitor_email: visitorSession.email,
+        session_id: visitorSession.id,
         session_id: visitorSession.id
       });
 
@@ -287,8 +296,8 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
       // Submit reply through your existing reply system
       const result = await submitReplyToPost(postId, {
         content: replyContent,
-        author_email: visitorSession.email,
-        author_name: visitorSession.name,
+        visitor_email: visitorSession.email,
+        name: visitorSession.name,
         session_id: visitorSession.id
       });
 
@@ -337,19 +346,22 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
   };
 
   const renderWelcomeBackMessage = () => {
-    if (!visitorActivity) return null;
+    if (!visitorActivity || !visitorSession) return null;
 
     const lastVisit = visitorActivity.lastActivity;
     const daysSinceLastVisit = lastVisit ? 
       Math.floor((Date.now() - new Date(lastVisit).getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
     if (daysSinceLastVisit > 1) {
+      // Use first name for more personal welcome, fallback to full name
+      const displayName = visitorSession.first_name || visitorSession.name?.split(' ')[0] || visitorSession.name || 'Visitor';
+      
       return (
         <div className="welcome-back-banner bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2">
             <Heart className="text-blue-500" size={20} />
             <span className="font-medium text-blue-800">
-              Welcome back, {visitorSession.name}!
+              Welcome back, {visitorSession.first_name || visitorSession.name?.split(' ')[0] || visitorSession.name}!
             </span>
           </div>
           {visitorActivity.postsCount > 0 && (
@@ -609,7 +621,7 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired }) => {
       {showRegistrationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <VisitorRegistrationForm
+            <EnhancedVisitorRegistrationForm
               onSuccess={async (sessionData) => {
                 const session = await createNewVisitorSession(sessionData);
                 if (session) {

@@ -7,8 +7,8 @@ import {
   TrendingUp, AlertCircle, CheckCircle, XCircle, Clock,
   Eye, Edit, Trash2, Send, UserPlus, Award, Target
 } from 'lucide-react';
-import { AdminModerationService } from '../../services/admin/AdminModerationService';
-import { VisitorSecurityService } from '../../services/security/visitorSecurityService';
+import AdminModerationService from '../../services/admin/AdminModerationService';
+import VisitorSecurityService from '../../services/security/visitorSecurityService';
 
 const AdminDashboardIntegration = () => {
   const [currentView, setCurrentView] = useState('overview');
