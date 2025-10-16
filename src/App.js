@@ -25,6 +25,7 @@ import CreateCampaignModal from './components/email/CreateCampaignModal';
 // NEW: Visitor System Components
 import EnhancedNewsFeedIntegration from './components/newsfeed/EnhancedNewsFeedIntegration';
 import FacebookStyleNewsFeed from './components/newsfeed/FacebookStyleNewsFeed';
+import ProfessionalNewsFeed from './components/newsfeed/ProfessionalNewsFeed';
 import AdminDashboardIntegration from './components/admin/AdminDashboardIntegration';
 import VisitorRegistrationForm from './components/newsfeed/VisitorRegistrationForm';
 import VisitorSecurityService from './services/security/visitorSecurityService';
@@ -569,7 +570,7 @@ const App = () => {
       case 'blog':
         return <BlogSection posts={posts} setPosts={setPosts} />;
       case 'newsfeed':
-        return <FacebookStyleNewsFeed currentUser={currentUser} />;
+        return <ProfessionalNewsFeed currentUser={currentUser} />;
       case 'email':
         return <EmailSection campaigns={campaigns} setCampaigns={setCampaigns} />;
       case 'admin':
