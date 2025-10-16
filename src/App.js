@@ -29,6 +29,7 @@ import ProfessionalNewsFeed from './components/newsfeed/ProfessionalNewsFeed';
 import AdminDashboardIntegration from './components/admin/AdminDashboardIntegration';
 import VisitorRegistrationForm from './components/newsfeed/VisitorRegistrationForm';
 import VisitorSecurityService from './services/security/visitorSecurityService';
+import WidgetPreview from './components/WidgetPreview';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {
@@ -178,6 +179,7 @@ const StandaloneBlogWidget = () => {
                       </div>
                     </>
                   )}
+
                 </div>
                 
                 <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-600 transition">
@@ -619,8 +621,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/admin/*" element={<AdminDashboard />} />
-            <Route path="/widget/newsfeed" element={<FacebookStyleNewsFeed currentUser={currentUser} />} />
-            <Route path="/widget/blog" element={<StandaloneBlogWidget />} />
+            <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
         </main>
       </div>
@@ -1089,6 +1090,134 @@ const SettingsSection = () => {
                     </div>
                   </>
                 )}
+
+                  {selectedWidget === 'newsfeed' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Number of Posts</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={widgetSettings.newsfeed.postCount}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            newsfeed: { ...prev.newsfeed, postCount: parseInt(e.target.value) }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.newsfeed.showAvatars}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              newsfeed: { ...prev.newsfeed, showAvatars: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Avatars</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.newsfeed.showTimestamps}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              newsfeed: { ...prev.newsfeed, showTimestamps: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Timestamps</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.newsfeed.allowComments}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              newsfeed: { ...prev.newsfeed, allowComments: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Allow Comments</span>
+                        </label>
+                      </div>
+                    </>
+                  )}
+
+                  {selectedWidget === 'signup' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Text</label>
+                        <input
+                          type="text"
+                          value={widgetSettings.signup.buttonText}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            signup: { ...prev.signup, buttonText: e.target.value }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea
+                          value={widgetSettings.signup.description}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            signup: { ...prev.signup, description: e.target.value }
+                          }))}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Theme Color</label>
+                        <select
+                          value={widgetSettings.signup.theme}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            signup: { ...prev.signup, theme: e.target.value }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="blue">Blue</option>
+                          <option value="green">Green</option>
+                          <option value="purple">Purple</option>
+                          <option value="orange">Orange</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.signup.showDescription}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              signup: { ...prev.signup, showDescription: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Description</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.signup.compact}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              signup: { ...prev.signup, compact: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Compact Mode</span>
+                        </label>
+                      </div>
+                    </>
+                  )}
               </div>
 
               {/* Embed Code */}
