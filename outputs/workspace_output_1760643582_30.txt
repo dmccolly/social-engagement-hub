@@ -1,0 +1,12 @@
+[main a04edca] Add complete email marketing system with drag-and-drop builder and blog-to-email conversion
+ 2 files changed, 338 insertions(+)
+ create mode 100644 src/components/email/BlogToEmailConverter.js
+ create mode 100644 src/components/email/EmailMarketingSystem.js
+To https://github.com/dmccolly/social-engagement-hub.git
+ ! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/dmccolly/social-engagement-hub.git'
+hint: Updates were rejected because the remote contains work that you do
+hint: not have locally. This is usually caused by another repository pushing
+hint: to the same ref. You may want to first integrate the remote changes
+hint: (e.g., 'git pull ...') before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.

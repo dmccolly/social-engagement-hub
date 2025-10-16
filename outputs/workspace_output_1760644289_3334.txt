@@ -1,0 +1,50 @@
+// Complete Email Marketing System - FINAL VERSION
+import React, { useState, useEffect } from 'react';
+import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIcon, Link as LinkIcon, Sparkles } from 'lucide-react';
+import BlogToEmailConverter from './BlogToEmailConverter';
+
+const EmailMarketingSystem = () => {
+  const [campaigns, setCampaigns] = useState([
+    { id: 1, name: "Weekly Newsletter", subject: "This Week's Top Stories", status: "sent", fromEmail: "newsletter@yourcompany.com", stats: { sent: 24567, opened: 6789, clicked: 1023 } },
+    { id: 2, name: "Product Launch", subject: "🚀 Introducing Our New Features", status: "draft", fromEmail: "updates@yourcompany.com", stats: { sent: 0, opened: 0, clicked: 0 } }
+  ]);
+  
+  const [subscriberLists, setSubscriberLists] = useState([
+    { id: 1, name: "Main Subscribers", description: "Primary email list", count: 24567, growth: "+523 this week", engagement: { openRate: 28.4, clickRate: 4.2 } },
+    { id: 2, name: "VIP Customers", description: "Premium customers", count: 3245, growth: "+89 this week", engagement: { openRate: 45.2, clickRate: 8.7 } }
+  ]);
+  
+  const [activeView, setActiveView] = useState('campaigns');
+  const [currentCampaign, setCurrentCampaign] = useState(null);
+  const [emailBlocks, setEmailBlocks] = useState([]);
+  const [showBlogConverter, setShowBlogConverter] = useState(false);
+
+  const createNewCampaign = () => {
+    const newCampaign = { id: Date.now(), name: "New Campaign", subject: "", status: "draft", fromName: "", fromEmail: "", stats: { sent: 0, opened: 0, clicked: 0 } };
+    setCurrentCampaign(newCampaign);
+    setEmailBlocks([]);
+    setActiveView('builder');
+  };
+
+  const handleBlogToEmail = (campaignData) => {
+    setCurrentCampaign({ id: Date.now(), ...campaignData, status: "draft", stats: { sent: 0, opened: 0, clicked: 0 } });
+    setEmailBlocks(campaignData.blocks || []);
+    setShowBlogConverter(false);
+    setActiveView('builder');
+  };
+
+  const addBlock = (blockType) => {
+    const newBlock = { id: Date.now(), type: blockType, content: getDefaultBlockContent(blockType) };
+    setEmailBlocks([...emailBlocks, newBlock]);
+  };
+
+  const getDefaultBlockContent = (type) => {
+    switch(type) {
+      case 'heading': return { text: 'Your Heading Here', level: 1 };
+      case 'text': return { text: 'Your text content goes here...' };
+      case 'image': return { src: 'https://via.placeholder.com/600x300', alt: 'Image' };
+      case 'button': return { text: 'Click Here', url: '#', color: '#2563eb' };
+      case 'divider': return { style: 'solid', color: '#e5e7eb' };
+      case 'spacer': return { height: 20 };
+      default: return {};
+    }

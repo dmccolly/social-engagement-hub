@@ -1,0 +1,3 @@
+4051:  // Email Campaigns Section Component
+4235:                Email Campaigns
+4593:            { id: 'campaigns', icon: Mail, label: 'Email Campaigns' },

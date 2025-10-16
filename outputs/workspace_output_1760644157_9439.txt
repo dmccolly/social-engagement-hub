@@ -1,0 +1,100 @@
+      case 'home':
+        return <HomeSection posts={posts} />;
+      case 'blog':
+        return <BlogSection posts={posts} setPosts={setPosts} />;
+      case 'newsfeed':
+        return <FacebookStyleNewsFeed currentUser={currentUser} />;
+      case 'email':
+        return <EmailSection campaigns={campaigns} setCampaigns={setCampaigns} />;
+      case 'admin':
+        return <AdminDashboard />;
+      case 'analytics':
+        return <AnalyticsSection />;
+      case 'settings':
+        return <SettingsSection />;
+      default:
+        return <HomeSection posts={posts} />;
+    }
+  };
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        {/* Navigation */}
+        <nav className="bg-white shadow-lg border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold text-gray-900">Social Engagement Hub</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                {navigationItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition ${
+                      activeSection === item.id
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <item.icon size={18} />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <Routes>
+            <Route path="/" element={renderContent()} />
+            <Route path="/admin/*" element={<AdminDashboard />} />
+            <Route path="/widget/newsfeed" element={<FacebookStyleNewsFeed currentUser={currentUser} />} />
+            <Route path="/widget/blog" element={<StandaloneBlogWidget />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+};
+
+// Placeholder components for other sections
+const HomeSection = ({ posts }) => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Welcome to Social Engagement Hub</h1>
+    <p className="text-gray-600">Your complete platform for community engagement and content management.</p>
+  </div>
+);
+
+const BlogSection = ({ posts, setPosts }) => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Blog Management</h1>
+    <p className="text-gray-600">Create and manage your blog content.</p>
+  </div>
+);
+
+const EmailSection = ({ campaigns, setCampaigns }) => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
+    <p className="text-gray-600">Manage your email marketing campaigns.</p>
+  </div>
+);
+
+const AnalyticsSection = () => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+    <p className="text-gray-600">View detailed analytics and insights.</p>
+  </div>
+);
+
+const SettingsSection = () => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+    <p className="text-gray-600">Configure your platform settings.</p>
+  </div>
+);
+
+export default App;

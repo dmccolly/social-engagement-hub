@@ -1,0 +1,16 @@
+root         136  0.0  0.0 1115056 58092 pts/0   Sl   19:14   0:00 /usr/lib/code-server/lib/node /usr/lib/code-server --trusted-origins=* --bind-addr 127.0.0.1:4000 --auth none --user-data-dir /opt/code-server --extensions-dir /opt/code-server/extensions
+root         288  0.0  0.0 1050428 59512 pts/0   Sl   19:14   0:00 /usr/lib/code-server/lib/node /usr/lib/code-server/out/node/entry
+root         305  0.0  0.0 1193328 66884 pts/0   Sl   19:14   0:03 /usr/local/lib/python3.11/site-packages/playwright/driver/node /usr/local/lib/python3.11/site-packages/playwright/driver/package/cli.js run-driver
+root         682  0.0  0.0      0     0 pts/0    Z+   19:16   0:00 [node] <defunct>
+root         689  0.0  0.0      0     0 pts/0    Z+   19:16   0:10 [node] <defunct>
+root         908  0.0  0.0      0     0 pts/0    Z+   19:17   0:00 [npm start] <defunct>
+root         926  0.0  0.0      0     0 pts/0    Z+   19:17   0:00 [node] <defunct>
+root         933  0.0  0.0      0     0 pts/0    Z+   19:17   0:14 [node] <defunct>
+root        1499  0.0  0.0      0     0 pts/0    Z+   19:30   0:00 [npm start] <defunct>
+root        1517  0.0  0.0      0     0 pts/0    Z+   19:30   0:00 [node] <defunct>
+root        1524  0.0  0.0      0     0 pts/0    Z+   19:30   0:21 [node] <defunct>
+root        1827  0.0  0.0 1090700 53376 pts/0   Sl+  19:33   0:00 npm start
+root        1844  0.0  0.0   2584  1024 pts/0    S+   19:33   0:00 sh -c react-scripts start
+root        1845  0.0  0.0 791868 44156 pts/0    Sl+  19:33   0:00 node /workspace/node_modules/.bin/react-scripts start
+root        1852  0.0  0.0 53954488 333596 pts/0 Sl+  19:33   0:14 /usr/bin/node /workspace/node_modules/react-scripts/scripts/start.js
+root        2535  0.0  0.0   3752  1024 pts/0    S+   19:45   0:00 grep -E node|npm|react

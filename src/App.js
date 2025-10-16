@@ -462,6 +462,15 @@ const EnhancedNewsFeed = ({ currentUser }) => {
 // Admin Dashboard Component
 const AdminDashboard = () => {
   const [currentView, setCurrentView] = useState('overview');
+  const [MemberManagementComponent, setMemberManagementComponent] = useState(null);
+
+  useEffect(() => {
+    if (currentView === 'members') {
+      import('./components/members/MemberManagement').then(module => {
+        setMemberManagementComponent(() => module.default);
+      });
+    }
+  }, [currentView]);
   
   return (
     <div className="admin-dashboard min-h-screen bg-gray-50">
@@ -481,6 +490,7 @@ const AdminDashboard = () => {
           <div className="flex space-x-8">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'members', label: 'Members', icon: Users },
               { id: 'moderation', label: 'Moderation', icon: Shield },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
               { id: 'settings', label: 'Settings', icon: Settings }
@@ -501,7 +511,11 @@ const AdminDashboard = () => {
           </div>
         </nav>
 
-        <AdminDashboardIntegration currentView={currentView} />
+        {currentView === 'members' && MemberManagementComponent ? (
+          <MemberManagementComponent />
+        ) : (
+          <AdminDashboardIntegration currentView={currentView} />
+        )}
       </div>
     </div>
   );
@@ -884,6 +898,15 @@ const SettingsSection = () => {
       showCalendar: true,
       borderRadius: 8,
       transparent: false
+    },
+    signup: {
+      headerColor: '#ec4899',
+      headerText: '👋 Join Our Community',
+      buttonText: 'Sign Up',
+      description: 'Get access to exclusive content and connect with our community',
+      showDescription: true,
+      theme: 'blue',
+      compact: false
     }
   });
 
@@ -903,7 +926,8 @@ const SettingsSection = () => {
     { id: 'blog', name: 'Blog Widget', icon: FileText, color: 'blue' },
     { id: 'newsfeed', name: 'News Feed Widget', icon: MessageSquare, color: 'green' },
     { id: 'calendar', name: 'Calendar Widget', icon: Calendar, color: 'orange' },
-    { id: 'socialhub', name: 'Social Hub Widget', icon: Sparkles, color: 'purple' }
+    { id: 'socialhub', name: 'Social Hub Widget', icon: Sparkles, color: 'purple' },
+    { id: 'signup', name: 'Signup Widget', icon: UserPlus, color: 'pink' }
   ];
 
   return (

@@ -1,0 +1,18 @@
+699:  const [activeSection, setActiveSection] = useState('dashboard');
+755:                  activeSection === item.id
+769:          {activeSection === 'dashboard' && <Dashboard />}
+770:          {activeSection === 'newsfeed' && <NewsFeed />}
+771:          {activeSection === 'posts' && (
+796:          {activeSection === 'members' && <MembersSection />}
+797:          {activeSection === 'calendar' && <CalendarSection />}
+798:          {activeSection === 'analytics' && <AnalyticsSection />}
+824:  const [activeSection, setActiveSection] = useState('dashboard');
+4603:                activeSection === item.id 
+4620:            {activeSection === 'dashboard' && <Dashboard />}
+4621:            {activeSection === 'newsfeed' && <NewsFeed />}
+4622:            {activeSection === 'settings' && <SettingsSection />}
+4623:            {activeSection === 'posts' && (
+4653:            {activeSection === 'campaigns' && <EmailCampaignsSection />}
+4654:            {activeSection === 'members' && <MembersSection />}
+4657:            {activeSection === 'calendar' && <CalendarSection />}
+4658:            {activeSection === 'analytics' && <AnalyticsSection />}

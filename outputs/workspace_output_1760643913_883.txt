@@ -1,0 +1,100 @@
+// Updated App.js with Visitor System Integration
+// Resolves merge conflict and adds visitor registration, admin dashboard, security features
+
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { 
+  Home, FileText, Mail, Users, Settings, Calendar, BarChart3, 
+  Plus, Edit, Trash2, Search, Bell, Upload, Send, Clock, 
+  CheckCircle, X, ChevronDown, MessageSquare, Heart, BookmarkPlus,
+  Image, Film, Music, Link, Bold, Italic, Underline, Type,
+  Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
+  Star, Sparkles, Crown, Copy, ExternalLink, Zap, TrendingUp,
+  UserPlus, Award, Target, Activity, Download, Play, Shield
+} from 'lucide-react';
+import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
+import { uploadImageWithDeduplication, getImageStats } from './services/imageDeduplicationService';
+import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost, deleteBlogPost } from './services/xanoService';
+
+// Email System Components (from your existing system)
+import EmailDashboard from './components/email/EmailDashboard';
+import ContactManagement from './components/email/ContactManagement';
+import ContactForm from './components/email/ContactForm';
+import CreateCampaignModal from './components/email/CreateCampaignModal';
+
+// NEW: Visitor System Components
+import EnhancedNewsFeedIntegration from './components/newsfeed/EnhancedNewsFeedIntegration';
+import FacebookStyleNewsFeed from './components/newsfeed/FacebookStyleNewsFeed';
+import AdminDashboardIntegration from './components/admin/AdminDashboardIntegration';
+import VisitorRegistrationForm from './components/newsfeed/VisitorRegistrationForm';
+import VisitorSecurityService from './services/security/visitorSecurityService';
+
+// Enhanced Blog Widget with Rich Magazine-Style Output
+const StandaloneBlogWidget = () => {
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState('');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const settingsParam = urlParams.get('settings');
+  const settings = settingsParam ? JSON.parse(decodeURIComponent(settingsParam)) : {
+    headerColor: '#2563eb',
+    headerText: '📋 Latest Blog Posts',
+    postCount: 3,
+    showDates: true,
+    showExcerpts: true,
+    showImages: true,
+    borderRadius: 8,
+    transparent: true
+  };
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        setDebugInfo('Loading posts from XANO...');
+        console.log('Widget: Loading posts from XANO...');
+        
+        // Try to fetch from XANO first
+        try {
+          const result = await getPublishedPosts(settings.postCount, 0);
+          if (result.success && result.posts && result.posts.length > 0) {
+            const formattedPosts = result.posts.map(post => ({
+              id: post.id,
+              title: post.title,
+              content: post.content,
+              excerpt: post.excerpt || post.content.substring(0, 200) + '...',
+              image: post.featured_image,
+              author: post.author,
+              date: post.created_at,
+              readTime: post.reading_time || Math.ceil(post.content.split(' ').length / 200),
+              tags: post.tags || [],
+              category: post.category || 'General'
+            }));
+            setPosts(formattedPosts);
+            setIsLoading(false);
+            return;
+          }
+        } catch (apiError) {
+          console.warn('XANO API failed, falling back to local data:', apiError);
+        }
+
+        // Fallback to local storage
+        const localPosts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
+        if (localPosts.length > 0) {
+          const formattedPosts = localPosts.slice(0, settings.postCount).map(post => ({
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            excerpt: post.excerpt || post.content.substring(0, 200) + '...',
+            image: post.featured_image,
+            author: post.author,
+            date: post.created_at,
+            readTime: post.reading_time || Math.ceil(post.content.split(' ').length / 200),
+            tags: post.tags || [],
+            category: post.category || 'General'
+          }));
+          setPosts(formattedPosts);
+        } else {
+          // Ultimate fallback - sample data
+          setPosts([
+            {

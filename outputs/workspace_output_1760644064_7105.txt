@@ -1,0 +1,7 @@
+total 16
+drwxr-xr-x 5 root root   92 Oct 16 17:20 .
+drwxr-xr-x 5 root root 4096 Oct 16 19:35 ..
+-rw-r--r-- 1 root root 1100 Oct 16 17:20 UploadButton.tsx
+drwxr-xr-x 2 root root   50 Oct 16 19:35 admin
+drwxr-xr-x 2 root root 4096 Oct 16 19:39 email
+drwxr-xr-x 2 root root 4096 Oct 16 19:35 newsfeed
