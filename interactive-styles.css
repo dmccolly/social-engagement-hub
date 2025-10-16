@@ -1,0 +1,1818 @@
+/* Interactive Newsfeed - Facebook-style Social Feed */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Facebook-style Color Palette */
+    --facebook-blue: #1877f2;
+    --facebook-light: #e7f3ff;
+    --primary-text: #1c1e21;
+    --secondary-text: #65676b;
+    --border-color: #ced0d4;
+    --background: #f0f2f5;
+    --white: #ffffff;
+    --hover-bg: #f0f2f5;
+    --like-color: #f02849;
+    --comment-color: #45bd62;
+    --share-color: #1877f2;
+    --success: #42b72a;
+    --warning: #f7b928;
+    --error: #f02849;
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-size-sm: 0.75rem;
+    --font-size-base: 0.875rem;
+    --font-size-lg: 1rem;
+    --font-size-xl: 1.125rem;
+    
+    /* Spacing */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: 1.34;
+    color: var(--primary-text);
+    background-color: var(--background);
+    overflow-x: hidden;
+}
+
+/* Newsfeed Container */
+.newsfeed-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-4);
+    min-height: 100vh;
+}
+
+/* Header */
+.newsfeed-header {
+    background: var(--white);
+    padding: var(--spacing-5) var(--spacing-6);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-5);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-4);
+}
+
+.header-content h1 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-1);
+}
+
+.header-content p {
+    color: var(--secondary-text);
+    font-size: var(--font-size-base);
+}
+
+.header-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3) var(--spacing-4);
+    border: none;
+    border-radius: 8px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--facebook-blue);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: #166fe5;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--white);
+    color: var(--primary-text);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--hover-bg);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--secondary-text);
+    border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover {
+    background: var(--hover-bg);
+    color: var(--primary-text);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    padding: var(--spacing-2);
+    color: var(--secondary-text);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+    background: var(--hover-bg);
+    color: var(--primary-text);
+}
+
+/* Main Layout */
+.newsfeed-main {
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap: var(--spacing-5);
+    align-items: start;
+}
+
+/* Sidebar Left */
+.sidebar-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.user-card {
+    background: var(--white);
+    padding: var(--spacing-5);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.visitor-signup-prompt {
+    text-align: center;
+    padding: var(--spacing-4);
+}
+
+.visitor-signup-prompt i {
+    color: var(--facebook-blue);
+    margin-bottom: var(--spacing-3);
+}
+
+.visitor-signup-prompt h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-2);
+}
+
+.visitor-signup-prompt p {
+    color: var(--secondary-text);
+    margin-bottom: var(--spacing-4);
+}
+
+.user-profile-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+.post-visibility {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.community-stats {
+    background: var(--white);
+    padding: var(--spacing-5);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.community-stats h4 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-4);
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-number {
+    font-weight: 700;
+    color: var(--facebook-blue);
+}
+
+.stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text);
+}
+
+.trending-topics {
+    background: var(--white);
+    padding: var(--spacing-5);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.trending-topics h4 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-4);
+}
+
+.trending-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.trending-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-2);
+    background: var(--hover-bg);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trending-item:hover {
+    background: #e7f3ff;
+}
+
+.trending-keyword {
+    font-weight: 500;
+    color: var(--primary-text);
+}
+
+.trending-count {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text);
+}
+
+/* Newsfeed Center */
+.newsfeed-center {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+/* Post Creator */
+.post-creator {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.creator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-4) var(--spacing-5);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--hover-bg);
+}
+
+.creator-header h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+.creator-content {
+    padding: var(--spacing-5);
+}
+
+.post-content-area {
+    margin-bottom: var(--spacing-4);
+}
+
+.post-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: var(--spacing-4);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    resize: vertical;
+    transition: border-color 0.2s ease;
+}
+
+.post-textarea:focus {
+    outline: none;
+    border-color: var(--facebook-blue);
+}
+
+.post-media-area {
+    margin-bottom: var(--spacing-4);
+}
+
+.media-upload-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: var(--spacing-6);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.media-upload-zone:hover {
+    border-color: var(--facebook-blue);
+    background: var(--facebook-light);
+}
+
+.media-upload-zone i {
+    color: var(--secondary-text);
+    margin-bottom: var(--spacing-2);
+}
+
+.media-upload-zone p {
+    color: var(--secondary-text);
+    font-size: var(--font-size-sm);
+}
+
+.media-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+}
+
+.media-item {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.media-item img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+}
+
+.media-item video {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+}
+
+.media-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: var(--font-size-xs);
+}
+
+.post-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    padding: var(--spacing-2) var(--spacing-3);
+    color: var(--secondary-text);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: var(--hover-bg);
+    color: var(--primary-text);
+}
+
+/* Posts Feed */
+.posts-feed {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.post-card {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.post-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--spacing-4) var(--spacing-5);
+}
+
+.post-user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.post-user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-user-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.post-user-name {
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: 2px;
+}
+
+.post-timestamp {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text);
+}
+
+.post-menu {
+    position: relative;
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    padding: var(--spacing-2);
+    color: var(--secondary-text);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.post-menu-btn:hover {
+    background: var(--hover-bg);
+}
+
+.post-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-2);
+    min-width: 150px;
+    z-index: 1000;
+    display: none;
+}
+
+.post-menu-dropdown.show {
+    display: block;
+}
+
+.post-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    color: var(--primary-text);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.post-menu-item:hover {
+    background: var(--hover-bg);
+}
+
+.post-content {
+    padding: 0 var(--spacing-5) var(--spacing-4);
+}
+
+.post-text {
+    color: var(--primary-text);
+    line-height: 1.5;
+    margin-bottom: var(--spacing-3);
+}
+
+.post-media {
+    margin-bottom: var(--spacing-3);
+}
+
+.post-media img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.post-media video {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.post-hashtags {
+    margin-bottom: var(--spacing-3);
+}
+
+.post-hashtag {
+    display: inline-block;
+    color: var(--facebook-blue);
+    font-weight: 500;
+    margin-right: var(--spacing-2);
+}
+
+.post-actions-bar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: var(--spacing-3) var(--spacing-5);
+    border-top: 1px solid var(--border-color);
+}
+
+.post-action {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: none;
+    border: none;
+    color: var(--secondary-text);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.post-action:hover {
+    background: var(--hover-bg);
+    color: var(--primary-text);
+}
+
+.post-action.active {
+    color: var(--facebook-blue);
+}
+
+.post-action.liked {
+    color: var(--like-color);
+}
+
+.post-action-count {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+/* Comments Section */
+.post-comments {
+    padding: 0 var(--spacing-5) var(--spacing-4);
+    border-top: 1px solid var(--border-color);
+}
+
+.comments-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-3);
+}
+
+.comments-count {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text);
+    font-weight: 500;
+}
+
+.comment-item {
+    display: flex;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+    background: var(--hover-bg);
+}
+
+.comment-avatar {
+    width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .comment-content {
+            flex: 1;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            margin-bottom: var(--spacing-1);
+        }
+
+        .comment-user-name {
+            font-weight: 600;
+            color: var(--primary-text);
+            font-size: var(--font-size-sm);
+        }
+
+        .comment-timestamp {
+            font-size: var(--font-size-xs);
+            color: var(--secondary-text);
+        }
+
+        .comment-text {
+            color: var(--primary-text);
+            line-height: 1.4;
+            margin-bottom: var(--spacing-2);
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: var(--spacing-3);
+        }
+
+        .comment-action {
+            background: none;
+            border: none;
+            color: var(--secondary-text);
+            cursor: pointer;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .comment-action:hover {
+            color: var(--facebook-blue);
+        }
+
+        .comment-replies {
+            margin-left: var(--spacing-8);
+            margin-top: var(--spacing-3);
+            padding-left: var(--spacing-4);
+            border-left: 2px solid var(--border-color);
+        }
+
+        .comment-form {
+            display: flex;
+            gap: var(--spacing-3);
+            margin-top: var(--spacing-3);
+            padding-top: var(--spacing-3);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .comment-form-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .comment-form-content {
+            flex: 1;
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: var(--spacing-3);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-family: var(--font-family);
+            font-size: var(--font-size-sm);
+            resize: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: var(--facebook-blue);
+        }
+
+        .comment-form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-2);
+        }
+
+        .comment-form-buttons {
+            display: flex;
+            gap: var(--spacing-2);
+        }
+
+        .emoji-btn, .photo-btn {
+            background: none;
+            border: none;
+            padding: var(--spacing-2);
+            color: var(--secondary-text);
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .emoji-btn:hover, .photo-btn:hover {
+            background: var(--hover-bg);
+            color: var(--primary-text);
+        }
+
+        .post-comment-btn {
+            background: var(--facebook-blue);
+            color: var(--white);
+            border: none;
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: 16px;
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .post-comment-btn:hover {
+            background: #166fe5;
+        }
+
+        .load-more-comments {
+            text-align: center;
+            margin-top: var(--spacing-3);
+        }
+
+        .load-more-btn {
+            background: none;
+            border: none;
+            color: var(--facebook-blue);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .load-more-btn:hover {
+            color: #166fe5;
+        }
+
+/* Load More */
+.load-more {
+    text-align: center;
+    padding: var(--spacing-6);
+}
+
+.load-more .btn {
+    min-width: 200px;
+}
+
+/* Sidebar Right */
+.sidebar-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.activity-feed, .management-panel, .suggested-connections {
+    background: var(--white);
+    padding: var(--spacing-5);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.activity-feed h4, .management-panel h4, .suggested-connections h4 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-4);
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--hover-bg);
+    border-radius: 8px;
+}
+
+.activity-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--facebook-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-text {
+    font-size: var(--font-size-sm);
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-1);
+}
+
+.activity-time {
+    font-size: var(--font-size-xs);
+    color: var(--secondary-text);
+}
+
+.management-tools {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+.management-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-3);
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--primary-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.management-btn:hover {
+    background: var(--hover-bg);
+    border-color: var(--facebook-blue);
+}
+
+.suggested-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.suggested-user {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    background: var(--hover-bg);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.suggested-user:hover {
+    background: #e7f3ff;
+}
+
+.suggested-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.suggested-info {
+    flex: 1;
+}
+
+.suggested-name {
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: 2px;
+}
+
+.suggested-interests {
+    font-size: var(--font-size-xs);
+    color: var(--secondary-text);
+}
+
+.connect-btn {
+    background: var(--facebook-blue);
+    color: var(--white);
+    border: none;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: 6px;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.connect-btn:hover {
+    background: #166fe5;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--white);
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-content.large {
+    max-width: 700px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-4) var(--spacing-5);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--hover-bg);
+}
+
+.modal-header h3 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--primary-text);
+}
+
+.modal-body {
+    padding: var(--spacing-5);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4) var(--spacing-5);
+    border-top: 1px solid var(--border-color);
+    background: var(--hover-bg);
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: var(--spacing-4);
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-2);
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: var(--spacing-3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    transition: border-color 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--facebook-blue);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.char-count {
+    font-size: var(--font-size-xs);
+    color: var(--secondary-text);
+    margin-top: var(--spacing-1);
+    text-align: right;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    cursor: pointer;
+    font-weight: normal !important;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 3px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--facebook-blue);
+    border-color: var(--facebook-blue);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Emoji Picker */
+.emoji-picker-container {
+    position: relative;
+}
+
+.emoji-picker {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    z-index: 1000;
+    display: none;
+}
+
+.emoji-picker.show {
+    display: block;
+}
+
+/* Loading States */
+.loading {
+    text-align: center;
+    padding: var(--spacing-8);
+    color: var(--secondary-text);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--facebook-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--spacing-4);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .newsfeed-main {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-4);
+    }
+    
+    .sidebar-left, .sidebar-right {
+        display: none;
+    }
+    
+    .newsfeed-center {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .newsfeed-container {
+        padding: var(--spacing-3);
+    }
+    
+    .newsfeed-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .post-creator {
+        margin: 0 -var(--spacing-3);
+    }
+    
+    .post-card {
+        margin: 0 -var(--spacing-3);
+        border-radius: 0;
+    }
+    
+    .modal-content {
+        margin: var(--spacing-3);
+        max-width: calc(100% - var(--spacing-6));
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #18191a;
+        --white: #242526;
+        --primary-text: #e4e6eb;
+        --secondary-text: #b0b3b8;
+        --border-color: #3e4042;
+        --hover-bg: #3a3b3c;
+        --facebook-light: #263950;
+    }
+}
+
+/* Utility Classes */
+.text-muted {
+    color: var(--secondary-text);
+}
+
+.text-primary {
+    color: var(--primary-text);
+}
+
+.text-success {
+    color: var(--success);
+}
+
+.text-warning {
+    color: var(--warning);
+}
+
+.text-error {
+    color: var(--error);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: block !important;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus Management */
+:focus-visible {
+    outline: 2px solid var(--facebook-blue);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000000;
+        --secondary-text: #000000;
+    }
+}
+/* Facebook Widget Styles */
+.facebook-widget {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.facebook-header {
+    background: linear-gradient(135deg, #1877f2, #0c5bd6);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.facebook-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.facebook-header h3 i {
+    margin-right: 8px;
+}
+
+.facebook-tabs {
+    display: flex;
+    gap: 5px;
+}
+
+.tab-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.tab-btn.active {
+    background: white;
+    color: #1877f2;
+}
+
+.facebook-content {
+    padding: 20px;
+}
+
+.post-creator-fb {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e4e6eb;
+}
+
+.creator-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.creator-input {
+    flex: 1;
+}
+
+.creator-input textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    resize: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    min-height: 60px;
+    transition: border-color 0.3s ease;
+}
+
+.creator-input textarea:focus {
+    outline: none;
+    border-color: #1877f2;
+}
+
+.creator-options {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+}
+
+.option-btn {
+    background: #f0f2f5;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 18px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #65676b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.option-btn:hover {
+    background: #e4e6eb;
+}
+
+.option-btn i {
+    font-size: 0.9rem;
+}
+
+.post-btn {
+    background: #1877f2;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 18px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+.post-btn:hover {
+    background: #166fe5;
+}
+
+.facebook-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.facebook-post {
+    background: white;
+    border: 1px solid #e4e6eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+}
+
+.post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-meta {
+    flex: 1;
+}
+
+.post-author {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #050505;
+}
+
+.post-time {
+    font-size: 0.8rem;
+    color: #65676b;
+}
+
+.post-options {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #65676b;
+    transition: background 0.3s ease;
+}
+
+.post-options:hover {
+    background: #f0f2f5;
+}
+
+.post-content {
+    padding: 0 16px 12px;
+}
+
+.post-content p {
+    margin: 0 0 12px;
+    line-height: 1.4;
+    color: #050505;
+}
+
+.post-image {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.post-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-top: 1px solid #e4e6eb;
+    border-bottom: 1px solid #e4e6eb;
+}
+
+.reactions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reaction-count {
+    font-size: 0.85rem;
+    color: #65676b;
+}
+
+.reaction-icons {
+    display: flex;
+    gap: -4px;
+}
+
+.reaction-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+}
+
+.reaction-icon.like {
+    background: #1877f2;
+}
+
+.reaction-icon.love {
+    background: #f33e58;
+}
+
+.reaction-icon.wow {
+    background: #f7b125;
+}
+
+.shares-comments {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: #65676b;
+}
+
+.post-actions {
+    display: flex;
+    padding: 4px;
+}
+
+.action-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #65676b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: #f0f2f5;
+}
+
+.action-btn.liked {
+    color: #1877f2;
+}
+
+.action-btn i {
+    font-size: 1rem;
+}
+
+.comments-section {
+    padding: 16px;
+    background: #f0f2f5;
+}
+
+.comment-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-field {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 18px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.comment-field:focus {
+    outline: none;
+    border-color: #1877f2;
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.comment {
+    display: flex;
+    gap: 8px;
+}
+
+.comment-content {
+    flex: 1;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 18px;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #050505;
+}
+
+.comment-time {
+    font-size: 0.75rem;
+    color: #65676b;
+}
+
+.comment-text {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    color: #050505;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.comment-action {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #65676b;
+    transition: background 0.3s ease;
+}
+
+.comment-action:hover {
+    background: #f0f2f5;
+}
+
+/* Custom Dialog Styles */
+.custom-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.custom-dialog {
+    background: white;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e4e6eb;
+}
+
+.dialog-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #050505;
+}
+
+.dialog-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #65676b;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.dialog-close:hover {
+    background: #f0f2f5;
+}
+
+.dialog-content {
+    padding: 20px;
+}
+
+.feeling-option,
+.location-option {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e4e6eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.feeling-option:hover,
+.location-option:hover {
+    background: #f0f2f5;
+    border-color: #1877f2;
+}
+
+/* Facebook Widget Responsive Design */
+@media (max-width: 768px) {
+    .facebook-header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+    
+    .facebook-tabs {
+        justify-content: center;
+    }
+    
+    .creator-options {
+        justify-content: center;
+    }
+    
+    .post-stats {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .shares-comments {
+        gap: 12px;
+    }
+}
