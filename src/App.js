@@ -24,6 +24,7 @@ import CreateCampaignModal from './components/email/CreateCampaignModal';
 
 // NEW: Visitor System Components
 import EnhancedNewsFeedIntegration from './components/newsfeed/EnhancedNewsFeedIntegration';
+import FacebookStyleNewsFeed from './components/newsfeed/FacebookStyleNewsFeed';
 import AdminDashboardIntegration from './components/admin/AdminDashboardIntegration';
 import VisitorRegistrationForm from './components/newsfeed/VisitorRegistrationForm';
 import VisitorSecurityService from './services/security/visitorSecurityService';
@@ -554,7 +555,7 @@ const App = () => {
       case 'blog':
         return <BlogSection posts={posts} setPosts={setPosts} />;
       case 'newsfeed':
-        return <EnhancedNewsFeed currentUser={currentUser} />;
+        return <FacebookStyleNewsFeed currentUser={currentUser} />;
       case 'email':
         return <EmailSection campaigns={campaigns} setCampaigns={setCampaigns} />;
       case 'admin':
@@ -603,7 +604,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/admin/*" element={<AdminDashboard />} />
-            <Route path="/widget/newsfeed" element={<EnhancedNewsFeed currentUser={currentUser} />} />
+            <Route path="/widget/newsfeed" element={<FacebookStyleNewsFeed currentUser={currentUser} />} />
             <Route path="/widget/blog" element={<StandaloneBlogWidget />} />
           </Routes>
         </main>
