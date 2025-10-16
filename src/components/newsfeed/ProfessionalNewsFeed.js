@@ -5,6 +5,7 @@ import {
   Video, Smile, MapPin, X, Edit, Trash2, ThumbsUp, Bookmark,
   TrendingUp, Users, Clock, Eye
 } from 'lucide-react';
+import memberService from '../../services/memberService';
 
 const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admin@example.com' } }) => {
   const [posts, setPosts] = useState([]);
@@ -53,7 +54,8 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
     const newPost = {
       id: Date.now(),
       author: { 
-        name: currentUser.name, 
+        name: currentUser.name,
+        email: currentUser.email,
         avatar: null 
       },
       content: newPostContent,
@@ -67,6 +69,9 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
     setPosts([newPost, ...posts]);
     setNewPostContent('');
     setIsPosting(false);
+
+    // Track member activity
+    memberService.trackNewsFeedPost(currentUser.email);
   };
 
   const handleLikePost = (postId) => {
@@ -98,6 +103,7 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
             {
               id: Date.now(),
               author: currentUser.name,
+              email: currentUser.email,
               content: comment,
               timestamp: new Date().toISOString()
             }
@@ -108,6 +114,9 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
     }));
 
     setCommentText({ ...commentText, [postId]: '' });
+
+    // Track member activity
+    memberService.trackComment(currentUser.email);
   };
 
   const handleDeletePost = (postId) => {
