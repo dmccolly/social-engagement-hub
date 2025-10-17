@@ -6,6 +6,7 @@ import {
   TrendingUp, Users, Clock, Eye
 } from 'lucide-react';
 import memberService from '../../services/memberService';
+import RichTextEditor from './RichTextEditor';
 
 const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admin@example.com' } }) => {
   const [posts, setPosts] = useState([]);
@@ -198,40 +199,23 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
               </div>
             </div>
             <div className="flex-1">
-              <textarea
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                placeholder="What's on your mind?"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={3}
-              />
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex gap-2">
-                  <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                    <ImageIcon size={20} />
-                  </button>
-                  <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                    <Video size={20} />
-                  </button>
-                  <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                    <Smile size={20} />
-                  </button>
-                  <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
-                    <MapPin size={20} />
+                <RichTextEditor
+                  value={newPostContent}
+                  onChange={setNewPostContent}
+                  placeholder="What's on your mind?"
+                />
+                <div className="flex items-center justify-end mt-4">
+                  <button
+                    onClick={handleCreatePost}
+                    disabled={!newPostContent.trim() || isPosting}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
+                  >
+                    {isPosting ? 'Posting...' : 'Post'}
                   </button>
                 </div>
-                <button
-                  onClick={handleCreatePost}
-                  disabled={!newPostContent.trim() || isPosting}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
-                >
-                  {isPosting ? 'Posting...' : 'Post'}
-                </button>
-              </div>
             </div>
           </div>
         </div>
-
         {/* Posts Feed */}
         <div className="space-y-6">
           {posts.length === 0 ? (
@@ -279,7 +263,7 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
                   </div>
 
                   {/* Post Content */}
-                  <p className="text-gray-900 leading-relaxed mb-4">{post.content}</p>
+                  <div className="text-gray-900 leading-relaxed mb-4 prose max-w-none" dangerouslySetInnerHTML={{ __html: post.content }} />
 
                   {/* Post Image */}
                   {post.image && (
