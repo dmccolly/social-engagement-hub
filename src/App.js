@@ -10,7 +10,7 @@ import {
   Image, Film, Music, Link, Bold, Italic, Underline, Type,
   Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
   Star, Sparkles, Crown, Copy, ExternalLink, Zap, TrendingUp,
-  UserPlus, Award, Target, Activity, Download, Play, Shield, Save
+  UserPlus, Award, Target, Activity, Download, Play, Shield, Save, Radio
 } from 'lucide-react';
 import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
 import { uploadImageWithDeduplication, getImageStats } from './services/imageDeduplicationService';
@@ -920,10 +920,70 @@ const SettingsSection = () => {
          borderRadius: 8,
          transparent: false
        }
+      ,
+      station: {
+        headerColor: '#dc2626',
+        headerText: '📻 Station Admin Panel',
+        siteUrl: 'https://stationprofiles.netlify.app',
+        embedType: 'simple',
+        height: 800,
+        borderRadius: 8,
+        transparent: false
+      }
   });
 
   const generateEmbedCode = (widgetType) => {
     const settings = widgetSettings[widgetType];
+    
+    // Special handling for Station Admin Panel widget
+    if (widgetType === 'station') {
+      const siteUrl = settings.siteUrl || 'https://stationprofiles.netlify.app';
+      const height = settings.height || 800;
+      const borderRadius = settings.borderRadius || 8;
+      
+      if (settings.embedType === 'styled') {
+        return `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px;">
+  <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;">
+      <h2 style="margin: 0 0 5px 0; font-size: 1.8rem;">📻 Station Admin Panel</h2>
+      <p style="margin: 0; opacity: 0.9;">Manage your Idaho radio station profiles</p>
+    </div>
+    <iframe 
+      src="${siteUrl}/admin/" 
+      width="100%" 
+      height="${height - 100}px" 
+      frameborder="0"
+      style="border: none; display: block;">
+    </iframe>
+  </div>
+</div>`;
+      } else if (settings.embedType === 'responsive') {
+        return `<div style="position: relative; width: 100%; padding-bottom: 75%; background: #f5f5f5; border-radius: ${borderRadius}px; overflow: hidden;">
+  <iframe 
+    src="${siteUrl}/admin/" 
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+    frameborder="0">
+  </iframe>
+</div>`;
+      } else if (settings.embedType === 'button') {
+        return `<a href="${siteUrl}/admin/" 
+   target="_blank" 
+   style="display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: ${borderRadius}px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s;">
+  📻 Open Station Management Tool
+</a>`;
+      } else {
+        // Simple embed (default)
+        return `<iframe 
+  src="${siteUrl}/admin/" 
+  width="100%" 
+  height="${height}px" 
+  frameborder="0"
+  style="border: 1px solid #ddd; border-radius: ${borderRadius}px;">
+</iframe>`;
+      }
+    }
+    
+    // Default handling for other widgets
     const encodedSettings = encodeURIComponent(JSON.stringify(settings));
     const baseUrl = window.location.origin;
     return `<iframe src="${baseUrl}/widget/${widgetType}?settings=${encodedSettings}" width="100%" height="600" frameborder="0"></iframe>`;
@@ -940,7 +1000,8 @@ const SettingsSection = () => {
     { id: 'calendar', name: 'Calendar Widget', icon: Calendar, color: 'orange' },
     { id: 'socialhub', name: 'Social Hub Widget', icon: Sparkles, color: 'purple' },
     { id: 'signup', name: 'Signup Widget', icon: UserPlus, color: 'pink' },
-    { id: 'upload', name: 'Upload Widget', icon: Upload, color: 'indigo' }
+    { id: 'upload', name: 'Upload Widget', icon: Upload, color: 'indigo' },
+    { id: 'station', name: 'Station Admin Panel', icon: Radio, color: 'red' }
   ];
 
   return (
@@ -1273,75 +1334,73 @@ const SettingsSection = () => {
                         </label>
                       </div>
                     </>
-                  )}
-              </div>
+{selectedWidget === 'station' && (
+                  <>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <h4 className="font-semibold text-blue-900 mb-2">📻 Station Admin Panel Widget</h4>
+                      <p className="text-sm text-blue-800 mb-2">
+                        Embed the complete Station Admin Panel for managing Idaho radio station profiles.
+                      </p>
+                      <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                        <li>Add, edit, and delete radio stations</li>
+                        <li>Manage station information and profiles</li>
+                        <li>Upload logos and images</li>
+                        <li>Direct integration with GitHub repository</li>
+                      </ul>
+                    </div>
 
-              {/* Embed Code */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-semibold text-gray-900">Embed Code</h3>
-                  <button
-                    onClick={() => copyToClipboard(generateEmbedCode(selectedWidget))}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center gap-2"
-                  >
-                    <Copy size={16} />
-                    Copy
-                  </button>
-                </div>
-                <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto">
-                  {generateEmbedCode(selectedWidget)}
-                </pre>
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Embed Type</label>
+                      <select
+                        value={widgetSettings.station.embedType}
+                        onChange={(e) => setWidgetSettings(prev => ({
+                          ...prev,
+                          station: { ...prev.station, embedType: e.target.value }
+                        }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="simple">Simple Iframe</option>
+                        <option value="styled">Styled with Header</option>
+                        <option value="responsive">Responsive</option>
+                        <option value="button">Button Link</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">Choose how the admin panel will be embedded</p>
+                    </div>
 
-              {/* Preview Link */}
-              <div className="mt-4">
-                <a
-                  href={`/widget/${selectedWidget}?settings=${encodeURIComponent(JSON.stringify(widgetSettings[selectedWidget]))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  <ExternalLink size={20} />
-                  Preview Widget
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Widget Height (px)</label>
+                      <input
+                        type="number"
+                        min="400"
+                        max="1200"
+                        step="50"
+                        value={widgetSettings.station.height}
+                        onChange={(e) => setWidgetSettings(prev => ({
+                          ...prev,
+                          station: { ...prev.station, height: parseInt(e.target.value) }
+                        }))}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Recommended: 800px</p>
+                    </div>
 
-        {/* General Settings Tab */}
-        {activeTab === 'general' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Platform Settings</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
-                  <input
-                    type="text"
-                    defaultValue="Social Engagement Hub"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Site Description</label>
-                  <textarea
-                    defaultValue="Your complete platform for community engagement"
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Save Settings
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                      <h4 className="font-semibold text-yellow-900 mb-2">⚙️ Additional Embed Options</h4>
+                      <p className="text-sm text-yellow-800 mb-3">
+                        For more embed options and customization, visit:
+                      </p>
+                      <a 
+                        href="https://stationprofiles.netlify.app/embed-codes.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+                      >
+                        <ExternalLink size={16} />
+                        View All Embed Options
+                      </a>
+                    </div>
+                  </>
+                )}                  )}
     </div>
   );
 };
