@@ -36,7 +36,7 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
     emailBlocks.push({ id: Date.now(), type: 'heading', content: { text: selectedPost.title, level: 1 } });
     if (emailSettings.includeExcerpt && selectedPost.excerpt) emailBlocks.push({ id: Date.now() + 1, type: 'text', content: { text: selectedPost.excerpt } });
     if (emailSettings.includeImages && selectedPost.featured_image) emailBlocks.push({ id: Date.now() + 2, type: 'image', content: { src: selectedPost.featured_image, alt: selectedPost.title } });
-    if (selectedPost.content) emailBlocks.push({ id: Date.now() + 3, type: 'text', content: { text: selectedPost.content } });
+    if (selectedPost.content) emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: selectedPost.content } });
     if (emailSettings.addCallToAction) emailBlocks.push({ id: Date.now() + 4, type: 'button', content: { text: emailSettings.ctaText, url: emailSettings.ctaUrl || `https://yourblog.com/posts/${selectedPost.id}`, color: '#2563eb' } });
     const campaignData = { name: `Newsletter: ${selectedPost.title}`, subject: selectedPost.title, fromName: 'Your Blog', fromEmail: 'blog@yourcompany.com', blocks: emailBlocks };
     onConvert(campaignData);

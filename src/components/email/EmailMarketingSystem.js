@@ -42,6 +42,7 @@ const EmailMarketingSystem = () => {
     switch(type) {
       case 'heading': return { text: 'Your Heading Here', level: 1 };
       case 'text': return { text: 'Your text content goes here...' };
+      case 'html': return { html: '<p>Your HTML content goes here...</p>' };
       case 'image': return { src: 'https://via.placeholder.com/600x300', alt: 'Image' };
       case 'button': return { text: 'Click Here', url: '#', color: '#2563eb' };
       case 'divider': return { style: 'solid', color: '#e5e7eb' };
@@ -89,6 +90,19 @@ const EmailMarketingSystem = () => {
         return <div className="email-block"><input type="text" value={block.content.text} onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })} className="text-2xl font-bold w-full p-2 border rounded" placeholder="Heading text..." /></div>;
       case 'text':
         return <div className="email-block"><textarea value={block.content.text} onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })} className="w-full p-2 border rounded" rows="4" placeholder="Your text content..." /></div>;
+      case 'html':
+        return (
+          <div className="email-block">
+            <div className="border rounded p-4 bg-white prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content.html }} />
+            <textarea 
+              value={block.content.html} 
+              onChange={(e) => updateBlock(block.id, { ...block.content, html: e.target.value })} 
+              className="w-full p-2 border rounded mt-2 font-mono text-sm" 
+              rows="6" 
+              placeholder="<p>Your HTML content...</p>" 
+            />
+          </div>
+        );
       case 'image':
         return <div className="email-block"><img src={block.content.src} alt={block.content.alt} className="w-full rounded" /><input type="text" value={block.content.src} onChange={(e) => updateBlock(block.id, { ...block.content, src: e.target.value })} className="w-full p-2 border rounded mt-2" placeholder="Image URL..." /></div>;
       case 'button':
