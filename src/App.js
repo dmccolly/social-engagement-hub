@@ -1333,7 +1333,7 @@ const SettingsSection = () => {
                           <span className="text-sm">Show Upload Progress</span>
                         </label>
                       </div>
-                    </>
+                    </>,
 {selectedWidget === 'station' && (
                   <>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
