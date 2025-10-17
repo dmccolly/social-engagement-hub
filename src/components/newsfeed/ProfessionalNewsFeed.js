@@ -213,12 +213,9 @@ const ProfessionalNewsFeed = ({ currentUser = { name: 'Admin User', email: 'admi
                     {isPosting ? 'Posting...' : 'Post'}
                   </button>
                 </div>
-                </button>
-              </div>
             </div>
           </div>
         </div>
-
         {/* Posts Feed */}
         <div className="space-y-6">
           {posts.length === 0 ? (
