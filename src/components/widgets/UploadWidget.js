@@ -145,16 +145,16 @@ const UploadWidget = ({ settings = {} }) => {
       };
 
       // TODO: Send to XANO endpoint
-      // await fetch('YOUR_XANO_ENDPOINT', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(submissionData)
-      // });
+      await fetch('https://xa3o-bs7d-cagt.n7c.xano.io/api:pYQcCtVX/media_upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(submissionData)
+});
 
       // For now, save to localStorage
-      const submissions = JSON.parse(localStorage.getItem('visitorSubmissions') || '[]');
-      submissions.push(submissionData);
-      localStorage.setItem('visitorSubmissions', JSON.stringify(submissions));
+      // const submissions = JSON.parse(localStorage.getItem('visitorSubmissions') || '[]');
+      //  submissions.push(submissionData);
+      // localStorage.setItem('visitorSubmissions', JSON.stringify(submissions));
 
       // Show success
       setUploadSuccess(true);
