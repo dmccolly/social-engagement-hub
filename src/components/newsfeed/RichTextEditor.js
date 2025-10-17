@@ -20,10 +20,15 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
 
   // Initialize contenteditable div with value
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
+    if (editorRef.current) {
+      // Set initial value if empty
+      if (!editorRef.current.innerHTML && value) {
+        editorRef.current.innerHTML = value;
+      }
+      // Make sure the editor is editable
+      editorRef.current.setAttribute('contenteditable', 'true');
     }
-  }, [value]);
+  }, []);
 
   // Handle content changes
   const handleInput = () => {
@@ -34,9 +39,28 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
 
   // Execute formatting command
   const execCommand = (command, value = null) => {
-    document.execCommand(command, false, value);
-    editorRef.current?.focus();
-    handleInput();
+    if (editorRef.current) {
+      // Ensure the editor is focused
+      editorRef.current.focus();
+      
+      // For format commands, ensure there's a selection or content
+      const selection = window.getSelection();
+      if (!selection.rangeCount) {
+        // Create a range at the end of the content
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      
+      // Execute the command
+      const success = document.execCommand(command, false, value);
+      console.log(`execCommand(${command}, ${value}):`, success);
+      
+      // Update the content
+      handleInput();
+    }
   };
 
   // Insert link
@@ -140,7 +164,11 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
   const ToolbarButton = ({ icon: Icon, onClick, title, active = false }) => (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+      onMouseDown={(e) => e.preventDefault()}
       title={title}
       className={`p-2 rounded hover:bg-gray-200 transition ${active ? 'bg-gray-200' : ''}`}
     >
@@ -150,6 +178,13 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
 
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+      <style>{`
+        [contenteditable][data-placeholder]:empty:before {
+          content: attr(data-placeholder);
+          color: #9CA3AF;
+          pointer-events: none;
+        }
+      `}</style>
       {/* Toolbar */}
       <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-1">
         {/* Text Formatting */}
@@ -193,9 +228,11 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
         ref={editorRef}
         contentEditable
         onInput={handleInput}
-        className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none prose max-w-none"
+        onClick={() => editorRef.current?.focus()}
+        className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none prose max-w-none cursor-text"
         style={{ wordWrap: 'break-word' }}
         suppressContentEditableWarning
+        data-placeholder={placeholder}
       />
 
       {/* Link Modal */}
