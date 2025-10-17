@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X, CheckCircle, AlertCircle, File, Image, Video, FileText } from 'lucide-react';
 import { uploadImageWithProgress } from '../../services/cloudinaryService';
-import { getMembers, addMember } from '../../services/memberService';
+import memberService from '../../services/memberService';
 
 const UploadWidget = ({ settings = {} }) => {
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -23,7 +23,7 @@ const UploadWidget = ({ settings = {} }) => {
 
   // Check if visitor is recognized
   useEffect(() => {
-    const members = getMembers();
+    const members = memberService.getMembers();
     const lastUser = localStorage.getItem('currentVisitor');
     if (lastUser) {
       const user = JSON.parse(lastUser);
@@ -62,7 +62,7 @@ const UploadWidget = ({ settings = {} }) => {
     };
 
     // Add to members if not exists
-    addMember(visitor.name, visitor.email);
+    memberService.addMember({ name: visitor.name, email: visitor.email });
     
     // Save to localStorage
     localStorage.setItem('currentVisitor', JSON.stringify(visitor));
