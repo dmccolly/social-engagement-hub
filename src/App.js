@@ -1333,10 +1333,12 @@ const SettingsSection = () => {
                           <span className="text-sm">Show Upload Progress</span>
                         </label>
                       </div>
-                    </>,
-{selectedWidget === 'station' && (
-                  <>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      </>
+                    )}
+
+                    {selectedWidget === 'station' && (
+                      <>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                       <h4 className="font-semibold text-blue-900 mb-2">📻 Station Admin Panel Widget</h4>
                       <p className="text-sm text-blue-800 mb-2">
                         Embed the complete Station Admin Panel for managing Idaho radio station profiles.
@@ -1399,10 +1401,14 @@ const SettingsSection = () => {
                         View All Embed Options
                       </a>
                     </div>
-                  </>
-                )}                  )}
-    </div>
-  );
-};
-
+                     </>
+                   )}
+             </div>
+           </div>
+         </div>
+           )}
+       </div>
+     </div>
+     );
+   };
 export default App;
