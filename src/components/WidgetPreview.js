@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import NewsFeedWidget from './widgets/NewsFeedWidget';
 import SignupWidget from './widgets/SignupWidget';
+import UploadWidget from './widgets/UploadWidget';
 
 const WidgetPreview = () => {
   const location = useLocation();
@@ -163,6 +164,13 @@ const WidgetPreview = () => {
         return (
           <div className="max-w-2xl mx-auto p-6">
             <SignupWidget settings={settings} />
+          </div>
+        );
+
+      case 'upload':
+        return (
+          <div className="max-w-2xl mx-auto p-6">
+            <UploadWidget settings={settings} />
           </div>
         );
 

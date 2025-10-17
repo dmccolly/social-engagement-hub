@@ -910,6 +910,16 @@ const SettingsSection = () => {
       theme: 'blue',
       compact: false
     }
+       ,
+       upload: {
+         headerColor: '#6366f1',
+         headerText: '📤 Upload Content',
+         buttonText: 'Upload File',
+         showProgress: true,
+         maxFileSize: 10,
+         borderRadius: 8,
+         transparent: false
+       }
   });
 
   const generateEmbedCode = (widgetType) => {
@@ -929,7 +939,8 @@ const SettingsSection = () => {
     { id: 'newsfeed', name: 'News Feed Widget', icon: MessageSquare, color: 'green' },
     { id: 'calendar', name: 'Calendar Widget', icon: Calendar, color: 'orange' },
     { id: 'socialhub', name: 'Social Hub Widget', icon: Sparkles, color: 'purple' },
-    { id: 'signup', name: 'Signup Widget', icon: UserPlus, color: 'pink' }
+    { id: 'signup', name: 'Signup Widget', icon: UserPlus, color: 'pink' },
+    { id: 'upload', name: 'Upload Widget', icon: Upload, color: 'indigo' }
   ];
 
   return (
@@ -1214,6 +1225,51 @@ const SettingsSection = () => {
                             className="rounded"
                           />
                           <span className="text-sm">Compact Mode</span>
+                        </label>
+                      </div>
+                    </>
+                  )}
+
+                  {selectedWidget === 'upload' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Button Text</label>
+                        <input
+                          type="text"
+                          value={widgetSettings.upload.buttonText}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            upload: { ...prev.upload, buttonText: e.target.value }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Max File Size (MB)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={widgetSettings.upload.maxFileSize}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            upload: { ...prev.upload, maxFileSize: parseInt(e.target.value) }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.upload.showProgress}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              upload: { ...prev.upload, showProgress: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Upload Progress</span>
                         </label>
                       </div>
                     </>
