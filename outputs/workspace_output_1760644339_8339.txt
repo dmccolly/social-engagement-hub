@@ -1,0 +1,101 @@
+                {posts.map((post, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex gap-4">
+                      {post.image && (
+                        <img src={post.image} alt={post.title} className="w-20 h-20 object-cover rounded" />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-1">{post.title}</h3>
+                        <div className="text-sm text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: post.content }} />
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>{post.author}</span>
+                          <span>{post.date}</span>
+                          <span>{post.readTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeSection === 'members' && <MembersSection />}
+          {activeSection === 'calendar' && <CalendarSection />}
+          {activeSection === 'analytics' && <AnalyticsSection />}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  // Check if this is a widget route
+  const currentPath = window.location.pathname;
+  
+  // Widget routing - render standalone widgets
+  if (currentPath === '/widget/blog') {
+    return <StandaloneBlogWidget />;
+  }
+  if (currentPath === '/widget/calendar') {
+    return <StandaloneCalendarWidget />;
+  }
+  if (currentPath === '/widget/newsfeed') {
+    return <StandaloneNewsFeedWidget />;
+  }
+  if (currentPath === '/widget/socialhub') {
+    return <StandaloneSocialHubWidget />;
+  }
+
+  // State Management
+  const [activeSection, setActiveSection] = useState('dashboard');
+     // Load posts from localStorage or use default posts
+     const loadPostsFromStorage = () => {
+       try {
+         const stored = localStorage.getItem('socialHubPosts');
+         if (stored) {
+           const parsed = JSON.parse(stored);
+           if (Array.isArray(parsed) && parsed.length > 0) {
+             return parsed;
+           }
+         }
+       } catch (err) {
+         console.error('Failed to load posts from localStorage', err);
+       }
+       
+       // Return default posts if nothing in storage
+       return [
+         {
+           title: 'Welcome to Our Platform',
+           content: 'This is a featured post!',
+           date: '9/23/2025',
+           isFeatured: true
+         },
+         {
+           title: 'Latest Updates',
+           content: 'Check out our new features',
+           date: '9/23/2025',
+           isFeatured: false
+         }
+       ];
+     };
+     
+     const [posts, setPosts] = useState(loadPostsFromStorage());
+  const [campaigns, setCampaigns] = useState([]);
+  
+  // Load email campaigns from XANO
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        const { getCampaigns } = await import('./services/email/emailCampaignService');
+        const result = await getCampaigns();
+        if (result.success && result.campaigns) {
+          setCampaigns(result.campaigns);
+        }
+      } catch (error) {
+        console.error('Failed to load campaigns:', error);
+        // Fallback to hardcoded data if API fails
+        setCampaigns([
+          {
+            id: 1,
+            name: 'Welcome Series',
+            subject: 'Welcome to our community!',

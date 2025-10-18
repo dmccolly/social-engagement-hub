@@ -1,25 +1,21 @@
-# Fix Blog Widget Display Issue
+# Social Engagement Hub - Task List
 
-## Problem Analysis
-- [x] Identified duplicate onClick handlers in navigation buttons
-- [x] First onClick sets isCreating=true, preventing proper navigation
-- [x] localStorage sync happens in wrong onClick handler
-- [x] Navigation to sections is broken due to conflicting handlers
+## Task 1: Blog Post to Email Formatting Issue ✅
+- [x] Fixed HTML rendering in email previews
+- [x] Added 'html' block type support
+- [x] Created PR #34: https://github.com/dmccolly/social-engagement-hub/pull/34
 
-## Solution Tasks
-- [x] Remove the duplicate/incorrect onClick handler from navigation buttons
-- [x] Keep only the proper onClick that calls setActiveSection
-- [x] Move localStorage sync to the useEffect that monitors posts changes (already exists)
-- [x] Test that navigation works correctly
-- [x] Verify blog posts appear in widget after creating new posts
-- [x] Create pull request with the fix
-
-## Testing Checklist
-- [x] Navigate between sections works correctly
-- [x] Creating new blog posts saves to localStorage
-- [x] Widget displays newly created posts
-- [x] No console errors
-
-## Completed
-All tasks completed successfully! Pull request created at:
-https://github.com/dmccolly/social-engagement-hub/pull/2
+## Task 2: News Feed Rich Text Editor
+- [x] Examine current news feed implementation (ProfessionalNewsFeed.js)
+- [x] Identified placeholder buttons need functionality
+- [x] Create RichTextEditor component with formatting toolbar
+- [x] Add text formatting (bold, italic, underline, strikethrough)
+- [x] Add link insertion with URL input modal
+- [x] Add image upload and URL embedding
+- [x] Add YouTube/Vimeo video embed support
+- [x] Add text formatting options (headings, lists, quotes)
+- [x] Integrate rich text editor into ProfessionalNewsFeed
+- [x] Update post storage to support HTML content
+- [x] Update post display to render HTML content
+- [ ] Test all formatting features
+- [ ] Commit and create pull request

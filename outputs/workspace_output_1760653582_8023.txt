@@ -1,0 +1,7 @@
+                        <span className="text-sm">Show Images</span>
+                      </label>
+                    </div>
+                  </>
+                )}
+              </div>
+

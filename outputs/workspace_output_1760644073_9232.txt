@@ -1,0 +1,51 @@
+const App = () => {
+  const [currentUser] = useState({ name: 'Admin User', email: 'admin@example.com' });
+  const [activeSection, setActiveSection] = useState('home');
+  const [posts, setPosts] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+
+  // Load data on mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // Load blog posts
+        const postsResult = await getPublishedPosts(10, 0);
+        if (postsResult.success && postsResult.posts) {
+          setPosts(postsResult.posts);
+        }
+
+        // Load email campaigns
+        const { getCampaigns } = await import('./services/email/emailCampaignService');
+        const campaignsResult = await getCampaigns();
+        if (campaignsResult.success && campaignsResult.campaigns) {
+          setCampaigns(campaignsResult.campaigns);
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  const navigationItems = [
+    { id: 'home', label: 'Home', icon: Home },
+    { id: 'blog', label: 'Blog', icon: FileText },
+    { id: 'newsfeed', label: 'News Feed', icon: MessageSquare },
+    { id: 'email', label: 'Email', icon: Mail },
+    { id: 'admin', label: 'Admin', icon: Shield },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'settings', label: 'Settings', icon: Settings }
+  ];
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'home':
+        return <HomeSection posts={posts} />;
+      case 'blog':
+        return <BlogSection posts={posts} setPosts={setPosts} />;
+      case 'newsfeed':
+        return <FacebookStyleNewsFeed currentUser={currentUser} />;
+      case 'email':
+        return <EmailSection campaigns={campaigns} setCampaigns={setCampaigns} />;
+      case 'admin':

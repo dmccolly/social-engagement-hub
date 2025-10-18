@@ -1,0 +1,10 @@
+    socialhub: {
+      headerColor: '#8b5cf6',
+      headerText: '🌟 Social Hub',
+      showBlog: true,
+      showNewsfeed: true,
+      showCalendar: true,
+      borderRadius: 8,
+      transparent: false
+    }
+  });
