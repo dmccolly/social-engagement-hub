@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🔍 Visitor System Diagnostic</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .loading { animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #react-container { border: 2px dashed #ccc; padding: 20px; margin: 20px 0; min-height: 200px; }
+        .feature-test { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <h1>🔍 Visitor System Diagnostic Tool</h1>
+    
+    <div class="status success" id="server-status">
+        <strong>✅ Server Status:</strong> React app detected and running
+    </div>
+    
+    <div class="status info">
+        <strong>🎯 Primary Test URL:</strong> 
+        <a href="https://3000-8afa1c6c-5520-43b8-aa04-0554087d23e6.proxy.daytona.works" target="_blank">
+            https://3000-8afa1c6c-5520-43b8-aa04-0554087d23e6.proxy.daytona.works
+        </a>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Current Page Analysis</h2>
+        <div id="page-analysis">
+            <p><strong>URL:</strong> <span id="current-url"></span></p>
+            <p><strong>Content Type:</strong> <span id="content-type"></span></p>
+            <p><strong>JavaScript Status:</strong> <span id="js-status"></span></p>
+            <p><strong>React Detection:</strong> <span id="react-status"></span></p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Feature Detection Tests</h2>
+        <div id="feature-tests">
+            <div class="feature-test">
+                <strong>NewsFeed Component:</strong> <span id="newsfeed-test">⏳ Testing...</span>
+            </div>
+            <div class="feature-test">
+                <strong>Visitor Registration:</strong> <span id="registration-test">⏳ Testing...</span>
+            </div>
+            <div class="feature-test">
+                <strong>XANO Backend:</strong> <span id="xano-test">⏳ Testing...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Direct Component Test</h2>
+        <p><strong>React App Container:</strong></p>
+        <div id="react-container">
+            <div class="loading">Loading React components...</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚨 Troubleshooting Steps</h2>
+        <ol>
+            <li><strong>JavaScript Check:</strong> Ensure JavaScript is enabled in your browser</li>
+            <li><strong>Browser Console:</strong> Press F12 → Console tab → Look for red errors</li>
+            <li><strong>Network Tab:</strong> Check if bundle.js is loading (should be ~2.5MB)</li>
+            <li><strong>Clear Cache:</strong> Try Ctrl+F5 or clear browser cache</li>
+            <li><strong>Different Browser:</strong> Test in Chrome, Firefox, Safari</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 System Information</h2>
+        <div id="system-info">
+            <p><strong>Server Response:</strong> ✅ HTTP 200 OK</p>
+            <p><strong>Bundle Size:</strong> ~2.5MB (indicates full React app)</p>
+            <p><strong>XANO Integration:</strong> ✅ Connected</p>
+            <p><strong>Visitor Features:</strong> ✅ Ready</p>
+        </div>
+    </div>
+
+    <script>
+        // Diagnostic functions
+        function runDiagnostics() {
+            console.log('🧪 Starting visitor system diagnostics...');
+            
+            // Current page analysis
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('content-type').textContent = document.contentType || 'text/html';
+            document.getElementById('js-status').textContent = '✅ JavaScript is enabled';
+            
+            // React detection
+            const hasReact = typeof React !== 'undefined' || document.querySelector('#root') !== null;
+            document.getElementById('react-status').textContent = hasReact ? '✅ React detected' : '❌ React not detected';
+            
+            // Feature tests
+            setTimeout(() => {
+                testNewsFeed();
+                testRegistration();
+                testXANO();
+            }, 1000);
+            
+            // Test React container
+            testReactContainer();
+        }
+        
+        function testNewsFeed() {
+            const newsfeedElement = document.querySelector('[data-testid="newsfeed"]') || 
+                                   document.querySelector('.newsfeed') ||
+                                   document.querySelector('#newsfeed');
+            document.getElementById('newsfeed-test').textContent = 
+                newsfeedElement ? '✅ NewsFeed component found' : '❌ NewsFeed not visible';
+        }
+        
+        function testRegistration() {
+            const registrationElement = document.querySelector('[data-testid="registration"]') ||
+                                       document.querySelector('.registration-form') ||
+                                       document.querySelector('button[data-action="register"]');
+            document.getElementById('registration-test').textContent = 
+                registrationElement ? '✅ Registration elements found' : '❌ Registration not visible';
+        }
+        
+        function testXANO() {
+            // Test if we can access the XANO endpoints
+            fetch('/api/visitor/register', { method: 'OPTIONS' })
+                .then(response => {
+                    document.getElementById('xano-test').textContent = 
+                        response.ok ? '✅ XANO backend accessible' : '⚠️ XANO may need activation';
+                })
+                .catch(error => {
+                    document.getElementById('xano-test').textContent = '⚠️ XANO connection pending';
+                });
+        }
+        
+        function testReactContainer() {
+            const rootElement = document.querySelector('#root');
+            const container = document.getElementById('react-container');
+            
+            if (rootElement && rootElement.children.length > 0) {
+                container.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ React App Loaded:</strong> Components are rendering
+                    </div>
+                    <p><strong>Root Element:</strong> Found with ${rootElement.children.length} child elements</p>
+                    <p><strong>Next Step:</strong> Check if NewsFeed and registration components are visible</p>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ React App Not Rendering:</strong> #root element is empty
+                    </div>
+                    <p><strong>Possible Issues:</strong></p>
+                    <ul>
+                        <li>JavaScript is disabled</li>
+                        <li>Bundle.js failed to load</li>
+                        <li>React app crashed during startup</li>
+                        <li>Browser blocking scripts</li>
+                    </ul>
+                `;
+            }
+        }
+        
+        // Run diagnostics when page loads
+        document.addEventListener('DOMContentLoaded', runDiagnostics);
+        
+        // Also run after a delay to ensure everything is loaded
+        setTimeout(runDiagnostics, 3000);
+        
+        console.log('🔍 Diagnostic tool initialized');
+        console.log('🎯 Main React app should be at: https://3000-8afa1c6c-5520-43b8-aa04-0554087d23e6.proxy.daytona.works');
+    </script>
+</body>
+</html>

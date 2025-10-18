@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: transparent;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .widget-container {
+            max-width: 100%;
+            margin: 0;
+        }
+        
+        .widget-header {
+            display: none;
+        }
+        
+        .posts-container {
+            background: linear-gradient(135deg, rgba(248, 249, 250, 0.5) 0%, rgba(233, 236, 239, 0.5) 100%);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .post {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 0;
+            overflow: hidden;
+        }
+        
+        .post:last-child {
+            border-bottom: none;
+        }
+        
+        .post-image {
+            width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+            float: left;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .post-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .post-meta {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
+        .post-excerpt {
+            font-size: 16px;
+            color: #4b5563;
+            line-height: 1.8;
+        }
+        
+        .post-excerpt p {
+            margin-bottom: 10px;
+        }
+        
+        .post-excerpt strong,
+        .post-excerpt b {
+            font-weight: 600;
+        }
+        
+        .post-excerpt em,
+        .post-excerpt i {
+            font-style: italic;
+        }
+        
+        .post-excerpt a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        
+           
+           /* Preserve XANO HTML formatting */
+           .post-excerpt font {
+               /* Allow font tags to use their color and face attributes */
+           }
+           
+           .post-excerpt span[style*="font-weight: 700"],
+           .post-excerpt span[style*="font-weight:700"] {
+               font-weight: 700 !important;
+           }
+           
+           .post-excerpt span[style*="font-style: italic"],
+           .post-excerpt span[style*="font-style:italic"] {
+               font-style: italic !important;
+           }
+           
+           /* Ensure inline styles are respected */
+           .post-excerpt [style] {
+               /* Inline styles will be applied naturally */
+           }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc2626;
+        }
+
+        .featured-badge {
+            display: inline-block;
+            background: #fbbf24;
+            color: #78350f;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .read-more-btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        .read-more-btn:hover {
+            background: #1d4ed8;
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            📝 Latest Blog Posts
+        </div>
+        <div class="posts-container" id="posts">
+            <div class="loading">Loading posts...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const XANO_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:pYeQctVX/asset';
+            
+            function extractImage(html) {
+                if (!html) return null;
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    const img = tmp.querySelector('img');
+                    return img ? img.src : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            function stripHtml(html) {
+                if (!html) return '';
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    return tmp.textContent || tmp.innerText || '';
+                } catch (e) {
+                    return '';
+                }
+            }
+            
+            function createExcerpt(content, maxLength) {
+                maxLength = maxLength || 300;
+                if (!content) return '';
+                
+                // Remove images from excerpt but keep ALL other HTML formatting
+                let html = content.replace(/<img[^>]*>/gi, '');
+                
+                // Remove empty paragraphs that cause excessive spacing
+                // This handles complex nested structures like <p><font><span><br></span></font></p>
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const paragraphs = tempDiv.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    const text = p.textContent.trim();
+                    if (!text || text === '' || /^\s*$/.test(text)) {
+                        p.remove();
+                    }
+                });
+                html = tempDiv.innerHTML;
+                
+                // Get plain text length for truncation check
+                const plainText = stripHtml(html);
+                
+                if (plainText.length <= maxLength) {
+                    // Return full HTML with all formatting preserved
+                    return html;
+                }
+                
+                // Need to truncate - keep HTML up to maxLength characters of text
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                
+                // Walk through text nodes and truncate
+                let charCount = 0;
+                let truncated = '';
+                
+                function walkNodes(node) {
+                    if (charCount >= maxLength) return;
+                    
+                    if (node.nodeType === 3) { // Text node
+                        const remaining = maxLength - charCount;
+                        const text = node.textContent;
+                        if (text.length <= remaining) {
+                            truncated += text;
+                            charCount += text.length;
+                        } else {
+                            truncated += text.substring(0, remaining) + '...';
+                            charCount = maxLength;
+                        }
+                    } else if (node.nodeType === 1) { // Element node
+                        const tag = node.tagName.toLowerCase();
+                        const attrs = Array.from(node.attributes)
+                            .map(attr => attr.name + '="' + attr.value + '"')
+                            .join(' ');
+                        
+                        truncated += '<' + tag + (attrs ? ' ' + attrs : '') + '>';
+                        
+                        for (let child of node.childNodes) {
+                            walkNodes(child);
+                            if (charCount >= maxLength) break;
+                        }
+                        
+                        truncated += '</' + tag + '>';
+                    }
+                }
+                
+                for (let child of tmp.childNodes) {
+                    walkNodes(child);
+                    if (charCount >= maxLength) break;
+                }
+                
+                return truncated;
+            }
+            
+            function displayPosts(posts) {
+                const container = document.getElementById('posts');
+                
+                if (!posts || posts.length === 0) {
+                    container.innerHTML = '<div class="error">No blog posts found.</div>';
+                    return;
+                }
+                
+                   // Filter for blog posts only (category_id === 11)
+                   const blogPosts = posts.filter(function(post) {
+                       return post.category_id === 11;
+                   });
+                   
+                   // Sort: featured posts first, then by date (newest first)
+                   const sortedPosts = blogPosts
+                       .sort(function(a, b) {
+                           // First, sort by featured status (featured = true comes first)
+                           if (a.is_featured && !b.is_featured) return -1;
+                           if (!a.is_featured && b.is_featured) return 1;
+                           // Then sort by date (newest first)
+                           return b.created_at - a.created_at;
+                       })
+                    .slice(0, 3);
+                
+                container.innerHTML = '';
+                sortedPosts.forEach(function(post) {
+                    const imageUrl = extractImage(post.description);
+                    const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
+                    const date = new Date(post.created_at).toLocaleDateString();
+                    const readMoreUrl = 'https://gleaming-cendol-417bf3.netlify.app/post/' + post.id;
+                    
+                    const postDiv = document.createElement('div');
+                    postDiv.className = 'post';
+                    
+                    if (imageUrl) {
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.alt = post.title || 'Post image';
+                        img.className = 'post-image';
+                        postDiv.appendChild(img);
+                    }
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'post-title';
+                    titleDiv.innerHTML = (post.title || 'Untitled') + featuredBadge;
+                    postDiv.appendChild(titleDiv);
+                    
+                    const metaDiv = document.createElement('div');
+                    metaDiv.className = 'post-meta';
+                    metaDiv.textContent = (post.submitted_by || 'Unknown') + ' • ' + date;
+                    postDiv.appendChild(metaDiv);
+                    
+                    const excerptDiv = document.createElement('div');
+                    excerptDiv.className = 'post-excerpt';
+                    excerptDiv.innerHTML = createExcerpt(post.description, 300);
+                    postDiv.appendChild(excerptDiv);
+                    
+                    const readMoreLink = document.createElement('a');
+                    readMoreLink.href = readMoreUrl;
+                    readMoreLink.className = 'read-more-btn';
+                    readMoreLink.target = '_blank';
+                    readMoreLink.textContent = 'Read More';
+                    postDiv.appendChild(readMoreLink);
+                    
+                    const clearDiv = document.createElement('div');
+                    clearDiv.style.clear = 'both';
+                    postDiv.appendChild(clearDiv);
+                    
+                    container.appendChild(postDiv);
+                });
+            }
+            
+            function loadPosts() {
+                const container = document.getElementById('posts');
+                
+                fetch(XANO_URL)
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(assets) {
+                        displayPosts(assets);
+                    })
+                    .catch(function(error) {
+                        console.error('Error loading posts:', error);
+                        container.innerHTML = '<div class="error">Error loading posts: ' + error.message + '</div>';
+                    });
+            }
+            
+            // Load posts when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadPosts);
+            } else {
+                loadPosts();
+            }
+        })();
+    </script>
+</body>
+</html>

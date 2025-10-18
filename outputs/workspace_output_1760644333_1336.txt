@@ -1,0 +1,30 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+const WorkingRichBlogEditor = ({ onSave, onCancel }) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [images, setImages] = useState([]);
+  const [selectedImageId, setSelectedImageId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const contentRef = useRef(null);
+
+  // Handle content change - FIXED to prevent backwards typing
+  const handleContentChange = (e) => {
+    // Store cursor position before updating state
+    const selection = window.getSelection();
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    const startOffset = range ? range.startOffset : 0;
+    const endOffset = range ? range.endOffset : 0;
+    const startContainer = range ? range.startContainer : null;
+    
+    // Update content state
+    setContent(e.target.innerHTML);
+    
+    // Restore cursor position after React re-render
+    setTimeout(() => {
+      if (startContainer && contentRef.current && contentRef.current.contains(startContainer)) {
+        try {
+          const newRange = document.createRange();
+          newRange.setStart(startContainer, Math.min(startOffset, startContainer.textContent?.length || 0));
+          newRange.setEnd(startContainer, Math.min(endOffset, startContainer.textContent?.length || 0));

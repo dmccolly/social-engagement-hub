@@ -1,0 +1,10 @@
+  const widgets = [
+    { id: 'blog', name: 'Blog Widget', icon: FileText, color: 'blue' },
+    { id: 'newsfeed', name: 'News Feed Widget', icon: MessageSquare, color: 'green' },
+    { id: 'calendar', name: 'Calendar Widget', icon: Calendar, color: 'orange' },
+    { id: 'socialhub', name: 'Social Hub Widget', icon: Sparkles, color: 'purple' }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">

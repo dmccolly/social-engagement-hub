@@ -1,0 +1,22 @@
+const EmailSection = ({ campaigns, setCampaigns }) => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
+    <p className="text-gray-600">Manage your email marketing campaigns.</p>
+  </div>
+);
+
+const AnalyticsSection = () => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+    <p className="text-gray-600">View detailed analytics and insights.</p>
+  </div>
+);
+
+const SettingsSection = () => (
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+    <p className="text-gray-600">Configure your platform settings.</p>
+  </div>
+);
+
+export default App;

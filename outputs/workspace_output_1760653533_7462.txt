@@ -1,0 +1,11 @@
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            blog: { ...prev.blog, showImages: e.target.checked }
+                          }))}
+                          className="rounded"
+                        />
+                        <span className="text-sm">Show Images</span>
+                      </label>
+                    </div>
+                  </>
+                )}

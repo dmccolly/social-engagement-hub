@@ -1,0 +1,17 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { 
+  Home, FileText, Mail, Users, Settings, Calendar, BarChart3, 
+  Plus, Edit, Trash2, Search, Bell, Upload, Send, Clock, 
+  CheckCircle, X, ChevronDown, MessageSquare, Heart, BookmarkPlus,
+  Image, Film, Music, Link, Bold, Italic, Underline, Type,
+  Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
+  Star, Sparkles, Crown, Copy, ExternalLink, Zap, TrendingUp,
+  UserPlus, Award, Target, Activity, Download, Play, Shield
+} from 'lucide-react';
+import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
+import { uploadImageWithDeduplication, getImageStats } from './services/imageDeduplicationService';
+import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost, deleteBlogPost } from './services/xanoService';
+
+// Email System Components (from your existing system)
+import EmailDashboard from './components/email/EmailDashboard';

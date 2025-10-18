@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .widget-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <h1>Blog Widget Test Page</h1>
+    
+    <div class="info">
+        <h2>Testing:</h2>
+        <ul>
+            <li>✅ Widget filters by category_id === 11 (blog posts only)</li>
+            <li>✅ Widget sorts featured posts first, then by date</li>
+            <li>✅ Widget preserves HTML formatting (bold, colors, fonts)</li>
+        </ul>
+        <p><strong>Expected order:</strong> Featured posts should appear first, followed by newest posts</p>
+    </div>
+    
+    <div class="widget-wrapper">
+        <iframe src="https://gleaming-cendol-417bf3.netlify.app/blog-widget-final.html" 
+                width="100%" 
+                height="800" 
+                frameborder="0"
+                style="border: none;">
+        </iframe>
+    </div>
+</body>
+</html>

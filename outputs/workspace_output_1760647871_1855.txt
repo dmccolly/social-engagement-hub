@@ -1,0 +1,100 @@
+// src/components/newsfeed/FacebookStyleNewsFeed.js
+// Enhanced newsfeed with Facebook-style UI + XANO backend integration
+
+import React, { useState, useEffect } from 'react';
+import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search, Image, Video, Smile, MapPin, X } from 'lucide-react';
+import { getNewsfeedPosts, createNewsfeedPost, toggleNewsfeedLike, getNewsfeedReplies, getNewsfeedAnalytics } from '../../services/newsfeedService';
+import { createVisitorSession } from '../../services/newsfeedService';
+
+const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
+  const [posts, setPosts] = useState([]);
+  const [replies, setReplies] = useState({});
+  const [newPost, setNewPost] = useState('');
+  const [replyText, setReplyText] = useState({});
+  const [showReplyForm, setShowReplyForm] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [visitorSession, setVisitorSession] = useState(null);
+  const [showVisitorForm, setShowVisitorForm] = useState(false);
+  const [visitorData, setVisitorData] = useState({ name: '', email: '' });
+  const [activeTab, setActiveTab] = useState('posts'); // posts, stories, live
+  const [analytics, setAnalytics] = useState(null);
+
+  // Load visitor session on mount
+  useEffect(() => {
+    loadVisitorSession();
+    loadPosts();
+    loadAnalytics();
+  }, []);
+
+  // Load visitor session
+  const loadVisitorSession = async () => {
+    try {
+      if (currentUser) {
+        setVisitorSession({
+          name: currentUser.name,
+          email: currentUser.email,
+          is_member: true,
+          member_id: currentUser.id
+        });
+      } else {
+        const savedSession = localStorage.getItem('visitor_session');
+        if (savedSession) {
+          setVisitorSession(JSON.parse(savedSession));
+        }
+      }
+    } catch (error) {
+      console.error('Load visitor session error:', error);
+    }
+  };
+
+  // Save visitor session
+  const saveVisitorSession = async (sessionData) => {
+    try {
+      const result = await createVisitorSession(sessionData);
+      
+      if (result.success) {
+        localStorage.setItem('visitor_session', JSON.stringify(result.session));
+        setVisitorSession(result.session);
+      }
+      return result;
+    } catch (error) {
+      console.error('Save visitor session error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Load posts from XANO
+  const loadPosts = async () => {
+    try {
+      setIsLoading(true);
+      
+      const filters = {
+        type: 'posts_only',
+        limit: 50,
+        visitor_email: visitorSession?.email
+      };
+      
+      const result = await getNewsfeedPosts(filters);
+      
+      if (result.success && result.posts) {
+        setPosts(result.posts);
+      }
+    } catch (error) {
+      console.error('Load posts error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load analytics
+  const loadAnalytics = async () => {
+    try {
+      const result = await getNewsfeedAnalytics('7d');
+      if (result.success) {
+        setAnalytics(result.analytics);
+      }
+    } catch (error) {
+      console.error('Load analytics error:', error);
+    }
+  };
