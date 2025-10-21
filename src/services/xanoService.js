@@ -52,6 +52,10 @@ export const createBlogPost = async (postData) => {
       submitted_by: postData.author || 'Blog Editor',
       tags: postData.tags || '',
       is_featured: postData.featured || false,
+      pinned: postData.pinned || false,
+      sort_order: postData.sort_order || 0,
+      is_scheduled: postData.is_scheduled || false,
+      scheduled_datetime: postData.scheduled_datetime || null,
         original_creation_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
         category_id: 11 // Blog Posts category
     };
@@ -110,6 +114,10 @@ export const updateBlogPost = async (postId, postData) => {
       submitted_by: postData.author || 'Blog Editor',
       tags: postData.tags || '',
       is_featured: postData.featured || false,
+      pinned: postData.pinned || false,
+      sort_order: postData.sort_order !== undefined ? postData.sort_order : 0,
+      is_scheduled: postData.is_scheduled || false,
+      scheduled_datetime: postData.scheduled_datetime || null,
         category_id: 11 // Blog Posts category
     };
 
@@ -199,13 +207,19 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
           created_at: asset.created_at,
           published_at: asset.created_at,
           featured: asset.is_featured || false,
+          pinned: asset.pinned || false,
+          sort_order: asset.sort_order || 0,
+          is_scheduled: asset.is_scheduled || false,
+          scheduled_datetime: asset.scheduled_datetime || null,
           status: 'published'
         };
       })
          .sort((a, b) => {
-           // Featured posts first, then sort by date
+           if (a.pinned && !b.pinned) return -1;
+           if (!a.pinned && b.pinned) return 1;
            if (a.featured && !b.featured) return -1;
            if (!a.featured && b.featured) return 1;
+           if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
            return new Date(b.created_at) - new Date(a.created_at);
          })
       .slice(offset, offset + limit);

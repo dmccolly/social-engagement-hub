@@ -683,6 +683,68 @@ const BlogSection = ({ posts, setPosts }) => {
     }
   };
 
+  const handleToggleFeature = async (post) => {
+    try {
+      const result = await updateBlogPost(post.id, {
+        ...post,
+        featured: !post.featured
+      });
+      if (result.success) {
+        setPosts(prev => prev.map(p => p.id === post.id ? result.post : p));
+      }
+    } catch (error) {
+      console.error('Failed to toggle feature:', error);
+    }
+  };
+
+  const handleTogglePin = async (post) => {
+    try {
+      const result = await updateBlogPost(post.id, {
+        ...post,
+        pinned: !post.pinned
+      });
+      if (result.success) {
+        setPosts(prev => prev.map(p => p.id === post.id ? result.post : p));
+      }
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
+  };
+
+  const handleMoveUp = async (post, index) => {
+    if (index === 0) return;
+    const newPosts = [...posts];
+    const temp = newPosts[index - 1];
+    newPosts[index - 1] = newPosts[index];
+    newPosts[index] = temp;
+    
+    // Update sort_order for both posts
+    try {
+      await updateBlogPost(newPosts[index - 1].id, { ...newPosts[index - 1], sort_order: index - 1 });
+      await updateBlogPost(newPosts[index].id, { ...newPosts[index], sort_order: index });
+      setPosts(newPosts);
+    } catch (error) {
+      console.error('Failed to reorder posts:', error);
+    }
+  };
+
+  const handleMoveDown = async (post, index) => {
+    if (index === posts.length - 1) return;
+    const newPosts = [...posts];
+    const temp = newPosts[index + 1];
+    newPosts[index + 1] = newPosts[index];
+    newPosts[index] = temp;
+    
+    // Update sort_order for both posts
+    try {
+      await updateBlogPost(newPosts[index + 1].id, { ...newPosts[index + 1], sort_order: index + 1 });
+      await updateBlogPost(newPosts[index].id, { ...newPosts[index], sort_order: index });
+      setPosts(newPosts);
+    } catch (error) {
+      console.error('Failed to reorder posts:', error);
+    }
+  };
+
   if (isCreating && WorkingEditor) {
     return (
       <WorkingEditor
@@ -722,7 +784,7 @@ const BlogSection = ({ posts, setPosts }) => {
               <p>No blog posts yet. Create your first post!</p>
             </div>
           ) : (
-            posts.map((post) => (
+            posts.map((post, index) => (
               <div key={post.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                 <div className="flex gap-4">
                   {post.featured_image && (
@@ -734,8 +796,20 @@ const BlogSection = ({ posts, setPosts }) => {
                   )}
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-lg mb-2">{post.title}</h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-gray-900 text-lg">{post.title}</h3>
+                          {post.pinned && (
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded flex items-center gap-1">
+                              📌 Pinned
+                            </span>
+                          )}
+                          {post.featured && (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded flex items-center gap-1">
+                              ⭐ Featured
+                            </span>
+                          )}
+                        </div>
                         <div 
                           className="text-sm text-gray-600 mb-3 line-clamp-2" 
                           dangerouslySetInnerHTML={{ __html: post.excerpt || post.content?.substring(0, 150) + '...' }} 
@@ -747,20 +821,56 @@ const BlogSection = ({ posts, setPosts }) => {
                             {post.status || 'draft'}
                           </span>
                         </div>
+                        <div className="flex items-center gap-2 mt-3">
+                          <button
+                            onClick={() => handleTogglePin(post)}
+                            className={`px-3 py-1 text-xs rounded ${post.pinned ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'} hover:bg-purple-200`}
+                            title={post.pinned ? 'Unpin from top' : 'Pin to top'}
+                          >
+                            📌 {post.pinned ? 'Unpin' : 'Pin'}
+                          </button>
+                          <button
+                            onClick={() => handleToggleFeature(post)}
+                            className={`px-3 py-1 text-xs rounded ${post.featured ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'} hover:bg-yellow-200`}
+                            title={post.featured ? 'Remove feature' : 'Feature this post'}
+                          >
+                            ⭐ {post.featured ? 'Unfeature' : 'Feature'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleMoveUp(post, index)}
+                            disabled={index === 0}
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <ChevronDown size={18} className="transform rotate-180" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveDown(post, index)}
+                            disabled={index === posts.length - 1}
+                            className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <ChevronDown size={18} />
+                          </button>
+                        </div>
                         <button
                           onClick={() => {
                             setEditingPost(post);
                             setIsCreating(true);
                           }}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Edit post"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDeletePost(post)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded"
+                          title="Delete post"
                         >
                           <Trash2 size={18} />
                         </button>
