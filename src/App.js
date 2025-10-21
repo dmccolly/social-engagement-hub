@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { uploadImageToCloudinary, uploadImageWithProgress } from './services/cloudinaryService';
 import { uploadImageWithDeduplication, getImageStats } from './services/imageDeduplicationService';
-import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost, deleteBlogPost } from './services/xanoService';
+import { createBlogPost, updateBlogPost, getPublishedPosts, publishBlogPost, deleteBlogPost, getBlogPost } from './services/xanoService';
 
 // Email System Components (from your existing system)
 import EmailDashboard from './components/email/EmailDashboard';
@@ -620,6 +620,7 @@ const App = () => {
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
             <Route path="/" element={renderContent()} />
+            <Route path="/post/:postId" element={<BlogPostView />} />
             <Route path="/admin/*" element={<AdminDashboard />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
@@ -636,6 +637,70 @@ const HomeSection = ({ posts }) => (
     <p className="text-gray-600">Your complete platform for community engagement and content management.</p>
   </div>
 );
+
+const BlogPostView = () => {
+  const { useParams } = require('react-router-dom');
+  const { postId } = useParams();
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadPost = async () => {
+      try {
+        setLoading(true);
+        const result = await getBlogPost(postId);
+        if (result.success && result.post) {
+          setPost(result.post);
+        } else {
+          setError('Post not found');
+        }
+      } catch (err) {
+        console.error('Error loading post:', err);
+        setError('Failed to load post');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPost();
+  }, [postId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-600">Loading post...</div>
+      </div>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Post Not Found</h2>
+        <p className="text-gray-600 mb-4">{error || 'The requested post does not exist.'}</p>
+        <a href="/" className="text-blue-600 hover:underline">← Back to Home</a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-8">
+      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+      <div className="text-gray-600 mb-6">
+        {post.author && <span>By {post.author}</span>}
+        {post.created_at && <span className="ml-4">{new Date(post.created_at).toLocaleDateString()}</span>}
+      </div>
+      <div 
+        className="prose max-w-none"
+        dangerouslySetInnerHTML={{ __html: post.content }}
+      />
+      <div className="mt-8 pt-6 border-t">
+        <a href="/" className="text-blue-600 hover:underline">← Back to Home</a>
+      </div>
+    </div>
+  );
+};
 
 const BlogSection = ({ posts, setPosts }) => {
   const [isCreating, setIsCreating] = useState(false);
@@ -663,6 +728,12 @@ const BlogSection = ({ posts, setPosts }) => {
           setPosts(prev => [result.post, ...prev]);
         }
       }
+      
+      const postsResult = await getPublishedPosts(10, 0);
+      if (postsResult.success && postsResult.posts) {
+        setPosts(postsResult.posts);
+      }
+      
       setIsCreating(false);
       setEditingPost(null);
     } catch (error) {
