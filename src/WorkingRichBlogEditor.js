@@ -25,11 +25,12 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
       setScheduleTime(editingPost.scheduled_time || '');
       setIsScheduled(editingPost.is_scheduled || false);
       
-      // Update the contentEditable div
-      if (contentRef.current && editingPost.content) {
-        contentRef.current.innerHTML = editingPost.content;
+      if (contentRef.current) {
+        contentRef.current.innerHTML = editingPost.content || '';
         attachImageListeners();
       }
+    } else if (contentRef.current && !contentRef.current.innerHTML) {
+      contentRef.current.innerHTML = '<p>Start writing your content... Click here and start typing.</p>';
     }
   }, [editingPost]);
 
@@ -52,37 +53,10 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
     }
   };
 
-  // Handle content change - FIXED to prevent backwards typing
-  const handleContentChange = (e) => {
-    // Store cursor position before updating state
-    const selection = window.getSelection();
-    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-    const startOffset = range ? range.startOffset : 0;
-    const endOffset = range ? range.endOffset : 0;
-    const startContainer = range ? range.startContainer : null;
-    
-    // Update content state
-    setContent(e.target.innerHTML);
-    
-    // Restore cursor position after React re-render
-    setTimeout(() => {
-      if (startContainer && contentRef.current && contentRef.current.contains(startContainer)) {
-        try {
-          const newRange = document.createRange();
-          newRange.setStart(startContainer, Math.min(startOffset, startContainer.textContent?.length || 0));
-          newRange.setEnd(startContainer, Math.min(endOffset, startContainer.textContent?.length || 0));
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } catch (e) {
-          // Fallback: place cursor at end
-          const newRange = document.createRange();
-          newRange.selectNodeContents(contentRef.current);
-          newRange.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        }
-      }
-    }, 0);
+  const handleContentChange = () => {
+    if (contentRef.current) {
+      setContent(contentRef.current.innerHTML);
+    }
   };
 
   // Handle file upload
@@ -320,7 +294,7 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
     }
   };
 
-  // Make functions globally available and attach image listeners on mount
+  // Make functions globally available and set initial content on mount
   useEffect(() => {
     window.selectImage = selectImage;
     window.resizeImage = resizeImage;
@@ -328,6 +302,9 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
     window.setSelectedImageId = setSelectedImageId;
     
     setTimeout(() => {
+      if (contentRef.current && !contentRef.current.innerHTML) {
+        contentRef.current.innerHTML = content || '<p>Start writing your content... Click here and start typing.</p>';
+      }
       attachImageListeners();
     }, 100);
   }, []);
@@ -892,8 +869,7 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
             className="content-editor"
             contentEditable
             suppressContentEditableWarning={true}
-            onInput={handleContentChange}
-            dangerouslySetInnerHTML={{ __html: content || '<p>Start writing your content... Click here and start typing.</p>' }}
+            onBlur={handleContentChange}
           />
         </div>
 
