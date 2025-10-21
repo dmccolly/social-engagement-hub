@@ -8,6 +8,20 @@ const BlogPostView = ({ posts }) => {
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const decodeHtmlEntities = (text) => {
+    if (!text) return text;
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    let decoded = textarea.value;
+    
+    if (decoded.includes('&lt;') || decoded.includes('&gt;') || decoded.includes('&quot;')) {
+      textarea.innerHTML = decoded;
+      decoded = textarea.value;
+    }
+    
+    return decoded;
+  };
+
   useEffect(() => {
     const loadPost = async () => {
       setIsLoading(true);
@@ -165,7 +179,7 @@ const BlogPostView = ({ posts }) => {
             {/* Post Content */}
             <div
               className="prose prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+              dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(post.content) }}
               style={{
                 lineHeight: '1.8',
                 fontSize: '18px',
