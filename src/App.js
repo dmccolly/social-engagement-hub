@@ -2,12 +2,12 @@
 // Resolves merge conflict and adds visitor registration, admin dashboard, security features
 
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { 
   Home, FileText, Mail, Users, Settings, Calendar, BarChart3, 
   Plus, Edit, Trash2, Search, Bell, Upload, Send, Clock, 
   CheckCircle, X, ChevronDown, MessageSquare, Heart, BookmarkPlus,
-  Image, Film, Music, Link, Bold, Italic, Underline, Type,
+  Image, Film, Music, Link as LinkIcon, Bold, Italic, Underline, Type,
   Palette, AlignLeft, AlignCenter, AlignRight, List, Eye,
   Star, Sparkles, Crown, Copy, ExternalLink, Zap, TrendingUp,
   UserPlus, Award, Target, Activity, Download, Play, Shield, Save, Radio
@@ -30,6 +30,7 @@ import AdminDashboardIntegration from './components/admin/AdminDashboardIntegrat
 import VisitorRegistrationForm from './components/newsfeed/VisitorRegistrationForm';
 import VisitorSecurityService from './services/security/visitorSecurityService';
 import WidgetPreview from './components/WidgetPreview';
+import BlogPostView from './components/BlogPostView';
 
 // Enhanced Blog Widget with Rich Magazine-Style Output
 const StandaloneBlogWidget = () => {
@@ -202,9 +203,9 @@ const StandaloneBlogWidget = () => {
                     <span className="text-sm font-medium text-gray-700">{post.author}</span>
                   </div>
                   
-                  <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                  <Link to={`/post/${post.id}`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                     Read More →
-                  </button>
+                  </Link>
                 </div>
               </div>
             </article>
@@ -276,9 +277,9 @@ const StandaloneBlogWidget = () => {
                   <span className="text-sm font-medium text-gray-700">{post.author}</span>
                 </div>
                 
-                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                <Link to={`/post/${post.id}`} className="text-blue-600 hover:text-blue-700 font-medium text-sm">
                   Read More →
-                </button>
+                </Link>
               </div>
             </article>
           ))}
@@ -620,7 +621,7 @@ const App = () => {
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
             <Route path="/" element={renderContent()} />
-            <Route path="/post/:postId" element={<BlogPostView />} />
+            <Route path="/post/:id" element={<BlogPostView posts={posts} />} />
             <Route path="/admin/*" element={<AdminDashboard />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
@@ -638,74 +639,11 @@ const HomeSection = ({ posts }) => (
   </div>
 );
 
-const BlogPostView = () => {
-  const { useParams } = require('react-router-dom');
-  const { postId } = useParams();
-  const [post, setPost] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const loadPost = async () => {
-      try {
-        setLoading(true);
-        const result = await getBlogPost(postId);
-        if (result.success && result.post) {
-          setPost(result.post);
-        } else {
-          setError('Post not found');
-        }
-      } catch (err) {
-        console.error('Error loading post:', err);
-        setError('Failed to load post');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPost();
-  }, [postId]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading post...</div>
-      </div>
-    );
-  }
-
-  if (error || !post) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Post Not Found</h2>
-        <p className="text-gray-600 mb-4">{error || 'The requested post does not exist.'}</p>
-        <a href="/" className="text-blue-600 hover:underline">← Back to Home</a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-lg shadow p-8">
-      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-      <div className="text-gray-600 mb-6">
-        {post.author && <span>By {post.author}</span>}
-        {post.created_at && <span className="ml-4">{new Date(post.created_at).toLocaleDateString()}</span>}
-      </div>
-      <div 
-        className="prose max-w-none"
-        dangerouslySetInnerHTML={{ __html: post.content }}
-      />
-      <div className="mt-8 pt-6 border-t">
-        <a href="/" className="text-blue-600 hover:underline">← Back to Home</a>
-      </div>
-    </div>
-  );
-};
-
 const BlogSection = ({ posts, setPosts }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [WorkingEditor, setWorkingEditor] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     import('./WorkingRichBlogEditor').then(module => {
@@ -714,18 +652,26 @@ const BlogSection = ({ posts, setPosts }) => {
   }, []);
 
   const handleSavePost = async (postData) => {
+    setIsSaving(true);
     try {
       if (editingPost) {
         // Update existing post
         const result = await updateBlogPost(editingPost.id, postData);
         if (result.success) {
           setPosts(prev => prev.map(p => p.id === editingPost.id ? result.post : p));
+          setEditingPost(null);
+          setIsCreating(false);
+        } else {
+          alert('Failed to update post. Please try again.');
         }
       } else {
         // Create new post
         const result = await createBlogPost(postData);
         if (result.success) {
           setPosts(prev => [result.post, ...prev]);
+          setIsCreating(false);
+        } else {
+          alert('Failed to create post. Please try again.');
         }
       }
       
@@ -738,6 +684,9 @@ const BlogSection = ({ posts, setPosts }) => {
       setEditingPost(null);
     } catch (error) {
       console.error('Failed to save post:', error);
+      alert('An error occurred while saving. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -825,6 +774,7 @@ const BlogSection = ({ posts, setPosts }) => {
           setIsCreating(false);
           setEditingPost(null);
         }}
+        isSaving={isSaving}
       />
     );
   }
