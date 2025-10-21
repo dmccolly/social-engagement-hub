@@ -195,6 +195,40 @@ const BlogPostView = ({ posts }) => {
           margin: 1.5rem 0;
         }
         
+        .prose img.size-small {
+          width: 200px;
+        }
+        
+        .prose img.size-medium {
+          width: 400px;
+        }
+        
+        .prose img.size-large {
+          width: 600px;
+        }
+        
+        .prose img.size-full {
+          width: 100%;
+        }
+        
+        .prose img.position-left {
+          float: left;
+          margin: 0 15px 15px 0;
+          clear: left;
+        }
+        
+        .prose img.position-right {
+          float: right;
+          margin: 0 0 15px 15px;
+          clear: right;
+        }
+        
+        .prose img.position-center {
+          display: block;
+          margin: 15px auto;
+          float: none;
+        }
+        
         .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
           margin-top: 2rem;
           margin-bottom: 1rem;
