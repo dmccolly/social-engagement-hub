@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
+const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
   const [title, setTitle] = useState(editingPost?.title || '');
   const [content, setContent] = useState(editingPost?.content || '');
   const [images, setImages] = useState([]);
@@ -883,10 +883,10 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
       </div>
 
       <div className="actions">
-        <button className="save-btn" onClick={handleSave}>
-          Save Post
+        <button className="save-btn" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save Post'}
         </button>
-        <button className="cancel-btn" onClick={onCancel}>
+        <button className="cancel-btn" onClick={onCancel} disabled={isSaving}>
           Cancel
         </button>
       </div>
