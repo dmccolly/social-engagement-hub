@@ -12,7 +12,14 @@ const BlogPostView = ({ posts }) => {
     if (!text) return text;
     const textarea = document.createElement('textarea');
     textarea.innerHTML = text;
-    return textarea.value;
+    let decoded = textarea.value;
+    
+    if (decoded.includes('&lt;') || decoded.includes('&gt;') || decoded.includes('&quot;')) {
+      textarea.innerHTML = decoded;
+      decoded = textarea.value;
+    }
+    
+    return decoded;
   };
 
   useEffect(() => {
