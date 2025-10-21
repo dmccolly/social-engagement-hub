@@ -28,9 +28,29 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
       // Update the contentEditable div
       if (contentRef.current && editingPost.content) {
         contentRef.current.innerHTML = editingPost.content;
+        attachImageListeners();
       }
     }
   }, [editingPost]);
+
+  const attachImageListeners = () => {
+    if (contentRef.current) {
+      const images = contentRef.current.querySelectorAll('img');
+      images.forEach((img, index) => {
+        if (!img.id) {
+          img.id = `img-${Date.now()}-${index}`;
+        }
+        
+        img.style.cursor = 'pointer';
+        
+        img.onclick = (e) => {
+          e.preventDefault();
+          const imageId = img.id.replace('img-', '');
+          selectImage(imageId);
+        };
+      });
+    }
+  };
 
   // Handle content change - FIXED to prevent backwards typing
   const handleContentChange = (e) => {
@@ -97,11 +117,10 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
         };
         
         setImages(prev => [...prev, newImage]);
-        insertImageIntoContent(newImage);
         
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+        setTimeout(() => {
+          insertImageIntoContent(newImage);
+        }, 50);
       } else {
         alert('Upload failed. Please try again.');
       }
@@ -110,6 +129,9 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
       alert('Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -298,12 +320,16 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
     }
   };
 
-  // Make functions globally available
+  // Make functions globally available and attach image listeners on mount
   useEffect(() => {
     window.selectImage = selectImage;
     window.resizeImage = resizeImage;
     window.positionImage = positionImage;
     window.setSelectedImageId = setSelectedImageId;
+    
+    setTimeout(() => {
+      attachImageListeners();
+    }, 100);
   }, []);
 
   const handleSave = () => {
