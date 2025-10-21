@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const WorkingRichBlogEditor = ({ onSave, onCancel }) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
+  const [title, setTitle] = useState(editingPost?.title || '');
+  const [content, setContent] = useState(editingPost?.content || '');
   const [images, setImages] = useState([]);
   const [selectedImageId, setSelectedImageId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isFeatured, setIsFeatured] = useState(editingPost?.featured || false);
+  const [isPinned, setIsPinned] = useState(editingPost?.pinned || false);
   const fileInputRef = useRef(null);
   const contentRef = useRef(null);
 
@@ -287,7 +289,8 @@ const WorkingRichBlogEditor = ({ onSave, onCancel }) => {
     onSave?.({
       title,
       content: contentRef.current?.innerHTML || content,
-      isFeatured: false
+      featured: isFeatured,
+      pinned: isPinned
     });
   };
 
@@ -625,7 +628,33 @@ const WorkingRichBlogEditor = ({ onSave, onCancel }) => {
             placeholder="Enter post title..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            style={{ fontWeight: 'bold', fontSize: '18px' }}
           />
+
+          {/* Post Options Section */}
+          <div className="section">
+            <h3 className="section-title">⚙️ Post Options</h3>
+            <div className="controls">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: '500' }}>⭐ Feature this post (show first)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginLeft: '20px' }}>
+                <input
+                  type="checkbox"
+                  checked={isPinned}
+                  onChange={(e) => setIsPinned(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: '500' }}>📌 Pin to top</span>
+              </label>
+            </div>
+          </div>
 
           {/* Text Formatting Section */}
           <div className="section">
