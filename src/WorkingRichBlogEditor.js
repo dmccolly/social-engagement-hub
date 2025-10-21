@@ -8,8 +8,29 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isFeatured, setIsFeatured] = useState(editingPost?.featured || false);
   const [isPinned, setIsPinned] = useState(editingPost?.pinned || false);
+  const [scheduleDate, setScheduleDate] = useState(editingPost?.scheduled_date || '');
+  const [scheduleTime, setScheduleTime] = useState(editingPost?.scheduled_time || '');
+  const [isScheduled, setIsScheduled] = useState(editingPost?.is_scheduled || false);
   const fileInputRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Update content when editingPost changes
+  useEffect(() => {
+    if (editingPost) {
+      setTitle(editingPost.title || '');
+      setContent(editingPost.content || '');
+      setIsFeatured(editingPost.featured || false);
+      setIsPinned(editingPost.pinned || false);
+      setScheduleDate(editingPost.scheduled_date || '');
+      setScheduleTime(editingPost.scheduled_time || '');
+      setIsScheduled(editingPost.is_scheduled || false);
+      
+      // Update the contentEditable div
+      if (contentRef.current && editingPost.content) {
+        contentRef.current.innerHTML = editingPost.content;
+      }
+    }
+  }, [editingPost]);
 
   // Handle content change - FIXED to prevent backwards typing
   const handleContentChange = (e) => {
@@ -286,12 +307,21 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
   }, []);
 
   const handleSave = () => {
-    onSave?.({
+    const postData = {
       title,
       content: contentRef.current?.innerHTML || content,
       featured: isFeatured,
-      pinned: isPinned
-    });
+      pinned: isPinned,
+      is_scheduled: isScheduled,
+      scheduled_date: isScheduled ? scheduleDate : null,
+      scheduled_time: isScheduled ? scheduleTime : null
+    };
+    
+    if (isScheduled && scheduleDate && scheduleTime) {
+      postData.scheduled_datetime = `${scheduleDate}T${scheduleTime}:00`;
+    }
+    
+    onSave?.(postData);
   };
 
   return (
@@ -653,6 +683,56 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost }) => {
                 />
                 <span style={{ fontWeight: '500' }}>📌 Pin to top</span>
               </label>
+            </div>
+          </div>
+
+          {/* Scheduling Section */}
+          <div className="section">
+            <h3 className="section-title">📅 Schedule Post</h3>
+            <div className="controls" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '10px' }}>
+                <input
+                  type="checkbox"
+                  checked={isScheduled}
+                  onChange={(e) => setIsScheduled(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: '500' }}>Schedule this post for later</span>
+              </label>
+              {isScheduled && (
+                <div style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1', minWidth: '200px' }}>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '5px' }}>
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="input"
+                      style={{ width: '100%' }}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div style={{ flex: '1', minWidth: '150px' }}>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '5px' }}>
+                      Time
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                      className="input"
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+              )}
+              {isScheduled && scheduleDate && scheduleTime && (
+                <div style={{ marginTop: '10px', padding: '10px', background: '#e3f2fd', borderRadius: '4px', fontSize: '14px' }}>
+                  📅 Post will be published on {new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}
+                </div>
+              )}
             </div>
           </div>
 

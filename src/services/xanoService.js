@@ -54,6 +54,8 @@ export const createBlogPost = async (postData) => {
       is_featured: postData.featured || false,
       pinned: postData.pinned || false,
       sort_order: postData.sort_order || 0,
+      is_scheduled: postData.is_scheduled || false,
+      scheduled_datetime: postData.scheduled_datetime || null,
         original_creation_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
         category_id: 11 // Blog Posts category
     };
@@ -114,6 +116,8 @@ export const updateBlogPost = async (postId, postData) => {
       is_featured: postData.featured || false,
       pinned: postData.pinned || false,
       sort_order: postData.sort_order !== undefined ? postData.sort_order : 0,
+      is_scheduled: postData.is_scheduled || false,
+      scheduled_datetime: postData.scheduled_datetime || null,
         category_id: 11 // Blog Posts category
     };
 
@@ -205,6 +209,8 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
           featured: asset.is_featured || false,
           pinned: asset.pinned || false,
           sort_order: asset.sort_order || 0,
+          is_scheduled: asset.is_scheduled || false,
+          scheduled_datetime: asset.scheduled_datetime || null,
           status: 'published'
         };
       })
