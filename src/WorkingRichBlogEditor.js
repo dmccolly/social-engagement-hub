@@ -635,8 +635,44 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
         }
         
         .preview-content img {
+          max-width: 100%;
+          height: auto;
           border-radius: 8px;
           transition: all 0.2s ease;
+        }
+        
+        .preview-content img.size-small {
+          width: 200px;
+        }
+        
+        .preview-content img.size-medium {
+          width: 400px;
+        }
+        
+        .preview-content img.size-large {
+          width: 600px;
+        }
+        
+        .preview-content img.size-full {
+          width: 100%;
+        }
+        
+        .preview-content img.position-left {
+          float: left;
+          margin: 0 15px 15px 0;
+          clear: left;
+        }
+        
+        .preview-content img.position-right {
+          float: right;
+          margin: 0 0 15px 15px;
+          clear: right;
+        }
+        
+        .preview-content img.position-center {
+          display: block;
+          margin: 15px auto;
+          float: none;
         }
         
         @media (max-width: 768px) {
