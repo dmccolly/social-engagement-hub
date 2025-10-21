@@ -1,5 +1,5 @@
 [build]
-  command = "rm -rf node_modules/.cache && npm run build"
+  command = "rm -rf build && npm run build"
   publish = "build"
 
 [build.environment]
