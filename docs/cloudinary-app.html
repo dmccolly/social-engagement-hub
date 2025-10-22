@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOIBF Cloudinary Assets</title>
+    <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f9fafb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #111827;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .assets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .asset-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .asset-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .asset-info {
+            padding: 12px;
+        }
+        .copy-btn {
+            width: 100%;
+            padding: 8px;
+            background: #111827;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ HOIBF Cloudinary Assets</h1>
+        <button onclick="openCloudinary()">📤 Upload / Browse Cloudinary</button>
+        <div id="assets" class="assets-grid"></div>
+    </div>
+
+    <script>
+        const CLOUD_NAME = 'dzrw8nopf';
+        const UPLOAD_PRESET = 'HIBF_MASTER';
+        
+        function openCloudinary() {
+            const widget = cloudinary.createUploadWidget({
+                cloudName: CLOUD_NAME,
+                uploadPreset: UPLOAD_PRESET,
+                sources: ['local', 'url', 'camera', 'google_drive', 'dropbox'],
+                multiple: true,
+                folder: 'webflow-assets'
+            }, (error, result) => {
+                if (error) {
+                    console.error('Upload error:', error);
+                    return;
+                }
+                
+                if (result && result.event === 'success') {
+                    const url = result.info.secure_url;
+                    addAssetToGrid(url, result.info.public_id);
+                    
+                    // Send to parent window (Webflow)
+                    window.parent.postMessage({
+                        type: 'cloudinary-asset-selected',
+                        url: url,
+                        publicId: result.info.public_id
+                    }, '*');
+                }
+            });
+            
+            widget.open();
+        }
+        
+        function addAssetToGrid(url, publicId) {
+            const grid = document.getElementById('assets');
+            const card = document.createElement('div');
+            card.className = 'asset-card';
+            card.innerHTML = `
+                <img src="${url}" class="asset-image" alt="${publicId}">
+                <div class="asset-info">
+                    <button class="copy-btn" onclick="copyUrl('${url}')">📋 Copy URL</button>
+                </div>
+            `;
+            grid.insertBefore(card, grid.firstChild);
+        }
+        
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url);
+            alert('✅ URL copied to clipboard!');
+        }
+    </script>
+</body>
+</html>
