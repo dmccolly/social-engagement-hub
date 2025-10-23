@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIcon, Link as LinkIcon, Sparkles } from 'lucide-react';
 import BlogToEmailConverter from './BlogToEmailConverter';
+import NewsletterBuilder from './NewsletterBuilder';
 
 const EmailMarketingSystem = () => {
   const [campaigns, setCampaigns] = useState([
@@ -18,6 +19,7 @@ const EmailMarketingSystem = () => {
   const [currentCampaign, setCurrentCampaign] = useState(null);
   const [emailBlocks, setEmailBlocks] = useState([]);
   const [showBlogConverter, setShowBlogConverter] = useState(false);
+  const [showNewsletterBuilder, setShowNewsletterBuilder] = useState(false);
 
   const createNewCampaign = () => {
     const newCampaign = { id: Date.now(), name: "New Campaign", subject: "", status: "draft", fromName: "", fromEmail: "", stats: { sent: 0, opened: 0, clicked: 0 } };
@@ -30,6 +32,13 @@ const EmailMarketingSystem = () => {
     setCurrentCampaign({ id: Date.now(), ...campaignData, status: "draft", stats: { sent: 0, opened: 0, clicked: 0 } });
     setEmailBlocks(campaignData.blocks || []);
     setShowBlogConverter(false);
+    setActiveView('builder');
+  };
+
+  const handleNewsletterCreate = (newsletterData) => {
+    setCurrentCampaign({ id: Date.now(), ...newsletterData, status: "draft", stats: { sent: 0, opened: 0, clicked: 0 } });
+    setEmailBlocks(newsletterData.blocks || []);
+    setShowNewsletterBuilder(false);
     setActiveView('builder');
   };
 
@@ -121,6 +130,7 @@ const EmailMarketingSystem = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Email Campaigns</h2>
         <div className="flex gap-3">
+          <button onClick={() => setShowNewsletterBuilder(true)} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"><Mail size={20} />Create Newsletter</button>
           <button onClick={() => setShowBlogConverter(true)} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"><FileText size={20} />Blog to Email</button>
           <button onClick={createNewCampaign} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"><Plus size={20} />New Campaign</button>
         </div>
@@ -231,6 +241,11 @@ const EmailMarketingSystem = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {showNewsletterBuilder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <NewsletterBuilder onCreateNewsletter={handleNewsletterCreate} onCancel={() => setShowNewsletterBuilder(false)} />
+        </div>
+      )}
       {showBlogConverter && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <BlogToEmailConverter onConvert={handleBlogToEmail} onCancel={() => setShowBlogConverter(false)} />
