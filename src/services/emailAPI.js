@@ -1,18 +1,113 @@
 const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
-// Campaign API
+// LocalStorage helper for campaigns
+const localStorageHelper = {
+  STORAGE_KEY: 'email_campaigns_local',
+  
+  getAll() {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error reading from localStorage:', error);
+      return [];
+    }
+  },
+  
+  save(campaigns) {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(campaigns));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  },
+  
+  create(campaign) {
+    const campaigns = this.getAll();
+    const newCampaign = {
+      ...campaign,
+      id: Date.now(), // Use timestamp as ID
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    campaigns.push(newCampaign);
+    this.save(campaigns);
+    return newCampaign;
+  },
+  
+  update(id, updates) {
+    const campaigns = this.getAll();
+    const index = campaigns.findIndex(c => c.id === id);
+    if (index === -1) throw new Error('Campaign not found');
+    
+    campaigns[index] = {
+      ...campaigns[index],
+      ...updates,
+      id, // Preserve original ID
+      updated_at: new Date().toISOString()
+    };
+    this.save(campaigns);
+    return campaigns[index];
+  },
+  
+  delete(id) {
+    const campaigns = this.getAll();
+    const filtered = campaigns.filter(c => c.id !== id);
+    this.save(filtered);
+    return { success: true };
+  }
+};
+
+// Campaign API with localStorage fallback
 export const campaignAPI = {
   async getAll() {
-    const response = await fetch(`${XANO_BASE_URL}/email_campaigns`);
-    if (!response.ok) throw new Error('Failed to fetch campaigns');
-    return response.json();
+    try {
+      const response = await fetch(`${XANO_BASE_URL}/email_campaigns`);
+      if (!response.ok) {
+        // If Xano fails, use localStorage
+        console.warn('Xano unavailable, using localStorage for campaigns');
+        return localStorageHelper.getAll();
+      }
+      return response.json();
+    } catch (error) {
+      console.warn('Xano unavailable, using localStorage for campaigns:', error.message);
+      return localStorageHelper.getAll();
+    }
   },
 
   async create(campaign) {
-    const response = await fetch(`${XANO_BASE_URL}/email_campaigns`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const response = await fetch(`${XANO_BASE_URL}/email_campaigns`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: campaign.name,
+          subject: campaign.subject,
+          from_name: campaign.fromName,
+          from_email: campaign.fromEmail,
+          html_content: campaign.htmlContent || '',
+          blocks: JSON.stringify(campaign.blocks || []),
+          status: campaign.status || 'draft',
+          scheduled_at: campaign.scheduledAt || null
+        })
+      });
+      if (!response.ok) {
+        console.warn('Xano unavailable, using localStorage for campaign creation');
+        return localStorageHelper.create({
+          name: campaign.name,
+          subject: campaign.subject,
+          from_name: campaign.fromName,
+          from_email: campaign.fromEmail,
+          html_content: campaign.htmlContent || '',
+          blocks: JSON.stringify(campaign.blocks || []),
+          status: campaign.status || 'draft',
+          scheduled_at: campaign.scheduledAt || null
+        });
+      }
+      return response.json();
+    } catch (error) {
+      console.warn('Xano unavailable, using localStorage for campaign creation:', error.message);
+      return localStorageHelper.create({
         name: campaign.name,
         subject: campaign.subject,
         from_name: campaign.fromName,
@@ -21,17 +116,43 @@ export const campaignAPI = {
         blocks: JSON.stringify(campaign.blocks || []),
         status: campaign.status || 'draft',
         scheduled_at: campaign.scheduledAt || null
-      })
-    });
-    if (!response.ok) throw new Error('Failed to create campaign');
-    return response.json();
+      });
+    }
   },
 
   async update(id, campaign) {
-    const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: campaign.name,
+          subject: campaign.subject,
+          from_name: campaign.fromName,
+          from_email: campaign.fromEmail,
+          html_content: campaign.htmlContent || '',
+          blocks: JSON.stringify(campaign.blocks || []),
+          status: campaign.status,
+          scheduled_at: campaign.scheduledAt || null
+        })
+      });
+      if (!response.ok) {
+        console.warn('Xano unavailable, using localStorage for campaign update');
+        return localStorageHelper.update(id, {
+          name: campaign.name,
+          subject: campaign.subject,
+          from_name: campaign.fromName,
+          from_email: campaign.fromEmail,
+          html_content: campaign.htmlContent || '',
+          blocks: JSON.stringify(campaign.blocks || []),
+          status: campaign.status,
+          scheduled_at: campaign.scheduledAt || null
+        });
+      }
+      return response.json();
+    } catch (error) {
+      console.warn('Xano unavailable, using localStorage for campaign update:', error.message);
+      return localStorageHelper.update(id, {
         name: campaign.name,
         subject: campaign.subject,
         from_name: campaign.fromName,
@@ -40,18 +161,24 @@ export const campaignAPI = {
         blocks: JSON.stringify(campaign.blocks || []),
         status: campaign.status,
         scheduled_at: campaign.scheduledAt || null
-      })
-    });
-    if (!response.ok) throw new Error('Failed to update campaign');
-    return response.json();
+      });
+    }
   },
 
   async delete(id) {
-    const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) throw new Error('Failed to delete campaign');
-    return response.json();
+    try {
+      const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        console.warn('Xano unavailable, using localStorage for campaign deletion');
+        return localStorageHelper.delete(id);
+      }
+      return response.json();
+    } catch (error) {
+      console.warn('Xano unavailable, using localStorage for campaign deletion:', error.message);
+      return localStorageHelper.delete(id);
+    }
   }
 };
 
