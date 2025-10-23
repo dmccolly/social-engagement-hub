@@ -142,29 +142,52 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     for (let i = 0; i < recipients.length; i += batchSize) {
       const batch = recipients.slice(i, i + batchSize);
 
-      // Prepare messages for this batch
-      const messages = batch.map(recipient => ({
-        to: recipient.email,
-        from: {
-          email: campaignData.from_email,
-          name: campaignData.from_name
-        },
-        reply_to: campaignData.reply_to || campaignData.from_email,
-        subject: campaignData.subject,
-        html: addUnsubscribeLink(
-          injectTrackingPixel(campaignData.html_content, recipient.tracking_token),
-          recipient.email
-        ),
-        text: campaignData.plain_text_content || stripHtml(campaignData.html_content),
-        tracking_settings: {
-          click_tracking: { enable: true },
-          open_tracking: { enable: true }
-        },
-        custom_args: {
-          campaign_id: campaign_id.toString(),
-          recipient_id: recipient.id.toString(),
-          tracking_token: recipient.tracking_token
+      // Prepare messages for this batch with personalization
+      const messages = await Promise.all(batch.map(async (recipient) => {
+        // Fetch contact data for variable replacement
+        let contactData: any = {};
+        try {
+          const contactResponse = await fetch(
+            `${XANO_BASE_URL}/email_contacts/${recipient.contact_id}`
+          );
+          if (contactResponse.ok) {
+            contactData = await contactResponse.json();
+          }
+        } catch (error) {
+          console.error(`Failed to fetch contact data for ${recipient.email}:`, error);
         }
+
+        // Replace variables in content
+        const personalizedSubject = replaceVariables(campaignData.subject, contactData);
+        const personalizedHtml = replaceVariables(campaignData.html_content, contactData);
+        const personalizedText = replaceVariables(
+          campaignData.plain_text_content || stripHtml(campaignData.html_content),
+          contactData
+        );
+
+        return {
+          to: recipient.email,
+          from: {
+            email: campaignData.from_email,
+            name: campaignData.from_name
+          },
+          reply_to: campaignData.reply_to || campaignData.from_email,
+          subject: personalizedSubject,
+          html: addUnsubscribeLink(
+            injectTrackingPixel(personalizedHtml, recipient.tracking_token),
+            recipient.email
+          ),
+          text: personalizedText,
+          tracking_settings: {
+            click_tracking: { enable: true },
+            open_tracking: { enable: true }
+          },
+          custom_args: {
+            campaign_id: campaign_id.toString(),
+            recipient_id: recipient.id.toString(),
+            tracking_token: recipient.tracking_token
+          }
+        };
       }));
 
       try {
@@ -292,6 +315,47 @@ function injectTrackingPixel(html: string, token: string): string {
   } else {
     return html + trackingPixel;
   }
+}
+
+// Helper function to replace variables with contact data
+function replaceVariables(text: string, contact: any): string {
+  if (!text || typeof text !== 'string') return text;
+  
+  // Default fallbacks
+  const fallbacks: Record<string, string> = {
+    first_name: 'there',
+    last_name: '',
+    full_name: 'valued customer',
+    email: '',
+    phone: '',
+    company: 'your company',
+    job_title: '',
+    industry: '',
+    city: '',
+    state: '',
+    country: '',
+    zip_code: '',
+    created_at: '',
+    last_contacted: '',
+    member_type: 'member',
+    status: '',
+    custom_field_1: '',
+    custom_field_2: '',
+    custom_field_3: ''
+  };
+
+  // Replace all variables in the format {{variable_name}}
+  return text.replace(/\{\{([^}]+)\}\}/g, (match, variableName) => {
+    const trimmedName = variableName.trim();
+    
+    // Check if contact has this field
+    if (contact && contact[trimmedName] !== undefined && contact[trimmedName] !== null && contact[trimmedName] !== '') {
+      return contact[trimmedName];
+    }
+    
+    // Use fallback value
+    return fallbacks[trimmedName] || match;
+  });
 }
 
 // Helper function to add unsubscribe link to email footer

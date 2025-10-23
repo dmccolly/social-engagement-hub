@@ -7,6 +7,7 @@ import {
   Type, Palette, Link as LinkIcon, Image as ImageIcon,
   ChevronUp, ChevronDown, Trash2, Settings
 } from 'lucide-react';
+import VariablePicker from './VariablePicker';
 
 const EnhancedEmailBlockEditor = ({ block, onUpdate, onDelete, onMove }) => {
   const [showStylePanel, setShowStylePanel] = useState(false);
@@ -167,25 +168,50 @@ const EnhancedEmailBlockEditor = ({ block, onUpdate, onDelete, onMove }) => {
         )}
 
         {/* Text Input */}
-        <textarea
-          value={text || ''}
-          onChange={(e) => onUpdate(block.id, { ...block.content, text: e.target.value })}
-          className="w-full p-3 border rounded-lg"
-          rows="6"
-          placeholder="Enter your text content..."
-          style={{
-            fontSize: `${fontSize || 16}px`,
-            fontFamily: fontFamily || 'Arial',
-            color: color || '#000000',
-            backgroundColor: backgroundColor || '#ffffff',
-            textAlign: alignment || 'left',
-            fontWeight: bold ? 'bold' : 'normal',
-            fontStyle: italic ? 'italic' : 'normal',
-            textDecoration: underline ? 'underline' : 'none',
-            lineHeight: lineHeight || '1.5',
-            padding: `${block.content.padding || 10}px`
-          }}
-        />
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-gray-700">Content</label>
+            <VariablePicker 
+              onInsertVariable={(variable) => {
+                const textarea = document.getElementById(`text-${block.id}`);
+                if (textarea) {
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const currentText = text || '';
+                  const newText = currentText.substring(0, start) + variable + currentText.substring(end);
+                  onUpdate(block.id, { ...block.content, text: newText });
+                  // Set cursor position after variable
+                  setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + variable.length, start + variable.length);
+                  }, 0);
+                }
+              }}
+              compact={true}
+              buttonText="+ Variable"
+            />
+          </div>
+          <textarea
+            id={`text-${block.id}`}
+            value={text || ''}
+            onChange={(e) => onUpdate(block.id, { ...block.content, text: e.target.value })}
+            className="w-full p-3 border rounded-lg"
+            rows="6"
+            placeholder="Enter your text content... Use + Variable to add personalization"
+            style={{
+              fontSize: `${fontSize || 16}px`,
+              fontFamily: fontFamily || 'Arial',
+              color: color || '#000000',
+              backgroundColor: backgroundColor || '#ffffff',
+              textAlign: alignment || 'left',
+              fontWeight: bold ? 'bold' : 'normal',
+              fontStyle: italic ? 'italic' : 'normal',
+              textDecoration: underline ? 'underline' : 'none',
+              lineHeight: lineHeight || '1.5',
+              padding: `${block.content.padding || 10}px`
+            }}
+          />
+        </div>
       </div>
     );
   };
@@ -251,19 +277,43 @@ const EnhancedEmailBlockEditor = ({ block, onUpdate, onDelete, onMove }) => {
           </div>
         </div>
 
-        <input
-          type="text"
-          value={text || ''}
-          onChange={(e) => onUpdate(block.id, { ...block.content, text: e.target.value })}
-          className="w-full p-3 border rounded-lg font-bold"
-          placeholder="Enter heading text..."
-          style={{
-            fontSize: level === '1' ? '32px' : level === '2' ? '28px' : level === '3' ? '24px' : '20px',
-            fontFamily: fontFamily || 'Arial',
-            color: color || '#000000',
-            textAlign: alignment || 'left'
-          }}
-        />
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-gray-700">Heading Text</label>
+            <VariablePicker 
+              onInsertVariable={(variable) => {
+                const input = document.getElementById(`heading-${block.id}`);
+                if (input) {
+                  const start = input.selectionStart;
+                  const end = input.selectionEnd;
+                  const currentText = text || '';
+                  const newText = currentText.substring(0, start) + variable + currentText.substring(end);
+                  onUpdate(block.id, { ...block.content, text: newText });
+                  setTimeout(() => {
+                    input.focus();
+                    input.setSelectionRange(start + variable.length, start + variable.length);
+                  }, 0);
+                }
+              }}
+              compact={true}
+              buttonText="+ Variable"
+            />
+          </div>
+          <input
+            id={`heading-${block.id}`}
+            type="text"
+            value={text || ''}
+            onChange={(e) => onUpdate(block.id, { ...block.content, text: e.target.value })}
+            className="w-full p-3 border rounded-lg font-bold"
+            placeholder="Enter heading text... Use + Variable to personalize"
+            style={{
+              fontSize: level === '1' ? '32px' : level === '2' ? '28px' : level === '3' ? '24px' : '20px',
+              fontFamily: fontFamily || 'Arial',
+              color: color || '#000000',
+              textAlign: alignment || 'left'
+            }}
+          />
+        </div>
       </div>
     );
   };
@@ -399,10 +449,31 @@ const EnhancedEmailBlockEditor = ({ block, onUpdate, onDelete, onMove }) => {
         {/* Button Settings */}
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Button Text
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Button Text
+              </label>
+              <VariablePicker 
+                onInsertVariable={(variable) => {
+                  const input = document.getElementById(`button-text-${block.id}`);
+                  if (input) {
+                    const start = input.selectionStart;
+                    const end = input.selectionEnd;
+                    const currentText = text || '';
+                    const newText = currentText.substring(0, start) + variable + currentText.substring(end);
+                    onUpdate(block.id, { ...block.content, text: newText });
+                    setTimeout(() => {
+                      input.focus();
+                      input.setSelectionRange(start + variable.length, start + variable.length);
+                    }, 0);
+                  }
+                }}
+                compact={true}
+                buttonText="+ Variable"
+              />
+            </div>
             <input
+              id={`button-text-${block.id}`}
               type="text"
               value={text || ''}
               onChange={(e) => onUpdate(block.id, { ...block.content, text: e.target.value })}
