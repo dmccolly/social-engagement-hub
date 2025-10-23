@@ -232,7 +232,7 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
                 const newHeight = newWidth / aspectRatio;
                 
                 // Set minimum and maximum size
-                if (newWidth > 100 &amp;&amp; newWidth < 1200) {
+                if (newWidth > 100 && newWidth < 1200) {
                   img.style.width = newWidth + 'px';
                   img.style.height = 'auto';
                   // Remove size classes when manually resizing
