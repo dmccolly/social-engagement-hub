@@ -70,24 +70,27 @@ const EmailMarketingSystem = () => {
   };
 
   const updateBlock = (blockId, newContent) => {
-    setEmailBlocks(emailBlocks.map(block => block.id === blockId ? { ...block, content: newContent } : block));
+    setEmailBlocks(prev => prev.map(block => block.id === blockId ? { ...block, content: newContent } : block));
   };
 
   const deleteBlock = (blockId) => {
-    setEmailBlocks(emailBlocks.filter(block => block.id !== blockId));
+    setEmailBlocks(prev => prev.filter(block => block.id !== blockId));
   };
 
   const moveBlock = (blockId, direction) => {
-    const index = emailBlocks.findIndex(b => b.id === blockId);
-    if (direction === 'up' && index > 0) {
-      const newBlocks = [...emailBlocks];
-      [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
-      setEmailBlocks(newBlocks);
-    } else if (direction === 'down' && index < emailBlocks.length - 1) {
-      const newBlocks = [...emailBlocks];
-      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
-      setEmailBlocks(newBlocks);
-    }
+    setEmailBlocks(prev => {
+      const index = prev.findIndex(b => b.id === blockId);
+      if (direction === 'up' && index > 0) {
+        const newBlocks = [...prev];
+        [newBlocks[index], newBlocks[index - 1]] = [newBlocks[index - 1], newBlocks[index]];
+        return newBlocks;
+      } else if (direction === 'down' && index < prev.length - 1) {
+        const newBlocks = [...prev];
+        [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+        return newBlocks;
+      }
+      return prev;
+    });
   };
 
   const saveCampaign = () => {
