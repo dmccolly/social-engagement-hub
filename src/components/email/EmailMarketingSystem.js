@@ -170,10 +170,10 @@ const EmailMarketingSystem = () => {
     <div className="grid grid-cols-12 gap-6 h-full">
       <div className="col-span-3 bg-white rounded-lg shadow p-4 space-y-4">
         <h3 className="font-semibold text-lg">Campaign Settings</h3>
-        <div><label className="block text-sm font-medium mb-1">Campaign Name</label><input type="text" value={currentCampaign?.name || ''} onChange={(e) => setCurrentCampaign({...currentCampaign, name: e.target.value})} className="w-full p-2 border rounded" /></div>
-        <div><label className="block text-sm font-medium mb-1">Subject Line</label><input type="text" value={currentCampaign?.subject || ''} onChange={(e) => setCurrentCampaign({...currentCampaign, subject: e.target.value})} className="w-full p-2 border rounded" /></div>
-        <div><label className="block text-sm font-medium mb-1">From Name</label><input type="text" value={currentCampaign?.fromName || ''} onChange={(e) => setCurrentCampaign({...currentCampaign, fromName: e.target.value})} className="w-full p-2 border rounded" /></div>
-        <div><label className="block text-sm font-medium mb-1">From Email</label><input type="email" value={currentCampaign?.fromEmail || ''} onChange={(e) => setCurrentCampaign({...currentCampaign, fromEmail: e.target.value})} className="w-full p-2 border rounded" /></div>
+        <div><label className="block text-sm font-medium mb-1">Campaign Name</label><input type="text" value={currentCampaign?.name || ''} onChange={(e) => setCurrentCampaign(prev => ({...prev, name: e.target.value}))} className="w-full p-2 border rounded" /></div>
+        <div><label className="block text-sm font-medium mb-1">Subject Line</label><input type="text" value={currentCampaign?.subject || ''} onChange={(e) => setCurrentCampaign(prev => ({...prev, subject: e.target.value}))} className="w-full p-2 border rounded" /></div>
+        <div><label className="block text-sm font-medium mb-1">From Name</label><input type="text" value={currentCampaign?.fromName || ''} onChange={(e) => setCurrentCampaign(prev => ({...prev, fromName: e.target.value}))} className="w-full p-2 border rounded" /></div>
+        <div><label className="block text-sm font-medium mb-1">From Email</label><input type="email" value={currentCampaign?.fromEmail || ''} onChange={(e) => setCurrentCampaign(prev => ({...prev, fromEmail: e.target.value}))} className="w-full p-2 border rounded" /></div>
         <div className="pt-4 space-y-2">
           <button onClick={saveCampaign} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><Save size={18} />Save Campaign</button>
           <button onClick={() => setActiveView('campaigns')} className="w-full bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Back to Campaigns</button>
