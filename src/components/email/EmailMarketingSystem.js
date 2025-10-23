@@ -6,6 +6,7 @@ import NewsletterBuilder from './NewsletterBuilder';
 import BlockEditor from './BlockEditor';
 import SubscriberListModal from './SubscriberListModal';
 import SendCampaignPanel from './SendCampaignPanel';
+import ContactManager from './ContactManager';
 
 const EmailMarketingSystem = () => {
   const [campaigns, setCampaigns] = useState([
@@ -25,7 +26,9 @@ const EmailMarketingSystem = () => {
   const [showNewsletterBuilder, setShowNewsletterBuilder] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
   const [showSendPanel, setShowSendPanel] = useState(false);
+  const [showContactManager, setShowContactManager] = useState(false);
   const [currentList, setCurrentList] = useState(null);
+  const [allContacts, setAllContacts] = useState([]);
 
   const createNewCampaign = () => {
     const newCampaign = { id: Date.now(), name: "New Campaign", subject: "", status: "draft", fromName: "", fromEmail: "", stats: { sent: 0, opened: 0, clicked: 0 } };
@@ -126,6 +129,22 @@ const EmailMarketingSystem = () => {
       setSubscriberLists(prev => prev.filter(l => l.id !== listId));
       alert('List deleted successfully!');
     }
+  };
+
+  const handleSaveContacts = ({ contacts, members, memberIds }) => {
+    // Update all contacts
+    setAllContacts(contacts);
+    
+    // Update the current list with new member count and members
+    setSubscriberLists(prev => prev.map(l => 
+      l.id === currentList.id 
+        ? { ...l, count: memberIds.length, members: memberIds }
+        : l
+    ));
+    
+    setShowContactManager(false);
+    setCurrentList(null);
+    alert(`List updated with ${memberIds.length} contacts`);
   };
 
   const handleSendCampaign = async (sendData) => {
@@ -298,6 +317,12 @@ const EmailMarketingSystem = () => {
               <div className="bg-blue-50 p-3 rounded"><div className="text-sm text-gray-600">Open Rate</div><div className="text-2xl font-bold text-blue-600">{list.engagement.openRate}%</div></div>
               <div className="bg-green-50 p-3 rounded"><div className="text-sm text-gray-600">Click Rate</div><div className="text-2xl font-bold text-green-600">{list.engagement.clickRate}%</div></div>
             </div>
+            <div className="mt-4 pt-4 border-t">
+              <button onClick={() => { setCurrentList(list); setShowContactManager(true); }} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <Users size={18} />
+                Manage Contacts
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -329,6 +354,14 @@ const EmailMarketingSystem = () => {
           subscriberLists={subscriberLists}
           onSend={handleSendCampaign}
           onClose={() => setShowSendPanel(false)}
+        />
+      )}
+      {showContactManager && currentList && (
+        <ContactManager
+          list={currentList}
+          allContacts={allContacts}
+          onSave={handleSaveContacts}
+          onClose={() => { setShowContactManager(false); setCurrentList(null); }}
         />
       )}
       <div className="mb-6 flex gap-4 border-b">
