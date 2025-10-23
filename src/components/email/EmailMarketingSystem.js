@@ -101,6 +101,9 @@ const EmailMarketingSystem = () => {
         if (existing) return prev.map(c => c.id === currentCampaign.id ? updatedCampaign : c);
         return [...prev, updatedCampaign];
       });
+      setActiveView('campaigns');
+      setCurrentCampaign(null);
+      setEmailBlocks([]);
       alert('Campaign saved successfully!');
     }
   };
