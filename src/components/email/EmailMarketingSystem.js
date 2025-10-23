@@ -7,17 +7,13 @@ import BlockEditor from './BlockEditor';
 import SubscriberListModal from './SubscriberListModal';
 import SendCampaignPanel from './SendCampaignPanel';
 import ContactManager from './ContactManager';
+import { campaignAPI, contactAPI, groupAPI } from '../../services/emailAPI';
 
 const EmailMarketingSystem = () => {
-  const [campaigns, setCampaigns] = useState([
-    { id: 1, name: "Weekly Newsletter", subject: "This Week's Top Stories", status: "sent", fromEmail: "newsletter@yourcompany.com", stats: { sent: 24567, opened: 6789, clicked: 1023 } },
-    { id: 2, name: "Product Launch", subject: "🚀 Introducing Our New Features", status: "draft", fromEmail: "updates@yourcompany.com", stats: { sent: 0, opened: 0, clicked: 0 } }
-  ]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  const [subscriberLists, setSubscriberLists] = useState([
-    { id: 1, name: "Main Subscribers", description: "Primary email list", count: 24567, growth: "+523 this week", engagement: { openRate: 28.4, clickRate: 4.2 } },
-    { id: 2, name: "VIP Customers", description: "Premium customers", count: 3245, growth: "+89 this week", engagement: { openRate: 45.2, clickRate: 8.7 } }
-  ]);
+  const [subscriberLists, setSubscriberLists] = useState([]);
   
   const [activeView, setActiveView] = useState('campaigns');
   const [currentCampaign, setCurrentCampaign] = useState(null);
@@ -29,6 +25,65 @@ const EmailMarketingSystem = () => {
   const [showContactManager, setShowContactManager] = useState(false);
   const [currentList, setCurrentList] = useState(null);
   const [allContacts, setAllContacts] = useState([]);
+
+  // Load data from Xano on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [campaignsData, groupsData, contactsData] = await Promise.all([
+          campaignAPI.getAll(),
+          groupAPI.getAll(),
+          contactAPI.getAll()
+        ]);
+        
+        // Transform Xano data to component format
+        const transformedCampaigns = campaignsData.map(c => ({
+          id: c.id,
+          name: c.name,
+          subject: c.subject,
+          fromName: c.from_name,
+          fromEmail: c.from_email,
+          status: c.status,
+          blocks: c.blocks ? JSON.parse(c.blocks) : [],
+          htmlContent: c.html_content,
+          scheduledAt: c.scheduled_at,
+          createdAt: c.created_at,
+          stats: { sent: c.sent_count || 0, opened: c.opened_count || 0, clicked: c.clicked_count || 0 }
+        }));
+        
+        const transformedGroups = groupsData.map(g => ({
+          id: g.id,
+          name: g.name,
+          description: g.description,
+          tags: g.tags,
+          count: g.member_count || 0,
+          members: g.members || [],
+          growth: '',
+          engagement: { openRate: 0, clickRate: 0 }
+        }));
+        
+        const transformedContacts = contactsData.map(c => ({
+          id: c.id,
+          email: c.email,
+          firstName: c.first_name,
+          lastName: c.last_name,
+          company: c.company,
+          status: c.status
+        }));
+        
+        setCampaigns(transformedCampaigns);
+        setSubscriberLists(transformedGroups);
+        setAllContacts(transformedContacts);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        alert('Error loading data from server. Using offline mode.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const createNewCampaign = () => {
     const newCampaign = { id: Date.now(), name: "New Campaign", subject: "", status: "draft", fromName: "", fromEmail: "", stats: { sent: 0, opened: 0, clicked: 0 } };
@@ -93,47 +148,87 @@ const EmailMarketingSystem = () => {
     });
   };
 
-  const saveCampaign = () => {
-    if (currentCampaign) {
-      const updatedCampaign = { ...currentCampaign, blocks: emailBlocks, updatedAt: new Date().toISOString() };
-      setCampaigns(prev => {
-        const existing = prev.find(c => c.id === currentCampaign.id);
-        if (existing) return prev.map(c => c.id === currentCampaign.id ? updatedCampaign : c);
-        return [...prev, updatedCampaign];
-      });
+  const saveCampaign = async () => {
+    if (!currentCampaign) return;
+    
+    try {
+      const campaignData = {
+        name: currentCampaign.name,
+        subject: currentCampaign.subject,
+        fromName: currentCampaign.fromName,
+        fromEmail: currentCampaign.fromEmail,
+        blocks: emailBlocks,
+        htmlContent: generateEmailHTML(emailBlocks),
+        status: currentCampaign.status || 'draft',
+        scheduledAt: currentCampaign.scheduledAt
+      };
+      
+      let savedCampaign;
+      const isNew = !campaigns.find(c => c.id === currentCampaign.id);
+      
+      if (isNew) {
+        savedCampaign = await campaignAPI.create(campaignData);
+        setCampaigns(prev => [...prev, {
+          ...savedCampaign,
+          blocks: JSON.parse(savedCampaign.blocks || '[]'),
+          stats: { sent: 0, opened: 0, clicked: 0 }
+        }]);
+      } else {
+        savedCampaign = await campaignAPI.update(currentCampaign.id, campaignData);
+        setCampaigns(prev => prev.map(c => 
+          c.id === currentCampaign.id 
+            ? { ...savedCampaign, blocks: JSON.parse(savedCampaign.blocks || '[]') }
+            : c
+        ));
+      }
+      
       setActiveView('campaigns');
       setCurrentCampaign(null);
       setEmailBlocks([]);
       alert('Campaign saved successfully!');
+    } catch (error) {
+      console.error('Error saving campaign:', error);
+      alert(`Error saving campaign: ${error.message}`);
     }
   };
 
-  const handleSaveList = (listData) => {
-    if (currentList) {
-      // Update existing list
-      setSubscriberLists(prev => prev.map(l => l.id === currentList.id ? { ...l, ...listData } : l));
-      alert('List updated successfully!');
-    } else {
-      // Create new list
-      const newList = {
-        id: Date.now(),
-        ...listData,
-        count: 0,
-        growth: '+0%',
-        engagement: { openRate: 0, clickRate: 0 },
-        createdAt: new Date().toISOString()
-      };
-      setSubscriberLists(prev => [...prev, newList]);
-      alert('List created successfully!');
+  const handleSaveList = async (listData) => {
+    try {
+      if (currentList) {
+        // Update existing list
+        const updated = await groupAPI.update(currentList.id, listData);
+        setSubscriberLists(prev => prev.map(l => l.id === currentList.id ? { ...l, ...updated } : l));
+        alert('List updated successfully!');
+      } else {
+        // Create new list
+        const newList = await groupAPI.create(listData);
+        setSubscriberLists(prev => [...prev, {
+          ...newList,
+          count: 0,
+          members: [],
+          growth: '+0%',
+          engagement: { openRate: 0, clickRate: 0 }
+        }]);
+        alert('List created successfully!');
+      }
+      setShowListModal(false);
+      setCurrentList(null);
+    } catch (error) {
+      console.error('Error saving list:', error);
+      alert(`Error saving list: ${error.message}`);
     }
-    setShowListModal(false);
-    setCurrentList(null);
   };
 
-  const handleDeleteList = (listId) => {
-    if (confirm('Are you sure you want to delete this list?')) {
+  const handleDeleteList = async (listId) => {
+    if (!confirm('Are you sure you want to delete this list?')) return;
+    
+    try {
+      await groupAPI.delete(listId);
       setSubscriberLists(prev => prev.filter(l => l.id !== listId));
       alert('List deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      alert(`Error deleting list: ${error.message}`);
     }
   };
 
