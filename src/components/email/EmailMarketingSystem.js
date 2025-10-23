@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIcon, Link as LinkIcon, Sparkles } from 'lucide-react';
 import BlogToEmailConverter from './BlogToEmailConverter';
 import NewsletterBuilder from './NewsletterBuilder';
+import BlockEditor from './BlockEditor';
 
 const EmailMarketingSystem = () => {
   const [campaigns, setCampaigns] = useState([
@@ -193,7 +194,7 @@ const EmailMarketingSystem = () => {
                     <button onClick={() => moveBlock(block.id, 'down')} disabled={index === emailBlocks.length - 1} className="block p-1 bg-white rounded shadow hover:bg-gray-100 disabled:opacity-50">↓</button>
                     <button onClick={() => deleteBlock(block.id)} className="block p-1 bg-white rounded shadow hover:bg-red-100 text-red-600"><Trash2 size={16} /></button>
                   </div>
-                  {renderBlock(block)}
+                  <BlockEditor block={block} onUpdate={updateBlock} />
                 </div>
               ))}
             </div>
