@@ -65,7 +65,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     if (!recipientsResponse.ok) {
       throw new Error('Failed to fetch recipients');
     }
-    const recipients: Recipient[] = await recipientsResponse.json();
+    let recipients: Recipient[] = await recipientsResponse.json();
 
     if (recipients.length === 0) {
       return {
@@ -77,6 +77,62 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         })
       };
     }
+
+    // Filter out suppressed emails before sending
+    const validRecipients: Recipient[] = [];
+    let suppressedCount = 0;
+
+    for (const recipient of recipients) {
+      try {
+        // Check if email is suppressed
+        const checkResponse = await fetch(
+          `${XANO_BASE_URL}/email/check-suppression?email=${encodeURIComponent(recipient.email)}`
+        );
+        
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          
+          if (!checkData.suppressed) {
+            validRecipients.push(recipient);
+          } else {
+            // Update recipient status to suppressed
+            suppressedCount++;
+            await fetch(`${XANO_BASE_URL}/email_campaign_recipients/${recipient.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'suppressed',
+                bounce_reason: checkData.reason || 'Suppressed'
+              })
+            });
+          }
+        } else {
+          // If check fails, include recipient (fail open)
+          validRecipients.push(recipient);
+        }
+      } catch (error) {
+        // If check fails, include recipient (fail open)
+        console.error(`Error checking suppression for ${recipient.email}:`, error);
+        validRecipients.push(recipient);
+      }
+    }
+
+    // Update recipients list to only valid ones
+    recipients = validRecipients;
+
+    if (recipients.length === 0) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ 
+          success: true, 
+          message: `All recipients suppressed (${suppressedCount} total)`,
+          sent: 0,
+          suppressed: suppressedCount
+        })
+      };
+    }
+
+    console.log(`Sending to ${recipients.length} recipients (${suppressedCount} suppressed)`);
 
     // Send emails in batches (SendGrid limit: 1000 per request, we'll use 100 for safety)
     const batchSize = 100;
@@ -95,7 +151,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         },
         reply_to: campaignData.reply_to || campaignData.from_email,
         subject: campaignData.subject,
-        html: injectTrackingPixel(campaignData.html_content, recipient.tracking_token),
+        html: addUnsubscribeLink(
+          injectTrackingPixel(campaignData.html_content, recipient.tracking_token),
+          recipient.email
+        ),
         text: campaignData.plain_text_content || stripHtml(campaignData.html_content),
         tracking_settings: {
           click_tracking: { enable: true },
@@ -232,6 +291,31 @@ function injectTrackingPixel(html: string, token: string): string {
     return html.replace('</body>', `${trackingPixel}</body>`);
   } else {
     return html + trackingPixel;
+  }
+}
+
+// Helper function to add unsubscribe link to email footer
+function addUnsubscribeLink(html: string, email: string): string {
+  const unsubToken = Buffer.from(email).toString('base64');
+  const unsubLink = `${APP_URL}/.netlify/functions/handle-unsubscribe?token=${unsubToken}`;
+  
+  const footer = `
+    <div style="margin-top: 40px; padding: 20px; border-top: 2px solid #e5e7eb; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <p style="margin: 0 0 8px 0; font-size: 12px; color: #6b7280; line-height: 1.5;">
+        You're receiving this email because you subscribed to our mailing list.
+      </p>
+      <p style="margin: 0; font-size: 12px; color: #6b7280;">
+        <a href="${unsubLink}" style="color: #2563eb; text-decoration: underline;">Unsubscribe</a> | 
+        <a href="${APP_URL}/privacy" style="color: #2563eb; text-decoration: underline;">Privacy Policy</a>
+      </p>
+    </div>
+  `;
+  
+  // Try to inject before </body>, otherwise append to end
+  if (html.includes('</body>')) {
+    return html.replace('</body>', `${footer}</body>`);
+  } else {
+    return html + footer;
   }
 }
 
