@@ -167,7 +167,7 @@ const EmailMarketingSystem = () => {
     </div>
   );
 
-  const EmailBuilderView = () => (
+  const emailBuilderViewJSX = (
     <div className="grid grid-cols-12 gap-6 h-full">
       <div className="col-span-3 bg-white rounded-lg shadow p-4 space-y-4">
         <h3 className="font-semibold text-lg">Campaign Settings</h3>
@@ -257,7 +257,7 @@ const EmailMarketingSystem = () => {
         <button onClick={() => setActiveView('lists')} className={`px-4 py-2 font-semibold ${activeView === 'lists' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Subscriber Lists</button>
       </div>
       {activeView === 'campaigns' && <CampaignListView />}
-      {activeView === 'builder' && <EmailBuilderView />}
+      {activeView === 'builder' && emailBuilderViewJSX}
       {activeView === 'lists' && <SubscriberListsView />}
     </div>
   );
