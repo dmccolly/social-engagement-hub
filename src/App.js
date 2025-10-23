@@ -21,6 +21,7 @@ import EmailDashboard from './components/email/EmailDashboard';
 import ContactManagement from './components/email/ContactManagement';
 import ContactForm from './components/email/ContactForm';
 import CreateCampaignModal from './components/email/CreateCampaignModal';
+import EmailMarketingSystem from './components/email/EmailMarketingSystem';
 
 // NEW: Visitor System Components
 import EnhancedNewsFeedIntegration from './components/newsfeed/EnhancedNewsFeedIntegration';
@@ -909,20 +910,7 @@ const BlogSection = ({ posts, setPosts }) => {
 };
 
 const EmailSection = ({ campaigns, setCampaigns }) => {
-  // Import and use the full EmailMarketingSystem component
-  const [EmailMarketingSystemComponent, setEmailMarketingSystemComponent] = useState(null);
-  
-  useEffect(() => {
-    import('./components/email/EmailMarketingSystem').then(module => {
-      setEmailMarketingSystemComponent(() => module.default);
-    });
-  }, []);
-  
-  if (!EmailMarketingSystemComponent) {
-    return <div className="text-center py-8">Loading email system...</div>;
-  }
-  
-  return <EmailMarketingSystemComponent />;
+  return <EmailMarketingSystem />;
 };
 
 const AnalyticsSection = () => (
