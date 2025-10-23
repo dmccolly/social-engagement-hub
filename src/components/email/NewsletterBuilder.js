@@ -229,7 +229,7 @@ const NewsletterBuilder = ({ onCreateNewsletter, onCancel }) => {
               <input
                 type="text"
                 value={newsletterData.name}
-                onChange={(e) => setNewsletterData({ ...newsletterData, name: e.target.value })}
+                onChange={(e) => setNewsletterData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Weekly Update - March 2024"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -242,7 +242,7 @@ const NewsletterBuilder = ({ onCreateNewsletter, onCancel }) => {
               <input
                 type="text"
                 value={newsletterData.subject}
-                onChange={(e) => setNewsletterData({ ...newsletterData, subject: e.target.value })}
+                onChange={(e) => setNewsletterData(prev => ({ ...prev, subject: e.target.value }))}
                 placeholder="e.g., This Week's Top Stories"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -255,7 +255,7 @@ const NewsletterBuilder = ({ onCreateNewsletter, onCancel }) => {
               <input
                 type="text"
                 value={newsletterData.fromName}
-                onChange={(e) => setNewsletterData({ ...newsletterData, fromName: e.target.value })}
+                onChange={(e) => setNewsletterData(prev => ({ ...prev, fromName: e.target.value }))}
                 placeholder="e.g., Your Company Name"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -268,7 +268,7 @@ const NewsletterBuilder = ({ onCreateNewsletter, onCancel }) => {
               <input
                 type="email"
                 value={newsletterData.fromEmail}
-                onChange={(e) => setNewsletterData({ ...newsletterData, fromEmail: e.target.value })}
+                onChange={(e) => setNewsletterData(prev => ({ ...prev, fromEmail: e.target.value }))}
                 placeholder="e.g., newsletter@yourcompany.com"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
@@ -282,7 +282,7 @@ const NewsletterBuilder = ({ onCreateNewsletter, onCancel }) => {
             <input
               type="text"
               value={newsletterData.preheader}
-              onChange={(e) => setNewsletterData({ ...newsletterData, preheader: e.target.value })}
+              onChange={(e) => setNewsletterData(prev => ({ ...prev, preheader: e.target.value }))}
               placeholder="Preview text that appears after the subject line"
               className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
