@@ -68,7 +68,9 @@ export const campaignAPI = {
         console.warn('Xano unavailable, using localStorage for campaigns');
         return localStorageHelper.getAll();
       }
-      return response.json();
+      const data = await response.json();
+      // Handle null or non-array responses
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.warn('Xano unavailable, using localStorage for campaigns:', error.message);
       return localStorageHelper.getAll();
@@ -185,9 +187,19 @@ export const campaignAPI = {
 // Contact API
 export const contactAPI = {
   async getAll() {
-    const response = await fetch(`${XANO_BASE_URL}/email_contacts`);
-    if (!response.ok) throw new Error('Failed to fetch contacts');
-    return response.json();
+    try {
+      const response = await fetch(`${XANO_BASE_URL}/email_contacts`);
+      if (!response.ok) {
+        console.warn('Failed to fetch contacts from Xano');
+        return [];
+      }
+      const data = await response.json();
+      // Handle null or non-array responses
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn('Error fetching contacts:', error.message);
+      return [];
+    }
   },
 
   async create(contact) {
@@ -228,9 +240,19 @@ export const contactAPI = {
 // Group/List API
 export const groupAPI = {
   async getAll() {
-    const response = await fetch(`${XANO_BASE_URL}/email_groups`);
-    if (!response.ok) throw new Error('Failed to fetch groups');
-    return response.json();
+    try {
+      const response = await fetch(`${XANO_BASE_URL}/email_groups`);
+      if (!response.ok) {
+        console.warn('Failed to fetch groups from Xano');
+        return [];
+      }
+      const data = await response.json();
+      // Handle null or non-array responses
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn('Error fetching groups:', error.message);
+      return [];
+    }
   },
 
   async create(group) {

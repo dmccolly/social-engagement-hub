@@ -76,7 +76,13 @@ const EmailMarketingSystem = () => {
         setAllContacts(transformedContacts);
       } catch (error) {
         console.error('Error loading data:', error);
-        alert('Error loading data from server. Using offline mode.');
+        // More helpful error message
+          const errorMessage = `Unable to connect to server. Working in offline mode.
+
+Note: Email sending requires server connection.
+
+Error: ${error.message}`;
+          alert(errorMessage);
       } finally {
         setLoading(false);
       }
