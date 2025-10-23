@@ -4,6 +4,8 @@ import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIc
 import BlogToEmailConverter from './BlogToEmailConverter';
 import NewsletterBuilder from './NewsletterBuilder';
 import BlockEditor from './BlockEditor';
+import SubscriberListModal from './SubscriberListModal';
+import SendCampaignPanel from './SendCampaignPanel';
 
 const EmailMarketingSystem = () => {
   const [campaigns, setCampaigns] = useState([
@@ -21,6 +23,9 @@ const EmailMarketingSystem = () => {
   const [emailBlocks, setEmailBlocks] = useState([]);
   const [showBlogConverter, setShowBlogConverter] = useState(false);
   const [showNewsletterBuilder, setShowNewsletterBuilder] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
+  const [showSendPanel, setShowSendPanel] = useState(false);
+  const [currentList, setCurrentList] = useState(null);
 
   const createNewCampaign = () => {
     const newCampaign = { id: Date.now(), name: "New Campaign", subject: "", status: "draft", fromName: "", fromEmail: "", stats: { sent: 0, opened: 0, clicked: 0 } };
@@ -91,6 +96,60 @@ const EmailMarketingSystem = () => {
         return [...prev, updatedCampaign];
       });
       alert('Campaign saved successfully!');
+    }
+  };
+
+  const handleSaveList = (listData) => {
+    if (currentList) {
+      // Update existing list
+      setSubscriberLists(prev => prev.map(l => l.id === currentList.id ? { ...l, ...listData } : l));
+      alert('List updated successfully!');
+    } else {
+      // Create new list
+      const newList = {
+        id: Date.now(),
+        ...listData,
+        count: 0,
+        growth: '+0%',
+        engagement: { openRate: 0, clickRate: 0 },
+        createdAt: new Date().toISOString()
+      };
+      setSubscriberLists(prev => [...prev, newList]);
+      alert('List created successfully!');
+    }
+    setShowListModal(false);
+    setCurrentList(null);
+  };
+
+  const handleDeleteList = (listId) => {
+    if (confirm('Are you sure you want to delete this list?')) {
+      setSubscriberLists(prev => prev.filter(l => l.id !== listId));
+      alert('List deleted successfully!');
+    }
+  };
+
+  const handleSendCampaign = async (sendData) => {
+    try {
+      // Save campaign first
+      saveCampaign();
+      
+      // TODO: Call Netlify function to send emails
+      console.log('Sending campaign:', sendData);
+      
+      // Update campaign status
+      setCurrentCampaign(prev => ({ ...prev, status: sendData.sendOption === 'now' ? 'sent' : 'scheduled' }));
+      setCampaigns(prev => prev.map(c => 
+        c.id === currentCampaign.id 
+          ? { ...c, status: sendData.sendOption === 'now' ? 'sent' : 'scheduled' }
+          : c
+      ));
+      
+      setShowSendPanel(false);
+      setActiveView('campaigns');
+      alert(sendData.sendOption === 'now' ? 'Campaign sent successfully!' : 'Campaign scheduled successfully!');
+    } catch (error) {
+      console.error('Error sending campaign:', error);
+      alert('Error sending campaign. Please try again.');
     }
   };
 
@@ -176,7 +235,8 @@ const EmailMarketingSystem = () => {
         <div><label className="block text-sm font-medium mb-1">From Name</label><input key="campaign-from-name" type="text" value={currentCampaign?.fromName || ''} onChange={(e) => setCurrentCampaign(prev => ({...prev, fromName: e.target.value}))} className="w-full p-2 border rounded" /></div>
         <div><label className="block text-sm font-medium mb-1">From Email</label><input key="campaign-from-email" type="email" value={currentCampaign?.fromEmail || ''} onChange={(e) => setCurrentCampaign(prev => ({...prev, fromEmail: e.target.value}))} className="w-full p-2 border rounded" /></div>
         <div className="pt-4 space-y-2">
-          <button onClick={saveCampaign} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><Save size={18} />Save Campaign</button>
+          <button onClick={() => setShowSendPanel(true)} className="w-full flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-semibold"><Mail size={18} />Send Campaign</button>
+          <button onClick={saveCampaign} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"><Save size={18} />Save Draft</button>
           <button onClick={() => setActiveView('campaigns')} className="w-full bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">Back to Campaigns</button>
         </div>
       </div>
@@ -222,13 +282,17 @@ const EmailMarketingSystem = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Subscriber Lists</h2>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"><Plus size={20} />New List</button>
+        <button onClick={() => { setCurrentList(null); setShowListModal(true); }} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"><Plus size={20} />New List</button>
       </div>
       <div className="grid gap-4">
         {subscriberLists.map(list => (
           <div key={list.id} className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-start">
               <div><h3 className="text-xl font-semibold">{list.name}</h3><p className="text-gray-600">{list.description}</p><div className="mt-2 text-sm text-gray-500"><span className="font-semibold">{list.count.toLocaleString()}</span> subscribers<span className="ml-4 text-green-600">{list.growth}</span></div></div>
+              <div className="flex gap-2">
+                <button onClick={() => { setCurrentList(list); setShowListModal(true); }} className="p-2 hover:bg-gray-100 rounded"><Edit size={20} /></button>
+                <button onClick={() => handleDeleteList(list.id)} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
+              </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div className="bg-blue-50 p-3 rounded"><div className="text-sm text-gray-600">Open Rate</div><div className="text-2xl font-bold text-blue-600">{list.engagement.openRate}%</div></div>
@@ -251,6 +315,21 @@ const EmailMarketingSystem = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <BlogToEmailConverter onConvert={handleBlogToEmail} onCancel={() => setShowBlogConverter(false)} />
         </div>
+      )}
+      {showListModal && (
+        <SubscriberListModal
+          list={currentList}
+          onSave={handleSaveList}
+          onClose={() => { setShowListModal(false); setCurrentList(null); }}
+        />
+      )}
+      {showSendPanel && currentCampaign && (
+        <SendCampaignPanel
+          campaign={currentCampaign}
+          subscriberLists={subscriberLists}
+          onSend={handleSendCampaign}
+          onClose={() => setShowSendPanel(false)}
+        />
       )}
       <div className="mb-6 flex gap-4 border-b">
         <button onClick={() => setActiveView('campaigns')} className={`px-4 py-2 font-semibold ${activeView === 'campaigns' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Campaigns</button>
