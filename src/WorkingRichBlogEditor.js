@@ -131,7 +131,8 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
       img.className = `size-${image.size} position-${image.position}`;
       img.setAttribute('data-size', image.size);
       img.setAttribute('data-position', image.position);
-      img.style.cssText = 'cursor: pointer; border-radius: 8px; max-width: 100%; height: auto;';
+      // Removed inline styles to allow CSS classes to work properly for positioning
+        img.style.cursor = 'pointer';
       
       img.addEventListener('click', (e) => {
         e.preventDefault();
@@ -171,6 +172,90 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
     const img = document.getElementById(`img-${imageId}`);
     if (img) {
       img.classList.add('selected-image');
+        
+        // Add resize handles for manual resizing
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper-resizable';
+        wrapper.style.cssText = 'position: relative; display: inline-block;';
+        
+        // Only wrap if not already wrapped
+        if (!img.parentElement.classList.contains('image-wrapper-resizable')) {
+          img.parentNode.insertBefore(wrapper, img);
+          wrapper.appendChild(img);
+          
+          // Create resize handles
+          const handles = ['nw', 'ne', 'sw', 'se'];
+          handles.forEach(position => {
+            const handle = document.createElement('div');
+            handle.className = `resize-handle resize-handle-${position}`;
+            handle.style.cssText = `
+              position: absolute;
+              width: 12px;
+              height: 12px;
+              background: #667eea;
+              border: 2px solid white;
+              border-radius: 50%;
+              cursor: ${position.includes('n') ? (position.includes('w') ? 'nw' : 'ne') : (position.includes('w') ? 'sw' : 'se')}-resize;
+              z-index: 1001;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            `;
+            
+            // Position the handles
+            if (position.includes('n')) handle.style.top = '-6px';
+            if (position.includes('s')) handle.style.bottom = '-6px';
+            if (position.includes('w')) handle.style.left = '-6px';
+            if (position.includes('e')) handle.style.right = '-6px';
+            
+            // Add resize functionality
+            handle.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              const startX = e.clientX;
+              const startY = e.clientY;
+              const startWidth = img.offsetWidth;
+              const startHeight = img.offsetHeight;
+              const aspectRatio = startWidth / startHeight;
+              
+              const onMouseMove = (moveEvent) => {
+                const deltaX = moveEvent.clientX - startX;
+                const deltaY = moveEvent.clientY - startY;
+                
+                let newWidth = startWidth;
+                if (position.includes('e')) {
+                  newWidth = startWidth + deltaX;
+                } else if (position.includes('w')) {
+                  newWidth = startWidth - deltaX;
+                }
+                
+                // Maintain aspect ratio
+                const newHeight = newWidth / aspectRatio;
+                
+                // Set minimum and maximum size
+                if (newWidth > 100 && newWidth < 1200) {
+                  img.style.width = newWidth + 'px';
+                  img.style.height = 'auto';
+                  // Remove size classes when manually resizing
+                  img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+                  img.setAttribute('data-size', 'custom');
+                }
+              };
+              
+              const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (contentRef.current) {
+                  setContent(contentRef.current.innerHTML);
+                }
+              };
+              
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+            });
+            
+            wrapper.appendChild(handle);
+          });
+        }
       
       const toolbar = document.createElement('div');
       toolbar.className = 'floating-toolbar';
