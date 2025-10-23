@@ -50,14 +50,54 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
     case 'image':
       return (
         <div className="email-block">
-          <img src={block.content.src} alt={block.content.alt} className="w-full rounded" />
-          <input 
-            type="text" 
-            value={block.content.src} 
-            onChange={(e) => handleChange('src', e.target.value)}
-            className="w-full p-2 border rounded mt-2" 
-            placeholder="Image URL..." 
-          />
+          <div className="flex justify-center">
+            <img 
+              src={block.content.src} 
+              alt={block.content.alt || 'Email image'} 
+              className="rounded" 
+              style={{ 
+                width: `${block.content.width || 100}%`,
+                maxWidth: '100%',
+                display: 'block',
+                margin: block.content.align === 'center' ? '0 auto' : block.content.align === 'right' ? '0 0 0 auto' : '0'
+              }} 
+            />
+          </div>
+          <div className="mt-2 space-y-2">
+            <input 
+              type="text" 
+              value={block.content.src || ''} 
+              onChange={(e) => handleChange('src', e.target.value)}
+              className="w-full p-2 border rounded" 
+              placeholder="Image URL..." 
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-600">Width (%)</label>
+                <input 
+                  type="range" 
+                  min="20" 
+                  max="100" 
+                  value={block.content.width || 100} 
+                  onChange={(e) => handleChange('width', parseInt(e.target.value))}
+                  className="w-full" 
+                />
+                <div className="text-xs text-center text-gray-600">{block.content.width || 100}%</div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">Alignment</label>
+                <select 
+                  value={block.content.align || 'left'} 
+                  onChange={(e) => handleChange('align', e.target.value)}
+                  className="w-full p-2 border rounded text-sm"
+                >
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       );
     

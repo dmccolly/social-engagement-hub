@@ -155,24 +155,109 @@ const EmailMarketingSystem = () => {
       // Save campaign first
       saveCampaign();
       
-      // TODO: Call Netlify function to send emails
-      console.log('Sending campaign:', sendData);
+      // Get all contacts from selected lists
+      const recipients = [];
+      sendData.listIds.forEach(listId => {
+        const list = subscriberLists.find(l => l.id === listId);
+        if (list && list.members) {
+          const listContacts = allContacts.filter(c => list.members.includes(c.id));
+          recipients.push(...listContacts);
+        }
+      });
+
+      // Remove duplicates
+      const uniqueRecipients = Array.from(new Map(recipients.map(r => [r.email, r])).values());
+
+      if (uniqueRecipients.length === 0) {
+        alert('No recipients found in selected lists');
+        return;
+      }
+
+      // Prepare email content
+      const emailHTML = generateEmailHTML(emailBlocks);
+      
+      // Call Netlify function to send emails
+      const response = await fetch('/.netlify/functions/send-campaign-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaign: {
+            id: currentCampaign.id,
+            name: currentCampaign.name,
+            subject: currentCampaign.subject,
+            fromName: currentCampaign.fromName,
+            fromEmail: currentCampaign.fromEmail,
+            htmlContent: emailHTML
+          },
+          recipients: uniqueRecipients,
+          sendOption: sendData.sendOption,
+          scheduleDateTime: sendData.scheduleDateTime
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Send failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Send result:', result);
       
       // Update campaign status
-      setCurrentCampaign(prev => ({ ...prev, status: sendData.sendOption === 'now' ? 'sent' : 'scheduled' }));
+      const newStatus = sendData.sendOption === 'now' ? 'sent' : 'scheduled';
+      setCurrentCampaign(prev => ({ ...prev, status: newStatus, sentAt: new Date().toISOString() }));
       setCampaigns(prev => prev.map(c => 
         c.id === currentCampaign.id 
-          ? { ...c, status: sendData.sendOption === 'now' ? 'sent' : 'scheduled' }
+          ? { ...c, status: newStatus, sentAt: new Date().toISOString(), stats: { ...c.stats, sent: uniqueRecipients.length } }
           : c
       ));
       
       setShowSendPanel(false);
       setActiveView('campaigns');
-      alert(sendData.sendOption === 'now' ? 'Campaign sent successfully!' : 'Campaign scheduled successfully!');
+      alert(`Campaign ${newStatus}! Sent to ${uniqueRecipients.length} recipients.`);
     } catch (error) {
       console.error('Error sending campaign:', error);
-      alert('Error sending campaign. Please try again.');
+      alert(`Error sending campaign: ${error.message}`);
     }
+  };
+
+  // Generate HTML from email blocks
+  const generateEmailHTML = (blocks) => {
+    const blockHTML = blocks.map(block => {
+      switch(block.type) {
+        case 'heading':
+          return `<h1 style="font-size: 24px; font-weight: bold; margin: 16px 0;">${block.content.text}</h1>`;
+        case 'text':
+          return `<p style="margin: 12px 0; line-height: 1.6;">${block.content.text.replace(/\n/g, '<br>')}</p>`;
+        case 'image':
+          const imgAlign = block.content.align === 'center' ? 'margin: 0 auto;' : block.content.align === 'right' ? 'margin-left: auto;' : '';
+          return `<img src="${block.content.src}" alt="${block.content.alt || ''}" style="width: ${block.content.width || 100}%; max-width: 100%; display: block; ${imgAlign} border-radius: 8px;" />`;
+        case 'button':
+          return `<div style="text-align: center; margin: 20px 0;"><a href="${block.content.url}" style="background-color: ${block.content.color || '#3B82F6'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">${block.content.text}</a></div>`;
+        case 'divider':
+          return `<hr style="border: none; border-top: 1px solid ${block.content.color || '#E5E7EB'}; margin: 24px 0;" />`;
+        case 'spacer':
+          return `<div style="height: ${block.content.height || 20}px;"></div>`;
+        case 'html':
+          return block.content.html;
+        default:
+          return '';
+      }
+    }).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #F3F4F6;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 32px;">
+          ${blockHTML}
+        </div>
+      </body>
+      </html>
+    `;
   };
 
   const renderBlock = (block) => {
