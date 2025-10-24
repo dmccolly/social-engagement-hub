@@ -1,0 +1,413 @@
+*** Begin Patch
+*** Update File: src/components/newsfeed/RichTextEditor.js
+@@
+-import React, { useState, useRef, useEffect } from 'react';
+-import {
+-  Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon,
+-  Video, List, ListOrdered, Quote, Code, Heading1, Heading2, AlignLeft,
+-  AlignCenter, AlignRight, X, Check, Youtube, Film
+-} from 'lucide-react';
++import React, { useState, useRef, useEffect } from 'react';
++import {
++  Bold,
++  Italic,
++  Underline,
++  Strikethrough,
++  Link as LinkIcon,
++  Image as ImageIcon,
++  Video,
++  List,
++  ListOrdered,
++  Quote,
++  Code,
++  Heading1,
++  Heading2,
++  AlignLeft,
++  AlignCenter,
++  AlignRight,
++  X,
++  Check,
++  Youtube,
++  Film,
++  File as FileIcon,
++  Font as FontIcon,
++  Palette as PaletteIcon
++} from 'lucide-react';
+@@
+ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" }) => {
+@@
+   const [showVideoModal, setShowVideoModal] = useState(false);
++  // Modal for uploading local files (images or other attachments)
++  const [showFileModal, setShowFileModal] = useState(false);
+@@
+   const [videoUrl, setVideoUrl] = useState('');
+   const editorRef = useRef(null);
+@@
+   // Initialize contenteditable div with value
+   useEffect(() => {
+     if (editorRef.current) {
+@@
+       editorRef.current.setAttribute('contenteditable', 'true');
+     }
+   }, []);
++
++  // Keep editor content in sync with the value prop
++  useEffect(() => {
++    if (editorRef.current && value !== editorRef.current.innerHTML) {
++      editorRef.current.innerHTML = value || '';
++    }
++  }, [value]);
++
++  // Ensure formatting commands output inline styles rather than deprecated tags
++  useEffect(() => {
++    try {
++      document.execCommand('styleWithCSS', false, true);
++    } catch (e) {
++      // Ignore if unsupported
++    }
++  }, []);
++
++  // Add drag-and-drop support for file attachments
++  useEffect(() => {
++    const editor = editorRef.current;
++    if (!editor) return;
++    const handleDragOver = (e) => {
++      e.preventDefault();
++    };
++    const handleDrop = (e) => {
++      e.preventDefault();
++      const files = Array.from(e.dataTransfer.files);
++      files.forEach((file) => insertFile(file));
++    };
++    editor.addEventListener('dragover', handleDragOver);
++    editor.addEventListener('drop', handleDrop);
++    return () => {
++      editor.removeEventListener('dragover', handleDragOver);
++      editor.removeEventListener('drop', handleDrop);
++    };
++  }, []);
+@@
+   // Handle content changes
+   const handleInput = () => {
+     if (editorRef.current) {
+       onChange(editorRef.current.innerHTML);
+     }
+   };
++
++  // Helper to insert arbitrary HTML at the current cursor position
++  const insertHtml = (html) => {
++    if (!editorRef.current) return;
++    const selection = window.getSelection();
++    if (selection && selection.rangeCount > 0) {
++      const range = selection.getRangeAt(0);
++      range.deleteContents();
++      const fragment = range.createContextualFragment(html);
++      range.insertNode(fragment);
++      range.setStartAfter(fragment.lastChild || fragment);
++      range.collapse(true);
++      selection.removeAllRanges();
++      selection.addRange(range);
++    } else {
++      editorRef.current.innerHTML += html;
++    }
++    editorRef.current.focus();
++    handleInput();
++  };
+@@
+   // Insert link
+   const insertLink = () => {
+@@
+-    const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${text}</a>`;
+-    document.execCommand('insertHTML', false, linkHtml);
+-
+-    setShowLinkModal(false);
+-    setLinkUrl('');
+-    setLinkText('');
+-    editorRef.current?.focus();
+-    handleInput();
++    const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${text}</a>`;
++    insertHtml(linkHtml);
++    setShowLinkModal(false);
++    setLinkUrl('');
++    setLinkText('');
+   };
+@@
+   // Insert image
+   const insertImage = () => {
+@@
+-    const imageHtml = `<div class="my-4"><img src="${url}" alt="Uploaded image" class="max-w-full h-auto rounded-lg shadow-md" /></div>`;
+-    document.execCommand('insertHTML', false, imageHtml);
+-
+-    setShowImageModal(false);
+-    setImageUrl('');
+-    editorRef.current?.focus();
+-    handleInput();
++    const imageHtml = `<div class="my-4"><img src="${url}" alt="Uploaded image" class="max-w-full h-auto rounded-lg shadow-md" /></div>`;
++    insertHtml(imageHtml);
++    setShowImageModal(false);
++    setImageUrl('');
+   };
+@@
+   // Insert video embed
+   const insertVideo = () => {
+@@
+-    document.execCommand('insertHTML', false, embedHtml);
+-
+-    setShowVideoModal(false);
+-    setVideoUrl('');
+-    editorRef.current?.focus();
+-    handleInput();
++    insertHtml(embedHtml);
++    setShowVideoModal(false);
++    setVideoUrl('');
+   };
++
++  /**
++   * Insert a local file into the editor. Images are embedded as Data URLs while
++   * other files are inserted as downloadable links. The modal closes automatically.
++   */
++  const insertFile = (file) => {
++    if (!file) return;
++    if (file.type && file.type.startsWith('image/')) {
++      const reader = new FileReader();
++      reader.onload = (e) => {
++        const dataUrl = e.target.result;
++        const html = `<div class="my-4"><img src="${dataUrl}" alt="${file.name}" class="max-w-full h-auto rounded-lg shadow-md" /></div>`;
++        insertHtml(html);
++      };
++      reader.readAsDataURL(file);
++    } else {
++      const url = URL.createObjectURL(file);
++      const html = `<div class="my-4"><a href="${url}" download="${file.name}" class="text-blue-600 hover:underline">${file.name}</a></div>`;
++      insertHtml(html);
++    }
++    setShowFileModal(false);
++  };
++
++  // Handle file input change from the upload modal
++  const handleFileChange = (e) => {
++    const file = e.target.files && e.target.files[0];
++    if (file) {
++      insertFile(file);
++      e.target.value = '';
++    }
++  };
+@@
+   return (
+@@
+       {/* Media */}
+-        <div className="flex gap-1">
+-          <ToolbarButton icon={LinkIcon} onClick={() => setShowLinkModal(true)} title="Insert Link" />
+-          <ToolbarButton icon={ImageIcon} onClick={() => setShowImageModal(true)} title="Insert Image" />
+-          <ToolbarButton icon={Video} onClick={() => setShowVideoModal(true)} title="Insert Video" />
+-        </div>
++        <div className="flex gap-1 border-r border-gray-300 pr-2">
++          <ToolbarButton icon={LinkIcon} onClick={() => setShowLinkModal(true)} title="Insert Link" />
++          <ToolbarButton icon={ImageIcon} onClick={() => setShowImageModal(true)} title="Insert Image by URL" />
++          <ToolbarButton icon={Video} onClick={() => setShowVideoModal(true)} title="Insert Video" />
++          <ToolbarButton icon={FileIcon} onClick={() => setShowFileModal(true)} title="Upload File or Image" />
++        </div>
++
++        {/* Font Controls */}
++        <div className="flex gap-1 items-center">
++          <select
++            onChange={(e) => execCommand('fontName', e.target.value)}
++            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
++            defaultValue="Arial"
++          >
++            <option value="Arial">Arial</option>
++            <option value="Georgia">Georgia</option>
++            <option value="Times New Roman">Times New Roman</option>
++            <option value="Courier New">Courier New</option>
++            <option value="Helvetica">Helvetica</option>
++          </select>
++          <select
++            onChange={(e) => execCommand('fontSize', e.target.value)}
++            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
++            defaultValue="3"
++          >
++            <option value="1">8pt</option>
++            <option value="2">10pt</option>
++            <option value="3">12pt</option>
++            <option value="4">14pt</option>
++            <option value="5">18pt</option>
++            <option value="6">24pt</option>
++            <option value="7">32pt</option>
++          </select>
++          <input
++            type="color"
++            onChange={(e) => execCommand('foreColor', e.target.value)}
++            className="w-6 h-6 p-0 border border-gray-300 rounded"
++            title="Text Color"
++          />
++        </div>
+@@
+       {/* Image Modal */}
+@@
+       )}
++
++      {/* File Modal */}
++      {showFileModal && (
++        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
++          <div className="bg-white rounded-lg p-6 w-full max-w-md">
++            <div className="flex justify-between items-center mb-4">
++              <h3 className="text-lg font-semibold">Insert File or Image</h3>
++              <button onClick={() => setShowFileModal(false)} className="text-gray-500 hover:text-gray-700">
++                <X size={20} />
++              </button>
++            </div>
++            <div className="space-y-4">
++              <div>
++                <label className="block text-sm font-medium text-gray-700 mb-1">Select a file</label>
++                <input
++                  type="file"
++                  onChange={handleFileChange}
++                  className="w-full"
++                  accept="*"
++                />
++                <p className="text-xs text-gray-500 mt-1">Supported: images or any file. Images will be embedded; other files will be inserted as download links.</p>
++              </div>
++              <div className="flex justify-end gap-2">
++                <button
++                  onClick={() => setShowFileModal(false)}
++                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
++                >
++                  Cancel
++                </button>
++              </div>
++            </div>
++          </div>
++        </div>
++      )}
+*** End Patch
+*** Update File: src/components/newsfeed/EnhancedNewsFeed.js
+@@
+-import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search } from 'lucide-react';
++import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search } from 'lucide-react';
++import RichTextEditor from './RichTextEditor';
+@@
+   const [newPost, setNewPost] = useState('');
+@@
+   const [replyText, setReplyText] = useState({});
+@@
+   // Handle new post submission
+   const handlePostSubmit = async () => {
+-    if (!newPost.trim()) return;
++    // Strip HTML tags to validate plain text
++    const plainContent = newPost.replace(/<[^>]*>/g, '');
++    if (!plainContent.trim()) return;
+@@
+       const postData = {
+         author_name: currentUser?.name || visitorSession.name,
+         author_email: currentUser?.email || visitorSession.email,
+         author_id: currentUser?.id || visitorSession.member_id || null,
+-        content: newPost,
++        content: newPost,
+         session_id: visitorSession?.session_id || generateSessionId(),
+         ip_address: null, // Would be set by XANO backend
+         user_agent: navigator.userAgent,
+         parent_id: null,
+         post_type: 'post'
+       };
+@@
+   // Handle reply submission
+   const handleReplySubmit = async (postId) => {
+-    const replyContent = replyText[postId];
+-    if (!replyContent || !replyContent.trim()) return;
++    const replyContent = replyText[postId];
++    if (!replyContent) return;
++    const plainReply = replyContent.replace(/<[^>]*>/g, '');
++    if (!plainReply.trim()) return;
+@@
+       const replyData = {
+         author_name: currentUser?.name || visitorSession.name,
+         author_email: currentUser?.email || visitorSession.email,
+         author_id: currentUser?.id || visitorSession.member_id || null,
+-        content: replyContent,
++        content: replyContent,
+         session_id: visitorSession?.session_id || generateSessionId(),
+         ip_address: null,
+         user_agent: navigator.userAgent,
+         parent_id: postId,
+         post_type: 'reply'
+       };
+@@
+       {/* Post Creation - Visitor Registration Required */}
+@@
+       ) : (
+         <div className="bg-white rounded-lg shadow p-6">
+@@
+-          <textarea
+-            value={newPost}
+-            onChange={(e) => setNewPost(e.target.value)}
+-            placeholder="What's on your mind? Share news, ask questions, or start a discussion..."
+-            className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+-            rows="4"
+-          />
++          <RichTextEditor
++            value={newPost}
++            onChange={setNewPost}
++            placeholder="What's on your mind? Share news, ask questions, or start a discussion..."
++          />
+           <div className="flex justify-between items-center mt-3">
+             <span className="text-sm text-gray-500">
+-              {newPost.length}/500 characters
++              {newPost.replace(/<[^>]*>/g, '').length}/500 characters
+             </span>
+             <button
+               onClick={handlePostSubmit}
+-              disabled={!newPost.trim() || isSubmitting || newPost.length > 500}
++              disabled={!newPost.replace(/<[^>]*>/g, '').trim() || isSubmitting || newPost.replace(/<[^>]*>/g, '').length > 500}
+               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+             >
+@@
+           </div>
+         </div>
+       )}
+@@
+               {/* Post Content */}
+-                 <div className="mb-4">
+-                   <p className="text-gray-800 leading-relaxed">{post.content}</p>
+-                 </div>
++                 <div className="mb-4">
++                   <div
++                     className="text-gray-800 leading-relaxed"
++                     dangerouslySetInnerHTML={{ __html: post.content }}
++                   />
++                 </div>
+@@
+               {/* Reply Form */}
+               {showReplyForm[post.id] && (
+                 <div className="px-6 pb-6 border-t border-gray-100">
+                   <div className="bg-gray-50 p-4 rounded-lg">
+                     <h5 className="font-medium text-gray-900 mb-3">Reply to {post.author_name}</h5>
+-                     <textarea
+-                       value={replyText[post.id] || ''}
+-                       onChange={(e) => setReplyText(prev => ({ ...prev, [post.id]: e.target.value }))}
+-                       placeholder="Write your reply..."
+-                       className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+-                       rows="3"
+-                     />
++                     <RichTextEditor
++                       value={replyText[post.id] || ''}
++                       onChange={(html) => setReplyText(prev => ({ ...prev, [post.id]: html }))}
++                       placeholder="Write your reply..."
++                     />
+                      <div className="flex justify-between items-center mt-3">
+                         <span className="text-sm text-gray-500">
+-                          {replyText[post.id]?.length || 0}/300 characters
++                          {(replyText[post.id] || '').replace(/<[^>]*>/g, '').length || 0}/300 characters
+                         </span>
+                         <button
+                           onClick={() => handleReplySubmit(post.id)}
+-                          disabled={!replyText[post.id]?.trim() || isSubmitting || replyText[post.id]?.length > 300}
++                          disabled={!(replyText[post.id] || '').replace(/<[^>]*>/g, '').trim() || isSubmitting || ((replyText[post.id] || '').replace(/<[^>]*>/g, '').length > 300)}
+                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                         >
+@@
+                     {/* Replies List */}
+                     {replies[post.id] && replies[post.id].length > 0 && (
+@@
+-                            <p className="text-gray-800 text-sm">{reply.content}</p>
++                            <p className="text-gray-800 text-sm" dangerouslySetInnerHTML={{ __html: reply.content }} />
+*** End Patch
