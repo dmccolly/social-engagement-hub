@@ -130,13 +130,15 @@ export const deleteCampaign = async (campaignId) => {
  */
 export const sendCampaign = async (campaignId, recipientIds) => {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${campaignId}/send`, {
+    // Use Netlify Function instead of Xano
+    const response = await fetch('/.netlify/functions/send-campaign', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        recipient_ids: recipientIds,
+        campaignId: campaignId,
+        recipientIds: recipientIds,
       }),
     });
     
