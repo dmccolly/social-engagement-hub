@@ -1,0 +1,84 @@
+*** Begin Patch
+*** Update File: src/WorkingRichBlogEditor.js
+@@
+-import { Upload, Link as LinkIcon, Image as ImageIcon, Video, Bold, Italic, Underline, TextColor, FontSize } from 'lucide-react';
++// Added Cloud icon for Cloudinary integration
++import { Upload, Link as LinkIcon, Image as ImageIcon, Video, Bold, Italic, Underline, TextColor, FontSize, Cloud } from 'lucide-react';
+@@
+         <div className="upload-section">
+@@
+             <button
+                 className="upload-button"
+                 onClick={() => {
+                   if (!isFocused()) {
+                     alert('Please click inside the content area first to select where the image will be inserted.');
+                     return;
+                   }
+                   fileInputRef.current.click();
+                 }}
+             >
+               <Upload className="icon" size={18} />
+               Upload Image
+             </button>
++            {/* New button to browse Cloudinary assets */}
++            <button
++              type="button"
++              className="upload-button cloudinary-button"
++              onClick={() => {
++                // Open the Cloudinary Webflow extension in a new window
++                window.open('https://webflow-cloudinary-ext.netlify.app/', '_blank', 'width=1280,height=720');
++              }}
++            >
++              <Cloud className="icon" size={18} />
++              Browse Cloudinary
++            </button>
+*** End Patch
+*** End Patch
+*** Begin Patch
+*** Update File: src/components/newsfeed/EnhancedNewsFeedIntegration.js
+@@
+-import { Users, Image as ImageIcon, Send, Loader, ThumbsUp, Reply } from 'lucide-react';
++// Added Cloud icon for Cloudinary integration
++import { Users, Image as ImageIcon, Send, Loader, ThumbsUp, Reply, Cloud } from 'lucide-react';
+@@ function EnhancedNewsFeedIntegration({ currentUser, ... }) {
+@@
+-        <div className="new-post-footer">
+-          <span className="character-count">
+-            {characterCount}/500 characters
+-          </span>
+-          <button
+-            className="post-button"
+-            disabled={characterCount === 0 || characterCount > 500}
+-            onClick={handlePostUpdate}
+-          >
+-            {postingUpdate ? <Loader className="spinner" size={16} /> : 'Post Update'}
+-          </button>
+-        </div>
++        <div className="new-post-footer">
++          {/* Cloudinary asset browser button for admins */}
++          {currentUser && (
++            <button
++              type="button"
++              className="cloudinary-button"
++              onClick={() => {
++                // Open the Cloudinary Webflow extension in a new window
++                window.open('https://webflow-cloudinary-ext.netlify.app/', '_blank', 'width=1280,height=720');
++              }}
++            >
++              <Cloud className="icon" size={16} />
++              Browse Cloudinary
++            </button>
++          )}
++          <span className="character-count">
++            {characterCount}/500 characters
++          </span>
++          <button
++            className="post-button"
++            disabled={characterCount === 0 || characterCount > 500}
++            onClick={handlePostUpdate}
++          >
++            {postingUpdate ? <Loader className="spinner" size={16} /> : 'Post Update'}
++          </button>
++        </div>
+*** End Patch
+*** End Patch
