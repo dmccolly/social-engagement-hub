@@ -1,0 +1,34 @@
+*** Begin Patch
+*** Update File: src/WorkingRichBlogEditor.js
+@@ const attachImageListeners = () => {
+         img.style.cursor = 'pointer';
+
+        // Ensure images loaded from existing content have default size and position
+        // classes and dataset values so they can be resized and positioned correctly.
+        if (!img.getAttribute('data-size')) {
+          img.setAttribute('data-size', 'medium');
+        }
+        if (!img.getAttribute('data-position')) {
+          img.setAttribute('data-position', 'center');
+        }
+        if (
+          !img.classList.contains('size-small') &&
+          !img.classList.contains('size-medium') &&
+          !img.classList.contains('size-large') &&
+          !img.classList.contains('size-full')
+        ) {
+          img.classList.add('size-medium');
+        }
+        if (
+          !img.classList.contains('position-left') &&
+          !img.classList.contains('position-center') &&
+          !img.classList.contains('position-right')
+        ) {
+          img.classList.add('position-center');
+        }
+@@ const attachImageListeners = () => {
+         img.onclick = (e) => {
+           e.preventDefault();
+           const imageId = img.id.replace('img-', '');
+           selectImage(imageId);
+         };
