@@ -1,10 +1,41 @@
-// src/components/newsfeed/EnhancedNewsFeed.js
+// Updated version of EnhancedNewsFeed with media attachments
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search } from 'lucide-react';
-import { getNewsfeedPosts, createNewsfeedPost, toggleNewsfeedLike, getNewsfeedReplies, getNewsfeedAnalytics, getVisitorPosts } from '../../services/newsfeedService';
+import {
+  MessageSquare,
+  Heart,
+  Share2,
+  Send,
+  User,
+  Mail,
+  Clock,
+  MoreVertical,
+  TrendingUp,
+  Search,
+  X
+} from 'lucide-react';
+import {
+  getNewsfeedPosts,
+  createNewsfeedPost,
+  toggleNewsfeedLike,
+  getNewsfeedReplies,
+  getNewsfeedAnalytics,
+  getVisitorPosts
+} from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
 
+/**
+ * EnhancedNewsFeed
+ *
+ * This updated component extends the existing EnhancedNewsFeed by
+ * introducing support for rich media attachments. Users can attach
+ * images, videos or audio clips to their posts either by uploading a
+ * file (which is uploaded to Cloudinary) or by pasting an existing
+ * Cloudinary URL. Attached media are appended to the post content as
+ * HTML tags (<img>, <video>, <audio>) so they render naturally in
+ * the feed. Posts are rendered with `dangerouslySetInnerHTML` to
+ * display the rich content. Basic text editing remains the same.
+ */
 const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
   const [posts, setPosts] = useState([]);
   const [replies, setReplies] = useState({});
@@ -20,17 +51,19 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
   const [sortBy, setSortBy] = useState('recent'); // recent, popular, trending
   const [analytics, setAnalytics] = useState(null);
 
-  // Load visitor session on mount
+  // New state for media attachments
+  const [mediaType, setMediaType] = useState('image');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+
   useEffect(() => {
     loadVisitorSession();
     loadPosts();
     loadAnalytics();
   }, []);
 
-  // Load visitor session
   const loadVisitorSession = async () => {
     try {
-      // Check for existing session or current user
       if (currentUser) {
         setVisitorSession({
           name: currentUser.name,
@@ -39,7 +72,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
           member_id: currentUser.id
         });
       } else {
-        // Check localStorage for visitor session
         const savedSession = localStorage.getItem('visitor_session');
         if (savedSession) {
           setVisitorSession(JSON.parse(savedSession));
@@ -50,12 +82,10 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Save visitor session
   const saveVisitorSession = async (sessionData) => {
     try {
       const { createVisitorSession } = await import('../services/newsfeedService');
       const result = await createVisitorSession(sessionData);
-      
       if (result.success) {
         localStorage.setItem('visitor_session', JSON.stringify(result.session));
         setVisitorSession(result.session);
@@ -67,30 +97,24 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Load posts from XANO
   const loadPosts = async () => {
     try {
       setIsLoading(true);
-      
       const filters = {
         type: 'posts_only',
         limit: 50,
         visitor_email: visitorSession?.email
       };
-      
       const result = await getNewsfeedPosts(filters);
-      
       if (result.success && result.posts) {
         setPosts(result.posts);
       } else {
-        // Fallback to sample data
         const { getSampleNewsfeedData } = await import('../services/newsfeedService');
         const sampleData = getSampleNewsfeedData();
         setPosts(sampleData.posts);
       }
     } catch (error) {
       console.error('Load posts error:', error);
-      // Fallback to sample data
       const { getSampleNewsfeedData } = await import('../services/newsfeedService');
       const sampleData = getSampleNewsfeedData();
       setPosts(sampleData.posts);
@@ -99,7 +123,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Load analytics
   const loadAnalytics = async () => {
     try {
       const result = await getNewsfeedAnalytics('7d');
@@ -111,24 +134,69 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle visitor form submission
+  // Media upload handler
+  const handleMediaFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setIsUploadingMedia(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'demo-preset');
+      const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'demo-cloud-name';
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${mediaType}/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      if (response.ok) {
+        const data = await response.json();
+        insertMediaIntoPost({ type: mediaType, url: data.secure_url, alt: file.name });
+      } else {
+        alert('Media upload failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Media upload error:', err);
+      alert('Media upload failed. Please try again.');
+    } finally {
+      setIsUploadingMedia(false);
+      // Reset file input
+      e.target.value = '';
+    }
+  };
+
+  // Insert media from an existing URL
+  const handleInsertMediaByUrl = () => {
+    if (!mediaUrl.trim()) return;
+    insertMediaIntoPost({ type: mediaType, url: mediaUrl.trim(), alt: mediaUrl.trim() });
+    setMediaUrl('');
+  };
+
+  // Append media markup to newPost content
+  const insertMediaIntoPost = ({ type, url, alt }) => {
+    let tag = '';
+    if (type === 'image') {
+      tag = `<img src="${url}" alt="${alt}" class="feed-media" />`;
+    } else if (type === 'video') {
+      tag = `<video controls src="${url}" class="feed-media"></video>`;
+    } else if (type === 'audio') {
+      tag = `<audio controls src="${url}" class="feed-media"></audio>`;
+    }
+    // Append media tag to the post with a newline for separation
+    setNewPost((prev) => (prev ? `${prev}\n${tag}` : tag));
+  };
+
   const handleVisitorFormSubmit = async (e) => {
     e.preventDefault();
-    
     if (!visitorData.name.trim() || !visitorData.email.trim()) {
       alert('Please fill in both name and email');
       return;
     }
-    
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(visitorData.email)) {
       alert('Please enter a valid email address');
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const sessionData = {
         session_id: generateSessionId(),
@@ -137,9 +205,7 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
         is_member: false,
         member_id: null
       };
-      
       const result = await saveVisitorSession(sessionData);
-      
       if (result.success) {
         setShowVisitorForm(false);
         setVisitorData({ name: '', email: '' });
@@ -155,18 +221,13 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle new post submission
   const handlePostSubmit = async () => {
     if (!newPost.trim()) return;
-    
-    // Check if visitor needs to register
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const postData = {
         author_name: currentUser?.name || visitorSession.name,
@@ -174,17 +235,15 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
         author_id: currentUser?.id || visitorSession.member_id || null,
         content: newPost,
         session_id: visitorSession?.session_id || generateSessionId(),
-        ip_address: null, // Would be set by XANO backend
+        ip_address: null,
         user_agent: navigator.userAgent,
         parent_id: null,
         post_type: 'post'
       };
-      
       const result = await createNewsfeedPost(postData);
-      
       if (result.success) {
         setNewPost('');
-        loadPosts(); // Reload to show new post
+        loadPosts();
         alert('Post created successfully!');
       } else {
         alert('Failed to create post: ' + result.error);
@@ -197,19 +256,14 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle reply submission
   const handleReplySubmit = async (postId) => {
     const replyContent = replyText[postId];
     if (!replyContent || !replyContent.trim()) return;
-    
-    // Check if visitor needs to register
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const replyData = {
         author_name: currentUser?.name || visitorSession.name,
@@ -222,15 +276,10 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
         parent_id: postId,
         post_type: 'reply'
       };
-      
       const result = await createNewsfeedPost(replyData);
-      
       if (result.success) {
-        // Clear reply text and hide form
-        setReplyText(prev => ({ ...prev, [postId]: '' }));
-        setShowReplyForm(prev => ({ ...prev, [postId]: false }));
-        
-        // Reload replies for this post
+        setReplyText((prev) => ({ ...prev, [postId]: '' }));
+        setShowReplyForm((prev) => ({ ...prev, [postId]: false }));
         await loadReplies(postId);
         alert('Reply posted successfully!');
       } else {
@@ -244,13 +293,11 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle like toggle
   const handleLike = async (postId) => {
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
     }
-    
     try {
       const visitorData = {
         author_email: currentUser?.email || visitorSession.email,
@@ -258,16 +305,11 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
         ip_address: null,
         user_agent: navigator.userAgent
       };
-      
       const result = await toggleNewsfeedLike(postId, visitorData);
-      
       if (result.success) {
-        // Update local state
-        setPosts(prev => prev.map(post => 
-          post.id === postId 
-            ? { ...post, likes_count: result.likes_count, visitor_liked: result.liked }
-            : post
-        ));
+        setPosts((prev) =>
+          prev.map((post) => (post.id === postId ? { ...post, likes_count: result.likes_count, visitor_liked: result.liked } : post))
+        );
       } else {
         alert('Failed to like post: ' + result.error);
       }
@@ -277,34 +319,29 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Load replies for a post
   const loadReplies = async (postId) => {
     try {
       const result = await getNewsfeedReplies(postId);
       if (result.success) {
-        setReplies(prev => ({ ...prev, [postId]: result.replies }));
+        setReplies((prev) => ({ ...prev, [postId]: result.replies }));
       }
     } catch (error) {
       console.error('Load replies error:', error);
     }
   };
 
-  // Toggle reply form visibility
   const toggleReplyForm = (postId) => {
-    setShowReplyForm(prev => ({ ...prev, [postId]: !prev[postId] }));
+    setShowReplyForm((prev) => ({ ...prev, [postId]: !prev[postId] }));
     if (!showReplyForm[postId]) {
-      // Load replies when opening form
       loadReplies(postId);
     }
   };
 
-  // Handle search
   const handleSearch = async (query) => {
     if (!query.trim()) {
       loadPosts();
       return;
     }
-    
     try {
       const result = await searchNewsfeedPosts(query);
       if (result.success) {
@@ -315,12 +352,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Generate session ID
-  const generateSessionId = () => {
-    return 'session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-  };
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -363,7 +394,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
             </div>
           )}
         </div>
-        
         {/* Search Bar */}
         <div className="mb-4">
           <div className="relative">
@@ -379,7 +409,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
           </div>
         </div>
       </div>
-
       {/* Post Creation - Visitor Registration Required */}
       {(!visitorSession && !currentUser) ? (
         <div className="bg-white rounded-lg shadow p-6">
@@ -420,6 +449,45 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
             className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows="4"
           />
+          {/* Media attachment controls */}
+          <div className="mt-3 space-y-3">
+            <div className="flex items-center gap-3">
+              <select
+                value={mediaType}
+                onChange={(e) => setMediaType(e.target.value)}
+                className="p-2 border border-gray-300 rounded"
+              >
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+              </select>
+              <input
+                type="file"
+                accept={mediaType + '/*'}
+                onChange={handleMediaFileChange}
+                className="flex-grow border border-gray-300 rounded p-2"
+                disabled={isUploadingMedia}
+              />
+              {isUploadingMedia && <span className="text-sm text-gray-500">Uploading...</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                placeholder="Paste a Cloudinary URL"
+                className="flex-grow p-2 border border-gray-300 rounded"
+              />
+              <button
+                type="button"
+                onClick={handleInsertMediaByUrl}
+                disabled={!mediaUrl.trim()}
+                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                Add via URL
+              </button>
+            </div>
+          </div>
           <div className="flex justify-between items-center mt-3">
             <span className="text-sm text-gray-500">
               {newPost.length}/500 characters
@@ -444,7 +512,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
           </div>
         </div>
       )}
-
       {/* Visitor Registration Form Modal */}
       {showVisitorForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -461,7 +528,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                 <X size={24} />
               </button>
             </div>
-            
             <form onSubmit={handleVisitorFormSubmit} className="p-6">
               <div className="space-y-4">
                 <div>
@@ -471,13 +537,12 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                   <input
                     type="text"
                     value={visitorData.name}
-                    onChange={(e) => setVisitorData({...visitorData, name: e.target.value})}
+                    onChange={(e) => setVisitorData({ ...visitorData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your name"
                     required
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email Address *
@@ -485,13 +550,12 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                   <input
                     type="email"
                     value={visitorData.email}
-                    onChange={(e) => setVisitorData({...visitorData, email: e.target.value})}
+                    onChange={(e) => setVisitorData({ ...visitorData, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="your-email@domain.com"
                     required
                   />
                 </div>
-                
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-blue-800">
                     <strong>Why we need this:</strong> To prevent spam and build a trusted community. 
@@ -499,7 +563,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                   </p>
                 </div>
               </div>
-              
               <div className="flex justify-between items-center mt-6">
                 <button
                   type="button"
@@ -530,7 +593,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
           </div>
         </div>
       )}
-
       {/* Posts List */}
       <div className="space-y-4">
         {posts.length === 0 ? (
@@ -550,7 +612,7 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
             )}
           </div>
         ) : (
-          posts.map(post => (
+          posts.map((post) => (
             <div key={post.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
               {/* Post Header */}
               <div className="p-6">
@@ -570,27 +632,25 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <MoreVertical size={16} className="text-gray-400" />
                   </button>
                 </div>
-
                 {/* Post Content */}
                 <div className="mb-4">
-                  <p className="text-gray-800 leading-relaxed">{post.content}</p>
+                  <div
+                    className="text-gray-800 leading-relaxed space-y-2"
+                    dangerouslySetInnerHTML={{ __html: post.content }}
+                  />
                 </div>
-
                 {/* Post Actions */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => handleLike(post.id)}
                       className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-colors ${
-                        post.visitor_liked 
-                          ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        post.visitor_liked ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       <Heart size={16} className={post.visitor_liked ? 'fill-current' : ''} />
                       <span>{post.likes_count}</span>
                     </button>
-                    
                     <button
                       onClick={() => toggleReplyForm(post.id)}
                       className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
@@ -598,7 +658,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                       <MessageSquare size={16} />
                       <span>{post.comments_count} replies</span>
                     </button>
-                    
                     <button className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
                       <Share2 size={16} />
                       <span>Share</span>
@@ -606,7 +665,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                   </div>
                 </div>
               </div>
-
               {/* Reply Form */}
               {showReplyForm[post.id] && (
                 <div className="px-6 pb-6 border-t border-gray-100">
@@ -614,7 +672,7 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <h5 className="font-medium text-gray-900 mb-3">Reply to {post.author_name}</h5>
                     <textarea
                       value={replyText[post.id] || ''}
-                      onChange={(e) => setReplyText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                      onChange={(e) => setReplyText((prev) => ({ ...prev, [post.id]: e.target.value }))}
                       placeholder="Write your reply..."
                       className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
@@ -637,11 +695,10 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                       </button>
                     </div>
                   </div>
-
                   {/* Replies List */}
                   {replies[post.id] && replies[post.id].length > 0 && (
                     <div className="mt-4 space-y-3">
-                      {replies[post.id].map(reply => (
+                      {replies[post.id].map((reply) => (
                         <div key={reply.id} className="bg-white border border-gray-200 rounded-lg p-4 ml-4">
                           <div className="flex items-center gap-3 mb-2">
                             <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -649,9 +706,7 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
                             </div>
                             <div>
                               <h6 className="font-medium text-gray-900 text-sm">{reply.author_name}</h6>
-                              <p className="text-xs text-gray-500">
-                                {new Date(reply.created_at).toLocaleString()}
-                              </p>
+                              <p className="text-xs text-gray-500">{new Date(reply.created_at).toLocaleString()}</p>
                             </div>
                           </div>
                           <p className="text-gray-800 text-sm">{reply.content}</p>
@@ -665,7 +720,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
           ))
         )}
       </div>
-
       {/* Analytics Footer */}
       {analytics && (
         <div className="bg-white rounded-lg shadow p-6 mt-6">
@@ -697,7 +751,6 @@ const EnhancedNewsFeed = ({ currentUser, onMembershipRequired }) => {
   );
 };
 
-// Helper function to generate session ID
 const generateSessionId = () => {
   return 'session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 };
