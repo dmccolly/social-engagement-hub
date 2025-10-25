@@ -1,12 +1,48 @@
-// src/components/newsfeed/FacebookStyleNewsFeed.js
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search, Image, Video, Smile, MapPin, X, Facebook as FacebookIcon, Twitter, Linkedin } from 'lucide-react';
-import { getNewsfeedPosts, createNewsfeedPost, toggleNewsfeedLike, getNewsfeedReplies, getNewsfeedAnalytics } from '../../services/newsfeedService';
+import {
+  MessageSquare,
+  Heart,
+  Share2,
+  Send,
+  User,
+  Mail,
+  Clock,
+  MoreVertical,
+  TrendingUp,
+  Search,
+  Image,
+  Video,
+  Smile,
+  MapPin,
+  X,
+  Facebook as FacebookIcon,
+  Twitter,
+  Linkedin
+} from 'lucide-react';
+import {
+  getNewsfeedPosts,
+  createNewsfeedPost,
+  toggleNewsfeedLike,
+  getNewsfeedReplies,
+  getNewsfeedAnalytics
+} from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
 
-const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
+/**
+ * FacebookStyleNewsFeed is a fully featured community feed component that includes:
+ *  - Rich post composer with images, videos, feelings, and location attachments
+ *  - Search bar to filter posts via backend search
+ *  - Social share menu on each post (Facebook, Twitter, LinkedIn)
+ *  - Replies and nested comments
+ *  - Visitor registration with session support
+ *  - Likes and analytics counts
+ *
+ * Note: This component requires a Xano backend with endpoints for posts, likes,
+ *       replies, and analytics. It also depends on lucide-react icons.
+ */
+const FacebookStyleNewsFeed = ({ currentUser }) => {
   const [posts, setPosts] = useState([]);
   const [replies, setReplies] = useState({});
   const [newPost, setNewPost] = useState('');
@@ -17,21 +53,19 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
   const [visitorSession, setVisitorSession] = useState(null);
   const [showVisitorForm, setShowVisitorForm] = useState(false);
   const [visitorData, setVisitorData] = useState({ name: '', email: '' });
-  const [activeTab, setActiveTab] = useState('posts'); // posts, stories, live
+  const [activeTab, setActiveTab] = useState('posts');
   const [analytics, setAnalytics] = useState(null);
-
-  // New state for search term and share menu
   const [searchTerm, setSearchTerm] = useState('');
   const [activeShareMenu, setActiveShareMenu] = useState(null);
 
-  // Load visitor session on mount
+  // Load visitor session and posts on mount
   useEffect(() => {
     loadVisitorSession();
     loadPosts();
     loadAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load visitor session
   const loadVisitorSession = async () => {
     try {
       if (currentUser) {
@@ -52,11 +86,10 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Save visitor session
+  // Save visitor session via backend
   const saveVisitorSession = async (sessionData) => {
     try {
       const result = await createVisitorSession(sessionData);
-      
       if (result.success) {
         localStorage.setItem('visitor_session', JSON.stringify(result.session));
         setVisitorSession(result.session);
@@ -68,21 +101,17 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Load posts from XANO
+  // Load posts from Xano, optionally with search filters
   const loadPosts = async (overrideFilters = {}) => {
     try {
       setIsLoading(true);
-      
-      // Build filters for newsfeed retrieval.  Override with any passed filters (e.g. search)
       const filters = {
         type: 'posts_only',
         limit: 50,
         visitor_email: visitorSession?.email,
         ...overrideFilters
       };
-      
       const result = await getNewsfeedPosts(filters);
-      
       if (result.success && result.posts) {
         setPosts(result.posts);
       }
@@ -93,17 +122,13 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle search submissions
   const handleSearch = async () => {
-    // Avoid empty search
     if (!searchTerm.trim()) {
-      // Reload default posts if search is cleared
       loadPosts();
       return;
     }
     try {
       setIsLoading(true);
-      // Pass search term to backend to filter posts
       const result = await getNewsfeedPosts({
         type: 'posts_only',
         limit: 50,
@@ -120,22 +145,23 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Toggle share menu visibility for a specific post
   const toggleShareMenu = (postId) => {
-    setActiveShareMenu(prev => (prev === postId ? null : postId));
+    setActiveShareMenu((prev) => (prev === postId ? null : postId));
   };
 
-  // Create share URL for a given post and network
   const shareToNetwork = (post, network) => {
-    // Build anchor link so shared link scrolls to the post
     const url = `${window.location.origin}${window.location.pathname}#post-${post.id}`;
-    // Use a snippet of the post content for tweet text
-    const snippet = post.content && post.content.length > 120 ? `${post.content.slice(0, 117)}...` : post.content;
+    const snippet =
+      post.content && post.content.length > 120
+        ? `${post.content.slice(0, 117)}...`
+        : post.content;
     let shareUrl = '';
     if (network === 'facebook') {
       shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
     } else if (network === 'twitter') {
-      shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(snippet || '')}`;
+      shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(
+        snippet || ''
+      )}`;
     } else if (network === 'linkedin') {
       shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
     }
@@ -143,7 +169,6 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     setActiveShareMenu(null);
   };
 
-  // Load analytics
   const loadAnalytics = async () => {
     try {
       const result = await getNewsfeedAnalytics('7d');
@@ -155,23 +180,18 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle visitor form submission
   const handleVisitorFormSubmit = async (e) => {
     e.preventDefault();
-    
     if (!visitorData.name.trim() || !visitorData.email.trim()) {
       alert('Please fill in both name and email');
       return;
     }
-    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(visitorData.email)) {
       alert('Please enter a valid email address');
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const sessionData = {
         session_id: generateSessionId(),
@@ -180,9 +200,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         is_member: false,
         member_id: null
       };
-      
       const result = await saveVisitorSession(sessionData);
-      
       if (result.success) {
         setShowVisitorForm(false);
         setVisitorData({ name: '', email: '' });
@@ -198,17 +216,13 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle new post submission
   const handlePostSubmit = async () => {
     if (!newPost.trim()) return;
-    
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const postData = {
         author_name: currentUser?.name || visitorSession.name,
@@ -221,9 +235,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         parent_id: null,
         post_type: 'post'
       };
-      
       const result = await createNewsfeedPost(postData);
-      
       if (result.success) {
         setNewPost('');
         loadPosts();
@@ -238,13 +250,11 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle like
   const handleLike = async (postId) => {
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
     }
-    
     try {
       const visitorData = {
         author_email: currentUser?.email || visitorSession.email,
@@ -252,9 +262,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         ip_address: null,
         user_agent: navigator.userAgent
       };
-      
       const result = await toggleNewsfeedLike(postId, visitorData);
-      
       if (result.success) {
         loadPosts();
       }
@@ -263,15 +271,13 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Toggle reply form
   const toggleReplyForm = async (postId) => {
-    setShowReplyForm(prev => ({ ...prev, [postId]: !prev[postId] }));
-    
+    setShowReplyForm((prev) => ({ ...prev, [postId]: !prev[postId] }));
     if (!replies[postId]) {
       try {
         const result = await getNewsfeedReplies(postId);
         if (result.success) {
-          setReplies(prev => ({ ...prev, [postId]: result.replies }));
+          setReplies((prev) => ({ ...prev, [postId]: result.replies }));
         }
       } catch (error) {
         console.error('Load replies error:', error);
@@ -279,17 +285,13 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
-  // Handle reply submission
   const handleReplySubmit = async (postId) => {
     if (!replyText[postId]?.trim()) return;
-    
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const replyData = {
         author_name: currentUser?.name || visitorSession.name,
@@ -302,14 +304,12 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         parent_id: postId,
         post_type: 'reply'
       };
-      
       const result = await createNewsfeedPost(replyData);
-      
       if (result.success) {
-        setReplyText(prev => ({ ...prev, [postId]: '' }));
+        setReplyText((prev) => ({ ...prev, [postId]: '' }));
         const repliesResult = await getNewsfeedReplies(postId);
         if (repliesResult.success) {
-          setReplies(prev => ({ ...prev, [postId]: repliesResult.replies }));
+          setReplies((prev) => ({ ...prev, [postId]: repliesResult.replies }));
         }
         loadPosts();
       } else {
@@ -323,22 +323,24 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     }
   };
 
+  // Helper to generate unique session IDs
+  const generateSessionId = () => {
+    return 'session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
-      {/* Facebook-Style Header */}
+      {/* Header with tab buttons */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <MessageSquare size={28} />
-            Social Feed
+            <MessageSquare size={28} /> Social Feed
           </h2>
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('posts')}
               className={`px-4 py-2 rounded-full transition-all ${
-                activeTab === 'posts' 
-                  ? 'bg-white text-blue-600 font-semibold' 
-                  : 'bg-blue-500 hover:bg-blue-400'
+                activeTab === 'posts' ? 'bg-white text-blue-600 font-semibold' : 'bg-blue-500 hover:bg-blue-400'
               }`}
             >
               Posts
@@ -346,9 +348,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
             <button
               onClick={() => setActiveTab('stories')}
               className={`px-4 py-2 rounded-full transition-all ${
-                activeTab === 'stories' 
-                  ? 'bg-white text-blue-600 font-semibold' 
-                  : 'bg-blue-500 hover:bg-blue-400'
+                activeTab === 'stories' ? 'bg-white text-blue-600 font-semibold' : 'bg-blue-500 hover:bg-blue-400'
               }`}
             >
               Stories
@@ -356,9 +356,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
             <button
               onClick={() => setActiveTab('live')}
               className={`px-4 py-2 rounded-full transition-all ${
-                activeTab === 'live' 
-                  ? 'bg-white text-blue-600 font-semibold' 
-                  : 'bg-blue-500 hover:bg-blue-400'
+                activeTab === 'live' ? 'bg-white text-blue-600 font-semibold' : 'bg-blue-500 hover:bg-blue-400'
               }`}
             >
               Live
@@ -372,14 +370,12 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         )}
       </div>
 
-      {/* Post Creator - Facebook Style */}
+      {/* Post composer */}
       {!visitorSession && !currentUser ? (
         <div className="bg-white rounded-xl shadow-lg p-6 text-center">
           <User size={48} className="mx-auto mb-4 text-blue-600" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">Join the Conversation</h3>
-          <p className="text-gray-600 mb-4">
-            Sign up to post, comment, and engage with the community
-          </p>
+          <p className="text-gray-600 mb-4">Sign up to post, comment, and engage with the community</p>
           <button
             onClick={() => setShowVisitorForm(true)}
             className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 font-semibold"
@@ -401,27 +397,21 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
               rows="3"
             />
           </div>
-          
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <Image size={18} className="text-green-600" />
-                <span className="text-sm font-medium">Photo</span>
+                <Image size={18} className="text-green-600" /> <span className="text-sm font-medium">Photo</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <Video size={18} className="text-red-600" />
-                <span className="text-sm font-medium">Video</span>
+                <Video size={18} className="text-red-600" /> <span className="text-sm font-medium">Video</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <Smile size={18} className="text-yellow-600" />
-                <span className="text-sm font-medium">Feeling</span>
+                <Smile size={18} className="text-yellow-600" /> <span className="text-sm font-medium">Feeling</span>
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <MapPin size={18} className="text-blue-600" />
-                <span className="text-sm font-medium">Location</span>
+                <MapPin size={18} className="text-blue-600" /> <span className="text-sm font-medium">Location</span>
               </button>
             </div>
-            
             <button
               onClick={handlePostSubmit}
               disabled={!newPost.trim() || isSubmitting}
@@ -433,7 +423,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         </div>
       )}
 
-      {/* Search Bar */}
+      {/* Search bar */}
       <div className="bg-white rounded-xl shadow-lg p-4 flex items-center gap-2">
         <Search size={20} className="text-gray-400" />
         <input
@@ -457,14 +447,13 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         </button>
       </div>
 
-      {/* Visitor Registration Modal */}
+      {/* Visitor registration modal */}
       {showVisitorForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <User className="text-blue-600" />
-                Join Community
+                <User className="text-blue-600" /> Join Community
               </h2>
               <button
                 onClick={() => setShowVisitorForm(false)}
@@ -473,44 +462,36 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                 <X size={24} />
               </button>
             </div>
-            
             <form onSubmit={handleVisitorFormSubmit} className="p-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
                   <input
                     type="text"
                     value={visitorData.name}
-                    onChange={(e) => setVisitorData({...visitorData, name: e.target.value})}
+                    onChange={(e) => setVisitorData({ ...visitorData, name: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
                     placeholder="Enter your name"
                     required
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                   <input
                     type="email"
                     value={visitorData.email}
-                    onChange={(e) => setVisitorData({...visitorData, email: e.target.value})}
+                    onChange={(e) => setVisitorData({ ...visitorData, email: e.target.value })}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
                     placeholder="your-email@domain.com"
                     required
                   />
                 </div>
-                
                 <div className="bg-blue-50 p-4 rounded-xl">
                   <p className="text-sm text-blue-800">
                     <strong>Why we need this:</strong> To prevent spam and build a trusted community.
                   </p>
                 </div>
               </div>
-              
               <div className="flex gap-3 mt-6">
                 <button
                   type="button"
@@ -532,7 +513,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         </div>
       )}
 
-      {/* Posts List - Facebook Style */}
+      {/* Posts list */}
       {isLoading ? (
         <div className="bg-white rounded-xl shadow-lg p-12 text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -546,9 +527,9 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         </div>
       ) : (
         <div className="space-y-4">
-          {posts.map(post => (
+          {posts.map((post) => (
             <div key={post.id} id={`post-${post.id}`} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              {/* Post Header */}
+              {/* Post header */}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -558,7 +539,11 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <div>
                       <h4 className="font-bold text-gray-900">{post.author_name}</h4>
                       <p className="text-sm text-gray-500">
-                        {new Date(post.created_at).toLocaleDateString()} at {new Date(post.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(post.created_at).toLocaleDateString()} at{' '}
+                        {new Date(post.created_at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </p>
                     </div>
                   </div>
@@ -566,13 +551,10 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <MoreVertical size={20} className="text-gray-400" />
                   </button>
                 </div>
-
-                {/* Post Content */}
                 <div className="mb-4">
                   <p className="text-gray-800 leading-relaxed text-lg">{post.content}</p>
                 </div>
-
-                {/* Post Stats */}
+                {/* Post stats */}
                 <div className="flex items-center justify-between py-3 border-t border-b border-gray-100">
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-1">
@@ -587,8 +569,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <span>0 shares</span>
                   </div>
                 </div>
-
-                {/* Post Actions */}
+                {/* Post actions */}
                 <div className="flex items-center justify-around pt-2">
                   <button
                     onClick={() => handleLike(post.id)}
@@ -599,23 +580,18 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <Heart size={20} className={post.visitor_liked ? 'fill-current' : ''} />
                     <span>{post.visitor_liked ? 'Liked' : 'Like'}</span>
                   </button>
-                  
                   <button
                     onClick={() => toggleReplyForm(post.id)}
                     className="flex items-center gap-2 px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
                   >
-                    <MessageSquare size={20} />
-                    <span>Comment</span>
+                    <MessageSquare size={20} /> <span>Comment</span>
                   </button>
-                  
-                  {/* Share button with social menu */}
                   <div className="relative">
                     <button
                       onClick={() => toggleShareMenu(post.id)}
                       className="flex items-center gap-2 px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
                     >
-                      <Share2 size={20} />
-                      <span>Share</span>
+                      <Share2 size={20} /> <span>Share</span>
                     </button>
                     {activeShareMenu === post.id && (
                       <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
@@ -623,30 +599,26 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                           onClick={() => shareToNetwork(post, 'facebook')}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
                         >
-                          <FacebookIcon size={16} className="text-blue-600" />
-                          Facebook
+                          <FacebookIcon size={16} className="text-blue-600" /> Facebook
                         </button>
                         <button
                           onClick={() => shareToNetwork(post, 'twitter')}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
                         >
-                          <Twitter size={16} className="text-blue-400" />
-                          Twitter
+                          <Twitter size={16} className="text-blue-400" /> Twitter
                         </button>
                         <button
                           onClick={() => shareToNetwork(post, 'linkedin')}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
                         >
-                          <Linkedin size={16} className="text-blue-700" />
-                          LinkedIn
+                          <Linkedin size={16} className="text-blue-700" /> LinkedIn
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-
-              {/* Reply Section */}
+              {/* Reply section */}
               {showReplyForm[post.id] && (
                 <div className="px-6 pb-6 bg-gray-50 border-t border-gray-100">
                   <div className="pt-4">
@@ -658,7 +630,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                         <input
                           type="text"
                           value={replyText[post.id] || ''}
-                          onChange={(e) => setReplyText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                          onChange={(e) => setReplyText((prev) => ({ ...prev, [post.id]: e.target.value }))}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
@@ -677,11 +649,9 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                         <Send size={18} />
                       </button>
                     </div>
-
-                    {/* Replies List */}
                     {replies[post.id] && replies[post.id].length > 0 && (
                       <div className="space-y-3 mt-4">
-                        {replies[post.id].map(reply => (
+                        {replies[post.id].map((reply) => (
                           <div key={reply.id} className="flex gap-3">
                             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
                               <User className="text-gray-600" size={16} />
@@ -708,11 +678,6 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
       )}
     </div>
   );
-};
-
-// Helper function to generate session ID
-const generateSessionId = () => {
-  return 'session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 };
 
 export default FacebookStyleNewsFeed;
