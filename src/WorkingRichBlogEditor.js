@@ -95,7 +95,9 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
       img.onclick = (e) => {
         e.preventDefault();
         const imageId = img.id.replace('img-', '');
-        selectImage(imageId);
+        // Use global selectImage to allow enhanced behaviour
+        if (window.selectImage) window.selectImage(imageId);
+        else selectImage(imageId);
       };
     });
   };
@@ -179,7 +181,9 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
     img.style.cursor = 'pointer';
     img.addEventListener('click', (e) => {
       e.preventDefault();
-      selectImage(image.id);
+      // Use the globally assigned selectImage handler so updates apply
+      if (window.selectImage) window.selectImage(image.id);
+      else selectImage(image.id);
     });
     // Insert image into document
     range.deleteContents();
@@ -203,61 +207,30 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
    */
   const selectImage = (imageId) => {
     setSelectedImageId(imageId);
-    // Remove previous selections, handles and toolbars
-    document.querySelectorAll('.selected-image').forEach(el => el.classList.remove('selected-image'));
-    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-    document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
+    // Clean up any previous selection, handles and toolbars
+    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
+    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
+    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
     const img = document.getElementById(`img-${imageId}`);
     if (!img) return;
     img.classList.add('selected-image');
-    // Wrap image for resizing if necessary
-    if (!img.parentElement.classList.contains('image-wrapper-resizable')) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'image-wrapper-resizable';
-      wrapper.style.cssText = 'position: relative; display: inline-block;';
-      img.parentNode.insertBefore(wrapper, img);
-      wrapper.appendChild(img);
-      // Create four resize handles (corners)
-      ['nw', 'ne', 'sw', 'se'].forEach((position) => {
-        const handle = document.createElement('div');
-        handle.className = `resize-handle resize-handle-${position}`;
-        handle.style.cssText = `position:absolute;width:12px;height:12px;background:#667eea;border:2px solid white;border-radius:50%;z-index:1001;box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:${position.includes('n') ? (position.includes('w') ? 'nw' : 'ne') : (position.includes('w') ? 'sw' : 'se')}-resize;`;
-        if (position.includes('n')) handle.style.top = '-6px';
-        if (position.includes('s')) handle.style.bottom = '-6px';
-        if (position.includes('w')) handle.style.left = '-6px';
-        if (position.includes('e')) handle.style.right = '-6px';
-        handle.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const startX = e.clientX;
-          const startWidth = img.offsetWidth;
-          const startHeight = img.offsetHeight;
-          const aspectRatio = startWidth / startHeight;
-          const onMouseMove = (moveEvent) => {
-            const deltaX = moveEvent.clientX - startX;
-            let newWidth = startWidth;
-            if (position.includes('e')) newWidth = startWidth + deltaX;
-            else if (position.includes('w')) newWidth = startWidth - deltaX;
-            const newHeight = newWidth / aspectRatio;
-            if (newWidth > 100 && newWidth < 1200) {
-              img.style.width = `${newWidth}px`;
-              img.style.height = 'auto';
-              img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
-              img.setAttribute('data-size', 'custom');
-            }
-          };
-          const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            if (contentRef.current) setContent(contentRef.current.innerHTML);
-          };
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
+    // Helper to reposition toolbar and handles
+    const updatePositions = (toolbar, handles) => {
+      const rect = img.getBoundingClientRect();
+      if (toolbar) {
+        toolbar.style.top = `${rect.top - 50}px`;
+        toolbar.style.left = `${rect.left}px`;
+      }
+      if (handles) {
+        handles.forEach(({ pos, el }) => {
+          if (pos.includes('n')) el.style.top = `${rect.top - 6}px`;
+          if (pos.includes('s')) el.style.top = `${rect.bottom - 6}px`;
+          if (pos.includes('w')) el.style.left = `${rect.left - 6}px`;
+          if (pos.includes('e')) el.style.left = `${rect.right - 6}px`;
         });
-        wrapper.appendChild(handle);
-      });
-    }
-    // Create floating toolbar for image controls
+      }
+    };
+    // Create floating toolbar
     const toolbar = document.createElement('div');
     toolbar.className = 'floating-toolbar';
     toolbar.innerHTML = `
@@ -273,12 +246,53 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
       <button onclick="window.deleteImage('${imageId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
       <button onclick="window.clearImageSelection()" class="toolbar-btn close-btn">×</button>
     `;
-    const rect = img.getBoundingClientRect();
-    toolbar.style.position = 'fixed';
-    toolbar.style.top = `${rect.top - 50}px`;
-    toolbar.style.left = `${rect.left}px`;
-    toolbar.style.zIndex = '1000';
     document.body.appendChild(toolbar);
+    // Create corner handles on document body
+    const positions = ['nw', 'ne', 'sw', 'se'];
+    const handles = [];
+    positions.forEach((pos) => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle resize-handle-${pos}`;
+      handle.style.position = 'fixed';
+      handle.style.width = '12px';
+      handle.style.height = '12px';
+      handle.style.background = '#667eea';
+      handle.style.border = '2px solid white';
+      handle.style.borderRadius = '50%';
+      handle.style.zIndex = '1001';
+      handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      handle.style.cursor = `${pos.includes('n') ? (pos.includes('w') ? 'nw' : 'ne') : (pos.includes('w') ? 'sw' : 'se')}-resize`;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startWidth = img.offsetWidth;
+        const onMouseMove = (moveEvt) => {
+          const deltaX = moveEvt.clientX - startX;
+          let newWidth = startWidth;
+          if (pos.includes('e')) newWidth = startWidth + deltaX;
+          else if (pos.includes('w')) newWidth = startWidth - deltaX;
+          if (newWidth > 100 && newWidth < 1200) {
+            img.style.width = `${newWidth}px`;
+            img.style.height = 'auto';
+            img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+            img.setAttribute('data-size', 'custom');
+            updatePositions(toolbar, handles);
+          }
+        };
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          if (contentRef.current) setContent(contentRef.current.innerHTML);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      document.body.appendChild(handle);
+      handles.push({ pos, el: handle });
+    });
+    // Initial placement
+    updatePositions(toolbar, handles);
   };
 
   /**
@@ -329,6 +343,104 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
     document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
     setSelectedImageId(null);
     if (contentRef.current) setContent(contentRef.current.innerHTML);
+  };
+
+  /**
+   * Enhanced image selection handler. This variant does not wrap the
+   * image in a container. Instead, it draws resize handles on the
+   * document body and positions a floating toolbar relative to the
+   * image. This avoids disrupting text flow when floating or
+   * positioning images and makes selection of subsequent images more
+   * reliable. Use window.selectImage to call this function.
+   */
+  const enhancedSelectImage = (imageId) => {
+    setSelectedImageId(imageId);
+    // Clear previous selections, handles and toolbars
+    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
+    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
+    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
+    const img = document.getElementById(`img-${imageId}`);
+    if (!img) return;
+    img.classList.add('selected-image');
+    // Helper to reposition toolbar and handles relative to image
+    const updatePositions = (toolbar, handles) => {
+      const rect = img.getBoundingClientRect();
+      if (toolbar) {
+        toolbar.style.top = `${rect.top - 50}px`;
+        toolbar.style.left = `${rect.left}px`;
+      }
+      if (handles) {
+        handles.forEach(({ pos, el }) => {
+          if (pos.includes('n')) el.style.top = `${rect.top - 6}px`;
+          if (pos.includes('s')) el.style.top = `${rect.bottom - 6}px`;
+          if (pos.includes('w')) el.style.left = `${rect.left - 6}px`;
+          if (pos.includes('e')) el.style.left = `${rect.right - 6}px`;
+        });
+      }
+    };
+    // Create floating toolbar with controls
+    const toolbar = document.createElement('div');
+    toolbar.className = 'floating-toolbar';
+    toolbar.innerHTML = `
+      <button onclick="window.resizeImage('${imageId}', 'small')" class="toolbar-btn">Small</button>
+      <button onclick="window.resizeImage('${imageId}', 'medium')" class="toolbar-btn">Medium</button>
+      <button onclick="window.resizeImage('${imageId}', 'large')" class="toolbar-btn">Large</button>
+      <button onclick="window.resizeImage('${imageId}', 'full')" class="toolbar-btn">Full</button>
+      <span class="toolbar-separator">|</span>
+      <button onclick="window.positionImage('${imageId}', 'left')" class="toolbar-btn">← Left</button>
+      <button onclick="window.positionImage('${imageId}', 'center')" class="toolbar-btn">Center</button>
+      <button onclick="window.positionImage('${imageId}', 'right')" class="toolbar-btn">Right →</button>
+      <span class="toolbar-separator">|</span>
+      <button onclick="window.deleteImage('${imageId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
+      <button onclick="window.clearImageSelection()" class="toolbar-btn close-btn">×</button>
+    `;
+    document.body.appendChild(toolbar);
+    // Create corner resize handles on document body
+    const positions = ['nw', 'ne', 'sw', 'se'];
+    const handles = [];
+    positions.forEach((pos) => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle resize-handle-${pos}`;
+      handle.style.position = 'fixed';
+      handle.style.width = '12px';
+      handle.style.height = '12px';
+      handle.style.background = '#667eea';
+      handle.style.border = '2px solid white';
+      handle.style.borderRadius = '50%';
+      handle.style.zIndex = '1001';
+      handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      handle.style.cursor = `${pos.includes('n') ? (pos.includes('w') ? 'nw' : 'ne') : (pos.includes('w') ? 'sw' : 'se')}-resize`;
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startWidth = img.offsetWidth;
+        const onMouseMove = (moveEvt) => {
+          const deltaX = moveEvt.clientX - startX;
+          let newWidth = startWidth;
+          if (pos.includes('e')) newWidth = startWidth + deltaX;
+          else if (pos.includes('w')) newWidth = startWidth - deltaX;
+          if (newWidth > 100 && newWidth < 1200) {
+            img.style.width = `${newWidth}px`;
+            img.style.height = 'auto';
+            img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+            img.setAttribute('data-size', 'custom');
+            updatePositions(toolbar, handles);
+          }
+        };
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          if (contentRef.current) setContent(contentRef.current.innerHTML);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      document.body.appendChild(handle);
+      handles.push({ pos, el: handle });
+    });
+    // Initial placement of toolbar and handles
+    updatePositions(toolbar, handles);
   };
 
   /**
@@ -504,7 +616,8 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
   // initial content.  A timeout is used so that the DOM is ready when
   // attaching image listeners.  We also clean up toolbars on unmount.
   useEffect(() => {
-    window.selectImage = selectImage;
+    // Use enhancedSelectImage for improved selection and resizing behaviour
+    window.selectImage = enhancedSelectImage;
     window.resizeImage = resizeImage;
     window.positionImage = positionImage;
     window.deleteImage = deleteImage;
