@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import NewsFeedWidget from './widgets/NewsFeedWidget';
 import SignupWidget from './widgets/SignupWidget';
 import UploadWidget from './widgets/UploadWidget';
+import CalendarMiniWidget from './calendar/CalendarMiniWidget';
 
 const WidgetPreview = () => {
   const location = useLocation();
@@ -74,36 +75,27 @@ const WidgetPreview = () => {
       case 'calendar':
         return (
           <div className="max-w-4xl mx-auto p-6">
-            <div 
+            <div
               className="bg-white rounded-lg shadow-lg overflow-hidden"
               style={{ borderRadius: `${settings.borderRadius || 8}px` }}
             >
-              <div 
+              <div
                 className="p-6 text-white font-bold text-2xl"
                 style={{ backgroundColor: settings.headerColor || '#f59e0b' }}
               >
                 {settings.headerText || '📅 Upcoming Events'}
               </div>
               <div className="p-6">
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].slice(0, settings.eventCount || 5).map((i) => (
-                    <div key={i} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="flex-shrink-0 w-16 h-16 bg-orange-500 text-white rounded-lg flex flex-col items-center justify-center">
-                        <div className="text-2xl font-bold">{10 + i}</div>
-                        <div className="text-xs">DEC</div>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-gray-900">Sample Event {i}</h4>
-                        {settings.showTime && (
-                          <p className="text-sm text-gray-600">⏰ 2:00 PM - 4:00 PM</p>
-                        )}
-                        {settings.showLocation && (
-                          <p className="text-sm text-gray-600">📍 Virtual Event</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {/* Inject our real calendar widget. We hide its internal header by passing null */}
+                <CalendarMiniWidget
+                  title={null}
+                  maxItems={settings.eventCount}
+                  tag={settings.tag || null}
+                  theme={settings.theme || 'light'}
+                  showImages={settings.showImages}
+                  showTime={settings.showTime}
+                  showLocation={settings.showLocation}
+                />
               </div>
             </div>
           </div>

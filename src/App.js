@@ -528,7 +528,8 @@ const AdminDashboard = () => {
 
 // Main App Component
 const App = () => {
-  const [currentUser] = useState({ name: 'Admin User', email: 'admin@example.com' });
+  // Include a role for role-based permissions (admin by default)
+  const [currentUser] = useState({ name: 'Admin User', email: 'admin@example.com', role: 'admin' });
   const [activeSection, setActiveSection] = useState('home');
   const [posts, setPosts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
@@ -1008,6 +1009,12 @@ const SettingsSection = () => {
       eventCount: 5,
       showTime: true,
       showLocation: true,
+      /** Whether to display the event's cover image in the list */
+      showImages: true,
+      /** Optional tag filter for events */
+      tag: '',
+      /** Theme for the calendar widget: light or dark */
+      theme: 'light',
       borderRadius: 8,
       transparent: false
     },
@@ -1335,6 +1342,89 @@ const SettingsSection = () => {
                           />
                           <span className="text-sm">Allow Comments</span>
                         </label>
+                      </div>
+                    </>
+                  )}
+
+                  {selectedWidget === 'calendar' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Number of Events</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={widgetSettings.calendar.eventCount}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            calendar: { ...prev.calendar, eventCount: parseInt(e.target.value) }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.calendar.showTime}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              calendar: { ...prev.calendar, showTime: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Event Time</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.calendar.showLocation}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              calendar: { ...prev.calendar, showLocation: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Location</span>
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={widgetSettings.calendar.showImages}
+                            onChange={(e) => setWidgetSettings(prev => ({
+                              ...prev,
+                              calendar: { ...prev.calendar, showImages: e.target.checked }
+                            }))}
+                            className="rounded"
+                          />
+                          <span className="text-sm">Show Images</span>
+                        </label>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Tag</label>
+                        <input
+                          type="text"
+                          value={widgetSettings.calendar.tag}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            calendar: { ...prev.calendar, tag: e.target.value }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+                        <select
+                          value={widgetSettings.calendar.theme}
+                          onChange={(e) => setWidgetSettings(prev => ({
+                            ...prev,
+                            calendar: { ...prev.calendar, theme: e.target.value }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="light">Light</option>
+                          <option value="dark">Dark</option>
+                        </select>
                       </div>
                     </>
                   )}

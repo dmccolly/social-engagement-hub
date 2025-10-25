@@ -2,7 +2,7 @@
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search, Image, Video, Smile, MapPin, X } from 'lucide-react';
+import { MessageSquare, Heart, Share2, Send, User, Mail, Clock, MoreVertical, TrendingUp, Search, Image, Video, Smile, MapPin, X, Facebook as FacebookIcon, Twitter, Linkedin } from 'lucide-react';
 import { getNewsfeedPosts, createNewsfeedPost, toggleNewsfeedLike, getNewsfeedReplies, getNewsfeedAnalytics } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
 
@@ -19,6 +19,10 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
   const [visitorData, setVisitorData] = useState({ name: '', email: '' });
   const [activeTab, setActiveTab] = useState('posts'); // posts, stories, live
   const [analytics, setAnalytics] = useState(null);
+
+  // New state for search term and share menu
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeShareMenu, setActiveShareMenu] = useState(null);
 
   // Load visitor session on mount
   useEffect(() => {
@@ -65,14 +69,16 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
   };
 
   // Load posts from XANO
-  const loadPosts = async () => {
+  const loadPosts = async (overrideFilters = {}) => {
     try {
       setIsLoading(true);
       
+      // Build filters for newsfeed retrieval.  Override with any passed filters (e.g. search)
       const filters = {
         type: 'posts_only',
         limit: 50,
-        visitor_email: visitorSession?.email
+        visitor_email: visitorSession?.email,
+        ...overrideFilters
       };
       
       const result = await getNewsfeedPosts(filters);
@@ -85,6 +91,56 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle search submissions
+  const handleSearch = async () => {
+    // Avoid empty search
+    if (!searchTerm.trim()) {
+      // Reload default posts if search is cleared
+      loadPosts();
+      return;
+    }
+    try {
+      setIsLoading(true);
+      // Pass search term to backend to filter posts
+      const result = await getNewsfeedPosts({
+        type: 'posts_only',
+        limit: 50,
+        search: searchTerm.trim(),
+        visitor_email: visitorSession?.email
+      });
+      if (result.success && result.posts) {
+        setPosts(result.posts);
+      }
+    } catch (error) {
+      console.error('Search posts error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Toggle share menu visibility for a specific post
+  const toggleShareMenu = (postId) => {
+    setActiveShareMenu(prev => (prev === postId ? null : postId));
+  };
+
+  // Create share URL for a given post and network
+  const shareToNetwork = (post, network) => {
+    // Build anchor link so shared link scrolls to the post
+    const url = `${window.location.origin}${window.location.pathname}#post-${post.id}`;
+    // Use a snippet of the post content for tweet text
+    const snippet = post.content && post.content.length > 120 ? `${post.content.slice(0, 117)}...` : post.content;
+    let shareUrl = '';
+    if (network === 'facebook') {
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    } else if (network === 'twitter') {
+      shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(snippet || '')}`;
+    } else if (network === 'linkedin') {
+      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+    }
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+    setActiveShareMenu(null);
   };
 
   // Load analytics
@@ -377,6 +433,30 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
         </div>
       )}
 
+      {/* Search Bar */}
+      <div className="bg-white rounded-xl shadow-lg p-4 flex items-center gap-2">
+        <Search size={20} className="text-gray-400" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch();
+            }
+          }}
+          placeholder="Search posts..."
+          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={!searchTerm.trim()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          Search
+        </button>
+      </div>
+
       {/* Visitor Registration Modal */}
       {showVisitorForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -467,7 +547,7 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
       ) : (
         <div className="space-y-4">
           {posts.map(post => (
-            <div key={post.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+            <div key={post.id} id={`post-${post.id}`} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
               {/* Post Header */}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -528,10 +608,41 @@ const FacebookStyleNewsFeed = ({ currentUser, onMembershipRequired }) => {
                     <span>Comment</span>
                   </button>
                   
-                  <button className="flex items-center gap-2 px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all">
-                    <Share2 size={20} />
-                    <span>Share</span>
-                  </button>
+                  {/* Share button with social menu */}
+                  <div className="relative">
+                    <button
+                      onClick={() => toggleShareMenu(post.id)}
+                      className="flex items-center gap-2 px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
+                    >
+                      <Share2 size={20} />
+                      <span>Share</span>
+                    </button>
+                    {activeShareMenu === post.id && (
+                      <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button
+                          onClick={() => shareToNetwork(post, 'facebook')}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                          <FacebookIcon size={16} className="text-blue-600" />
+                          Facebook
+                        </button>
+                        <button
+                          onClick={() => shareToNetwork(post, 'twitter')}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                          <Twitter size={16} className="text-blue-400" />
+                          Twitter
+                        </button>
+                        <button
+                          onClick={() => shareToNetwork(post, 'linkedin')}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                          <Linkedin size={16} className="text-blue-700" />
+                          LinkedIn
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

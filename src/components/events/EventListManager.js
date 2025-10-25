@@ -1,11 +1,12 @@
 // Event List Manager - Manage all events in one place
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin } from 'lucide-react';
 import { getStatusColor, getCategoryColor, formatShortDate } from '../../utils/eventUtils';
+import { shareEventToEmail, shareEventToBlog } from '../../services/eventShareService';
 import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
 
-const EventListManager = () => {
+const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,9 @@ const EventListManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // State to manage which event's share menu is open
+  const [shareMenuEvent, setShareMenuEvent] = useState(null);
 
   const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
@@ -120,6 +124,76 @@ const EventListManager = () => {
 
   const categories = ['all', 'conference', 'webinar', 'meetup', 'workshop', 'social', 'training', 'other'];
 
+  // Toggle share menu for a specific event
+  const toggleShareMenuEvent = (id) => {
+    setShareMenuEvent(prev => (prev === id ? null : id));
+  };
+
+  // Share event to a social network
+  const shareEventToNetwork = (eventItem, network) => {
+    // Build URL pointing to the event details page (assuming /events/{id})
+    const url = `${window.location.origin}/events/${eventItem.id}`;
+    const title = eventItem.title || '';
+    let shareUrl = '';
+    if (network === 'facebook') {
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    } else if (network === 'twitter') {
+      shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
+    } else if (network === 'linkedin') {
+      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+    }
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+    setShareMenuEvent(null);
+  };
+
+  // Determine user permissions
+  const userRole = currentUser?.role || 'member';
+  const canManageEvents = userRole === 'admin' || userRole === 'editor';
+
+  /**
+   * Create a draft email campaign from the given event.  Prompts the user
+   * for confirmation before sending the request to the backend.  Displays
+   * a success or error message based on the result.
+   */
+  const handleShareToEmail = async (eventItem) => {
+    if (!confirm('Create a draft email campaign from this event?')) {
+      return;
+    }
+    try {
+      const result = await shareEventToEmail(eventItem.id);
+      if (result && result.success) {
+        alert('Email campaign created successfully!');
+      } else {
+        alert(`Failed to create email campaign: ${result?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Share to email error:', err);
+      alert('Error creating email campaign');
+    }
+  };
+
+  /**
+   * Create a blog post from the given event.  Prompts the user
+   * for confirmation before sending the request to the backend.  Displays
+   * a success or error message based on the result.
+   */
+  const handleShareToBlog = async (eventItem) => {
+    if (!confirm('Create a new blog post from this event?')) {
+      return;
+    }
+    try {
+      const result = await shareEventToBlog(eventItem.id);
+      if (result && result.success) {
+        alert('Blog post created successfully!');
+      } else {
+        alert(`Failed to create blog post: ${result?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Share to blog error:', err);
+      alert('Error creating blog post');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -154,16 +228,18 @@ const EventListManager = () => {
           <Calendar size={28} />
           Event Management
         </h2>
-        <button
-          onClick={() => {
-            setEditingEvent(null);
-            setShowCreator(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-        >
-          <Plus size={20} />
-          Create Event
-        </button>
+        {canManageEvents && (
+          <button
+            onClick={() => {
+              setEditingEvent(null);
+              setShowCreator(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            <Plus size={20} />
+            Create Event
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -272,39 +348,98 @@ const EventListManager = () => {
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingEvent(event);
-                        setShowCreator(true);
-                      }}
-                      className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
-                    >
-                      <Edit2 size={14} />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDuplicate(event)}
-                      className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
-                    >
-                      <Copy size={14} />
-                      Duplicate
-                    </button>
-                    {event.rsvp_enabled && (
-                      <button
-                        onClick={() => setViewingRSVPs(event)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                      >
-                        <Users size={14} />
-                        View RSVPs
-                      </button>
+                    {canManageEvents && (
+                      <>
+                        {/* Edit */}
+                        <button
+                          onClick={() => {
+                            setEditingEvent(event);
+                            setShowCreator(true);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <Edit2 size={14} />
+                          Edit
+                        </button>
+                        {/* Duplicate */}
+                        <button
+                          onClick={() => handleDuplicate(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <Copy size={14} />
+                          Duplicate
+                        </button>
+                        {/* Share to Email */}
+                        <button
+                          onClick={() => handleShareToEmail(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <Mail size={14} />
+                          Email
+                        </button>
+                        {/* Add to Blog */}
+                        <button
+                          onClick={() => handleShareToBlog(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <FileText size={14} />
+                          Blog
+                        </button>
+                        {/* Share to Social Networks */}
+                        <div className="relative">
+                          <button
+                            onClick={() => toggleShareMenuEvent(event.id)}
+                            className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                          >
+                            <Share2 size={14} />
+                            Share
+                          </button>
+                          {shareMenuEvent === event.id && (
+                            <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                              <button
+                                onClick={() => shareEventToNetwork(event, 'facebook')}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-gray-50"
+                              >
+                                <FacebookIcon size={14} className="text-blue-600" />
+                                Facebook
+                              </button>
+                              <button
+                                onClick={() => shareEventToNetwork(event, 'twitter')}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-gray-50"
+                              >
+                                <Twitter size={14} className="text-blue-400" />
+                                Twitter
+                              </button>
+                              <button
+                                onClick={() => shareEventToNetwork(event, 'linkedin')}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-gray-50"
+                              >
+                                <Linkedin size={14} className="text-blue-700" />
+                                LinkedIn
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {/* View RSVPs */}
+                        {event.rsvp_enabled && (
+                          <button
+                            onClick={() => setViewingRSVPs(event)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                          >
+                            <Users size={14} />
+                            View RSVPs
+                          </button>
+                        )}
+                        {/* Delete */}
+                        <button
+                          onClick={() => handleDelete(event.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm ml-auto"
+                        >
+                          <Trash2 size={14} />
+                          Delete
+                        </button>
+                      </>
                     )}
-                    <button
-                      onClick={() => handleDelete(event.id)}
-                      className="flex items-center gap-1 px-3 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm ml-auto"
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                    </button>
                   </div>
                 </div>
               </div>
