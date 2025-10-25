@@ -36,6 +36,10 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
   const fileInputRef = useRef(null);
   const contentRef = useRef(null);
 
+  // Local state for inserting media by URL
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaType, setMediaType] = useState('image');
+
   // When editing a post, populate the editor with the post's existing data
   useEffect(() => {
     if (editingPost) {
@@ -267,7 +271,7 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
       <button onclick="window.positionImage('${imageId}', 'right')" class="toolbar-btn">Right →</button>
       <span class="toolbar-separator">|</span>
       <button onclick="window.deleteImage('${imageId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
-      <button onclick="window.setSelectedImageId(null)" class="toolbar-btn close-btn">×</button>
+      <button onclick="window.clearImageSelection()" class="toolbar-btn close-btn">×</button>
     `;
     const rect = img.getBoundingClientRect();
     toolbar.style.position = 'fixed';
@@ -327,6 +331,129 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
     if (contentRef.current) setContent(contentRef.current.innerHTML);
   };
 
+  /**
+   * Insert a media element into the editor based on a URL supplied by the
+   * user.  Supports images, videos, audio and YouTube embeds.  Images
+   * leverage the existing insertImageIntoContent routine so they can be
+   * resized and positioned using the toolbar.  Other media types are
+   * inserted as their native HTML tags with controls enabled.
+   */
+  const handleInsertByUrl = () => {
+    const url = mediaUrl.trim();
+    if (!url) return;
+    if (mediaType === 'image') {
+      const newImage = {
+        id: Date.now(),
+        src: url,
+        alt: 'Embedded image',
+        size: 'medium',
+        position: 'center',
+        width: 400,
+        height: 'auto',
+      };
+      insertImageIntoContent(newImage);
+    } else if (mediaType === 'video') {
+      const editor = contentRef.current;
+      if (editor) {
+        const selection = window.getSelection();
+        let range;
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        const videoEl = document.createElement('video');
+        videoEl.src = url;
+        videoEl.controls = true;
+        videoEl.className = 'size-medium position-center';
+        videoEl.setAttribute('data-size', 'medium');
+        videoEl.setAttribute('data-position', 'center');
+        range.deleteContents();
+        range.insertNode(videoEl);
+        const space = document.createTextNode(' ');
+        range.setStartAfter(videoEl);
+        range.insertNode(space);
+        range.setStartAfter(space);
+        range.setEndAfter(space);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        setContent(editor.innerHTML);
+      }
+    } else if (mediaType === 'audio') {
+      const editor = contentRef.current;
+      if (editor) {
+        const selection = window.getSelection();
+        let range;
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        const audioEl = document.createElement('audio');
+        audioEl.src = url;
+        audioEl.controls = true;
+        range.deleteContents();
+        range.insertNode(audioEl);
+        const space = document.createTextNode(' ');
+        range.setStartAfter(audioEl);
+        range.insertNode(space);
+        range.setStartAfter(space);
+        range.setEndAfter(space);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        setContent(editor.innerHTML);
+      }
+    } else if (mediaType === 'youtube') {
+      const editor = contentRef.current;
+      if (editor) {
+        const selection = window.getSelection();
+        let range;
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.width = '560';
+        iframe.height = '315';
+        iframe.allowFullscreen = true;
+        iframe.style.display = 'block';
+        iframe.style.margin = '15px auto';
+        range.deleteContents();
+        range.insertNode(iframe);
+        const space = document.createTextNode(' ');
+        range.setStartAfter(iframe);
+        range.insertNode(space);
+        range.setStartAfter(space);
+        range.setEndAfter(space);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        setContent(editor.innerHTML);
+      }
+    }
+    setMediaUrl('');
+  };
+
+  /**
+   * Clear the current image selection and close any floating toolbars.  This
+   * function can be called from the toolbar to hide itself.  It removes
+   * selected classes and resize handles, resets the selectedImageId state
+   * and cleans up existing toolbars.
+   */
+  const clearImageSelection = () => {
+    setSelectedImageId(null);
+    document.querySelectorAll('.selected-image').forEach(el => el.classList.remove('selected-image'));
+    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+    document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
+  };
+
   // Text formatting commands
   const applyFormat = (command) => {
     document.execCommand(command, false, null);
@@ -382,6 +509,7 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
     window.positionImage = positionImage;
     window.deleteImage = deleteImage;
     window.setSelectedImageId = setSelectedImageId;
+    window.clearImageSelection = clearImageSelection;
     setTimeout(() => {
       if (contentRef.current && !contentRef.current.innerHTML) {
         contentRef.current.innerHTML = content || '<p>Start writing your content... Click here and start typing.</p>';
@@ -877,6 +1005,38 @@ const WorkingRichBlogEditor = ({ onSave, onCancel, editingPost, isSaving }) => {
             <span style={{ fontSize: '14px', color: '#666' }}>
               Click in content area first, then upload to insert at cursor position
             </span>
+          </div>
+
+          {/* Insert Media by URL Section */}
+          <div className="section">
+            <h3 className="section-title">🎞️ Insert Media by URL</h3>
+            <div className="controls" style={{ flexWrap: 'wrap' }}>
+              <input
+                type="url"
+                placeholder="https://..."
+                className="input"
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                style={{ flexGrow: 1 }}
+              />
+              <select
+                className="select"
+                value={mediaType}
+                onChange={(e) => setMediaType(e.target.value)}
+                style={{ minWidth: '120px' }}
+              >
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+                <option value="youtube">YouTube</option>
+              </select>
+              <button className="btn" onClick={handleInsertByUrl} style={{ whiteSpace: 'nowrap' }}>
+                Insert
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
+              Paste a Cloudinary URL or YouTube link, choose the media type and click Insert.
+            </p>
           </div>
           <div
             ref={contentRef}
