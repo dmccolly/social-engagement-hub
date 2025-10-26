@@ -140,8 +140,9 @@ const HomeSection = ({ posts }) => (
   </div>
 );
 
-const BlogSection = ({ posts, setPosts }) => {
-  // Implementation for blog section omitted for brevity
+// Placeholder blog section kept for backwards compatibility.
+// It is unused now that we have a proper BlogSection component.
+const BlogSectionPlaceholder = ({ posts, setPosts }) => {
   return <div>Blog Section Placeholder</div>;
 };
 
