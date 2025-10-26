@@ -25,6 +25,7 @@ import WidgetPreview from './components/WidgetPreview';
 
 // Blog components
 import BlogPostView from './components/BlogPostView';
+import BlogSection from './components/BlogSection';
 
 // Main App component
 const App = () => {
@@ -70,7 +71,7 @@ const App = () => {
       case 'home':
         return <HomeSection posts={posts} />;
       case 'blog':
-        return <BlogSection posts={posts} setPosts={setPosts} />;
+        return <BlogSection />;
       case 'newsfeed':
         // Use the enhanced FacebookStyleNewsFeed instead of ProfessionalNewsFeed
         return <FacebookStyleNewsFeed currentUser={currentUser} />;
