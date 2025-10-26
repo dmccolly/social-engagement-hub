@@ -255,13 +255,8 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       return;
     }
     try {
-      const visitorData = {
-        author_email: currentUser?.email || visitorSession.email,
-        author_id: currentUser?.id || visitorSession.member_id || null,
-        ip_address: null,
-        user_agent: navigator.userAgent
-      };
-      const result = await toggleNewsfeedLike(postId, visitorData);
+      const authorEmail = currentUser?.email || visitorSession.email;
+      const result = await toggleNewsfeedLike(postId, authorEmail);
       if (result.success) {
         loadPosts();
       }
