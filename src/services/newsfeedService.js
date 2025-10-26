@@ -5,7 +5,9 @@
 // later rename your Xano endpoints to `newsfeed_posts`, you can revert these
 // changes.
 
-const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+// Use whichever env var is defined: REACT_APP_XANO_BASE_URL or REACT_APP_XANO_API_URL.
+// This provides flexibility if your build uses one or the other.
+const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || process.env.REACT_APP_XANO_API_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
 /**
  * Build a URL for the newsfeed API. Uses the singular `newsfeed_post` slug,
