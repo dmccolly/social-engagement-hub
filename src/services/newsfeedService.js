@@ -1,258 +1,167 @@
-// Updated newsfeed service to align with Xano endpoint names
-// NOTE: The existing code expected endpoints under `newsfeed_posts`.  Since your Xano
-// API group exposes endpoints under `newsfeed_post` (singular), this module
-// normalises the base URL and uses the singular slug for all requests.  If you
-// later rename your Xano endpoints to `newsfeed_posts`, you can revert these
-// changes.
+// Newsfeed service configured for Xano visitor endpoints
 
+// Base URL derived from environment variable or fallback
 const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
 /**
- * Build a URL for the newsfeed API. Uses the singular `newsfeed_post` slug,
- * matching the endpoints defined in Xano. Accepts optional query parameters.
+ * Build a URL for the visitor posts API. Accepts additional path segments and
+ * optional query parameters. Uses `/visitor/posts` as the root.
  *
- * @param {string} path Additional path segments (e.g. `/123/replies`)
- * @param {URLSearchParams} [params] Optional query parameters
- * @returns {string} Full API URL
+ * @param {string} path Additional path segments
+ * @param {URLSearchParams} [params] Query parameters
  */
-function buildUrl(path = '', params) {
-  const base = `${XANO_BASE_URL}/newsfeed_post`;
+function buildVisitorUrl(path = '', params) {
+  const base = `${XANO_BASE_URL}/visitor/posts`;
   const suffix = path ? `/${path.replace(/^\//, '')}` : '';
   const query = params && params.toString() ? `?${params.toString()}` : '';
   return `${base}${suffix}${query}`;
 }
 
 /**
- * Fetch a list of posts. Supports optional filters for type, author, search,
- * pagination and visitor email. Returns an object with `success`, `posts`,
- * `total` and `pagination` keys.
+ * Get all approved visitor posts. Supports optional filters (e.g., search,
+ * limit, offset). Returns data from the API.
  */
 export async function getNewsfeedPosts(filters = {}) {
   try {
     const params = new URLSearchParams();
-    if (filters.type) params.append('type', filters.type);
-    if (filters.author_id) params.append('author_id', filters.author_id);
-    if (filters.author_email) params.append('author_email', filters.author_email);
     if (filters.search) params.append('search', filters.search);
     if (filters.limit) params.append('limit', filters.limit);
     if (filters.offset) params.append('offset', filters.offset);
-    if (filters.visitor_email) params.append('visitor_email', filters.visitor_email);
-    const url = buildUrl('', params);
+    const url = buildVisitorUrl('', params);
     const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch posts: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch posts: ${response.statusText}`);
     return await response.json();
-  } catch (error) {
-    console.error('Get newsfeed posts error:', error);
-    return {
-      success: false,
-      error: error.message,
-      posts: [],
-      total: 0,
-      pagination: { limit: 20, offset: 0, has_more: false }
-    };
+  } catch (err) {
+    console.error('Get newsfeed posts error:', err);
+    return { success: false, error: err.message, posts: [], total: 0, pagination: { limit: 20, offset: 0, has_more: false } };
   }
 }
 
 /**
- * Fetch replies for a given post ID. Returns an array of reply objects.
- *
- * @param {number|string} postId The ID of the post
- */
-export async function getNewsfeedReplies(postId) {
-  try {
-    const url = buildUrl(`${postId}/replies`);
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch replies: ${response.statusText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Get newsfeed replies error:', error);
-    return { success: false, error: error.message, replies: [], total: 0 };
-  }
-}
-
-/**
- * Create a new post or reply. Requires `content` and `author_name`.
- *
- * @param {object} postData
+ * Create a new visitor post. Requires `content` and optionally visitor info.
  */
 export async function createNewsfeedPost(postData) {
   try {
-    // Validate required fields
     if (!postData.content || postData.content.trim() === '') {
       return { success: false, error: 'Post content is required' };
     }
-    if (!postData.author_name || postData.author_name.trim() === '') {
-      return { success: false, error: 'Author name is required' };
-    }
-    const response = await fetch(buildUrl(), {
+    const payload = {
+      visitor_email: postData.author_email || null,
+      content: postData.content,
+      session_id: postData.session_id || null,
+      ip_address: postData.ip_address || null,
+      user_agent: postData.user_agent || null
+    };
+    const response = await fetch(buildVisitorUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        author_name: postData.author_name,
-        author_email: postData.author_email || null,
-        author_id: postData.author_id || null,
-        content: postData.content,
-        parent_id: postData.parent_id || null,
-        post_type: postData.parent_id ? 'reply' : 'post',
-        session_id: postData.session_id || null,
-        ip_address: postData.ip_address || null,
-        user_agent: postData.user_agent || null
-      }),
+      body: JSON.stringify(payload)
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create post: ${response.statusText} - ${errorText}`);
+      const text = await response.text();
+      throw new Error(`Failed to create post: ${response.statusText} - ${text}`);
     }
     return await response.json();
-  } catch (error) {
-    console.error('Create newsfeed post error:', error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    console.error('Create newsfeed post error:', err);
+    return { success: false, error: err.message };
   }
 }
 
 /**
- * Toggle like on a post. Requires the liker’s email.
- *
- * @param {number|string} postId
- * @param {object} visitorData
+ * Like or unlike a visitor post. Requires `visitor_email` to identify the liker.
  */
 export async function toggleNewsfeedLike(postId, visitorData) {
   try {
-    if (!visitorData.author_email) {
+    if (!visitorData.visitor_email) {
       return { success: false, error: 'Email required for liking posts' };
     }
-    const response = await fetch(buildUrl(`${postId}/like`), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        author_email: visitorData.author_email,
-        author_id: visitorData.author_id || null,
-        ip_address: visitorData.ip_address || null,
-        user_agent: visitorData.user_agent || null
-      }),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to like post: ${response.statusText} - ${errorText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Toggle newsfeed like error:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Fetch analytics for a given time range.
- *
- * @param {string} timeRange One of '7d', '30d', '90d'
- */
-export async function getNewsfeedAnalytics(timeRange = '7d') {
-  try {
-    const url = `${XANO_BASE_URL}/newsfeed_analytics?time_range=${timeRange}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch analytics: ${response.statusText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Get newsfeed analytics error:', error);
-    return {
-      success: false,
-      error: error.message,
-      analytics: {
-        overview: { total_posts: 0, total_replies: 0, total_likes: 0, total_comments: 0, engagement_rate: 0 },
-        top_contributors: [],
-        time_range: timeRange
-      }
+    const payload = {
+      visitor_email: visitorData.visitor_email,
+      session_id: visitorData.session_id || null
     };
-  }
-}
-
-/**
- * Create or update a visitor session. Relies on a `visitor_sessions` endpoint in
- * your Xano API group.
- *
- * @param {object} sessionData
- */
-export async function createVisitorSession(sessionData) {
-  try {
-    const response = await fetch(`${XANO_BASE_URL}/visitor_sessions`, {
+    const response = await fetch(buildVisitorUrl(`${postId}/like`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id: sessionData.session_id,
-        email: sessionData.email,
-        name: sessionData.name,
-        ip_address: sessionData.ip_address || null,
-        user_agent: sessionData.user_agent || null,
-        is_member: sessionData.is_member || false,
-        member_id: sessionData.member_id || null
-      }),
+      body: JSON.stringify(payload)
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create session: ${response.statusText} - ${errorText}`);
+      const text = await response.text();
+      throw new Error(`Failed to like/unlike post: ${response.statusText} - ${text}`);
     }
     return await response.json();
-  } catch (error) {
-    console.error('Create visitor session error:', error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    console.error('Toggle newsfeed like error:', err);
+    return { success: false, error: err.message };
   }
 }
 
 /**
- * Convert a visitor to a member. Assumes your Xano API has an endpoint
- * `/visitor_sessions/convert` that accepts the visitor email and member data.
+ * Add a reply to a visitor post. Requires `content` and the replier’s email.
  */
-export async function convertVisitorToMember(visitorEmail, memberData) {
+export async function addNewsfeedReply(postId, replyData) {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/visitor_sessions/convert`, {
+    if (!replyData.content || replyData.content.trim() === '') {
+      return { success: false, error: 'Reply content is required' };
+    }
+    if (!replyData.visitor_email) {
+      return { success: false, error: 'Email is required to reply' };
+    }
+    const payload = {
+      visitor_email: replyData.visitor_email,
+      content: replyData.content,
+      session_id: replyData.session_id || null,
+      ip_address: replyData.ip_address || null,
+      user_agent: replyData.user_agent || null
+    };
+    const response = await fetch(buildVisitorUrl(`${postId}/replies`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        visitor_email: visitorEmail,
-        member_data: memberData
-      }),
+      body: JSON.stringify(payload)
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to convert visitor: ${response.statusText} - ${errorText}`);
+      const text = await response.text();
+      throw new Error(`Failed to add reply: ${response.statusText} - ${text}`);
     }
     return await response.json();
-  } catch (error) {
-    console.error('Convert visitor to member error:', error);
-    return { success: false, error: error.message };
+  } catch (err) {
+    console.error('Add newsfeed reply error:', err);
+    return { success: false, error: err.message };
   }
 }
 
 /**
- * Search posts with a query and optional filters. Uses the search endpoint on
- * `newsfeed_post`.
- *
- * @param {string} query
- * @param {object} filters
+ * Fetch visitor profile by token or email. If Xano uses tokens, modify accordingly.
  */
-export async function searchNewsfeedPosts(query, filters = {}) {
+export async function getVisitorProfile(visitorToken) {
   try {
-    const params = new URLSearchParams();
-    params.append('search', query);
-    if (filters.author) params.append('author', filters.author);
-    if (filters.date_from) params.append('date_from', filters.date_from);
-    if (filters.date_to) params.append('date_to', filters.date_to);
-    if (filters.limit) params.append('limit', filters.limit);
-    const url = `${XANO_BASE_URL}/newsfeed_post/search?${params.toString()}`;
+    const url = `${XANO_BASE_URL}/visitor/profile?token=${visitorToken}`;
     const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch visitor profile: ${response.statusText}`);
+    return await response.json();
+  } catch (err) {
+    console.error('Get visitor profile error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Register a new visitor. Wraps the `/visitor/register` endpoint.
+ */
+export async function registerVisitor(visitorData) {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(visitorData)
+    });
     if (!response.ok) {
-      throw new Error(`Failed to search posts: ${response.statusText}`);
+      const text = await response.text();
+      throw new Error(`Failed to register visitor: ${response.statusText} - ${text}`);
     }
     return await response.json();
-  } catch (error) {
-    console.error('Search newsfeed posts error:', error);
-    return { success: false, error: error.message, posts: [] };
+  } catch (err) {
+    console.error('Register visitor error:', err);
+    return { success: false, error: err.message };
   }
 }
