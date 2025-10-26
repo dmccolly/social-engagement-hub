@@ -147,12 +147,8 @@ const StandaloneNewsfeedWidget = () => {
     }
     
     try {
-      const visitorData = {
-        author_email: visitorSession.email,
-        author_id: visitorSession.member_id || null
-      };
-      
-      const result = await toggleNewsfeedLike(postId, visitorData);
+      const authorEmail = visitorSession.email;
+      const result = await toggleNewsfeedLike(postId, authorEmail);
       
       if (result.success) {
         // Update local state

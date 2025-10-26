@@ -115,18 +115,18 @@ export async function createNewsfeedPost(postData) {
 }
 
 /**
- * Toggle like on a post. Requires the liker’s email.
+ * Toggle like on a post. Requires the liker's email.
  *
  * @param {number|string} postId
- * @param {object} visitorData
+ * @param {string} authorEmail
  */
-export async function toggleNewsfeedLike(postId, visitorData) {
+export async function toggleNewsfeedLike(postId, authorEmail) {
   try {
-    if (!visitorData.author_email) {
+    if (!authorEmail) {
       return { success: false, error: 'Email required for liking posts' };
     }
     const payload = {
-      author_email: visitorData.author_email
+      author_email: authorEmail
     };
     const response = await fetch(buildUrl(`${postId}/like`), {
       method: 'POST',
