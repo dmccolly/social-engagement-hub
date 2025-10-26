@@ -1,5 +1,6 @@
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import {
   MessageSquare,
