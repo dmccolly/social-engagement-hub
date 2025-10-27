@@ -190,9 +190,12 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
       return excerpt + '...';
     };
     
-       // Filter to only blog posts (empty file_type) and convert to blog post format
+       // Filter to only blog posts (category_id = 11) and convert to blog post format
     const posts = assets
-         .filter(asset => asset.category_id === 11) // Only Blog Posts category
+         .filter(asset => {
+           const catId = asset.category_id ?? asset.category?.id ?? asset.category;
+           return Number(catId) === 11;
+         }) // Only Blog Posts category
       .map(asset => {
         console.log('Asset description:', asset.description);
         const excerpt = createExcerpt(asset.description || '', 400);

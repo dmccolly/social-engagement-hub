@@ -21,6 +21,7 @@ import {
 const BlogSection = () => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
 
@@ -28,9 +29,12 @@ const BlogSection = () => {
   useEffect(() => {
     const loadPosts = async () => {
       setIsLoading(true);
+      setLoadError(null);
       const result = await getPublishedPosts(100, 0);
       if (result.success) {
         setPosts(result.posts);
+      } else {
+        setLoadError(result.error || 'Failed to load posts');
       }
       setIsLoading(false);
     };
@@ -147,7 +151,15 @@ const BlogSection = () => {
           New Post
         </button>
       </div>
-      {posts.length === 0 ? (
+      {loadError ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 font-semibold">Failed to load blog posts</p>
+          <p className="text-red-600 text-sm mt-1">{loadError}</p>
+          <p className="text-red-600 text-sm mt-2">
+            This is usually caused by CORS configuration. Check the browser console for details.
+          </p>
+        </div>
+      ) : posts.length === 0 ? (
         <p>No blog posts yet. Click "New Post" to create one.</p>
       ) : (
         <ul className="space-y-4">
