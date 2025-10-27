@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import PatchedRichBlogEditor from '../PatchedRichBlogEditor';
+import PatchedRichBlogEditor from './feature-rich/PatchedRichBlogEditor';
 import {
   getPublishedPosts,
   createBlogPost,

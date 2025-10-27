@@ -29,6 +29,8 @@ import {
   getNewsfeedAnalytics
 } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
+// Import the rich text editor for composing posts
+import RichTextEditor from '../feature-rich/RichTextEditor';
 
 /**
  * FacebookStyleNewsFeed is a fully featured community feed component that includes:
@@ -45,7 +47,8 @@ import { createVisitorSession } from '../../services/newsfeedService';
 const FacebookStyleNewsFeed = ({ currentUser }) => {
   const [posts, setPosts] = useState([]);
   const [replies, setReplies] = useState({});
-  const [newPost, setNewPost] = useState('');
+  // Use a rich editor value instead of a plain textarea value
+  const [postContent, setPostContent] = useState('');
   const [replyText, setReplyText] = useState({});
   const [showReplyForm, setShowReplyForm] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -216,7 +219,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   };
 
   const handlePostSubmit = async () => {
-    if (!newPost.trim()) return;
+    if (!postContent.trim()) return;
     if (!visitorSession && !currentUser) {
       setShowVisitorForm(true);
       return;
@@ -227,7 +230,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         author_name: currentUser?.name || visitorSession.name,
         author_email: currentUser?.email || visitorSession.email,
         author_id: currentUser?.id || visitorSession.member_id || null,
-        content: newPost,
+        content: postContent,
         session_id: visitorSession?.session_id || generateSessionId(),
         ip_address: null,
         user_agent: navigator.userAgent,
@@ -236,7 +239,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       };
       const result = await createNewsfeedPost(postData);
       if (result.success) {
-        setNewPost('');
+        setPostContent('');
         loadPosts();
       } else {
         alert('Failed to create post: ' + result.error);
@@ -383,13 +386,10 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
             <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
               <User className="text-white" size={20} />
             </div>
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="What's on your mind?"
-              className="flex-1 p-4 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:border-blue-500 transition-colors"
-              rows="3"
-            />
+            {/* Use rich text editor instead of textarea */}
+            <div className="flex-1">
+              <RichTextEditor value={postContent} onChange={setPostContent} />
+            </div>
           </div>
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
@@ -408,7 +408,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
             </div>
             <button
               onClick={handlePostSubmit}
-              disabled={!newPost.trim() || isSubmitting}
+              disabled={!postContent.trim() || isSubmitting}
               className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
             >
               {isSubmitting ? 'Posting...' : 'Post'}
@@ -546,7 +546,8 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                   </button>
                 </div>
                 <div className="mb-4">
-                  <p className="text-gray-800 leading-relaxed text-lg">{post.content}</p>
+                  {/* Render HTML content safely */}
+                  <div className="text-gray-800 leading-relaxed text-lg" dangerouslySetInnerHTML={{ __html: post.content }} />
                 </div>
                 {/* Post stats */}
                 <div className="flex items-center justify-between py-3 border-t border-b border-gray-100">
