@@ -1,7 +1,8 @@
 // src/services/xanoService.js
 
-// Hardcode XANO URL as fallback for embedded widgets where env vars may not be available
-const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE || 
+  (typeof window !== 'undefined' ? '/xano' : 
+    (process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5'));
 
 /**
  * Upload image via XANO (which then uploads to Cloudinary)
@@ -190,9 +191,12 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
       return excerpt + '...';
     };
     
-       // Filter to only blog posts (empty file_type) and convert to blog post format
+       // Filter to only blog posts (category_id = 11) and convert to blog post format
     const posts = assets
-         .filter(asset => asset.category_id === 11) // Only Blog Posts category
+         .filter(asset => {
+           const catId = asset.category_id ?? asset.category?.id ?? asset.category;
+           return Number(catId) === 11;
+         }) // Only Blog Posts category
       .map(asset => {
         console.log('Asset description:', asset.description);
         const excerpt = createExcerpt(asset.description || '', 400);

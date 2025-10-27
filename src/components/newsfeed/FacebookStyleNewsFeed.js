@@ -29,6 +29,7 @@ import {
   getNewsfeedAnalytics
 } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
+import RichTextEditor from './RichTextEditor';
 
 /**
  * FacebookStyleNewsFeed is a fully featured community feed component that includes:
@@ -383,13 +384,13 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
             <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
               <User className="text-white" size={20} />
             </div>
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="What's on your mind?"
-              className="flex-1 p-4 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:border-blue-500 transition-colors"
-              rows="3"
-            />
+            <div className="flex-1">
+              <RichTextEditor
+                value={newPost}
+                onChange={setNewPost}
+                placeholder="What's on your mind?"
+              />
+            </div>
           </div>
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
