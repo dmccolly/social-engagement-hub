@@ -10,6 +10,7 @@
 // additional options as needed.
 
 import React, { useState } from 'react';
+import { CANONICAL_BASE } from '../utils/canonicalBase';
 
 // A basic preview component. This can be replaced with the real WidgetPreview
 // component if available in your project. For now it just echoes the
@@ -71,8 +72,7 @@ const SettingsSection = () => {
   };
 
   // Generate an embeddable iframe snippet based on the selected widget and its
-  // settings. The URL encodes the settings as query parameters. You may want
-  // to adjust the base URL (e.g. if using Netlify or another domain).
+  // settings. The URL encodes the settings as query parameters. Uses CANONICAL_BASE
   const generateEmbedCode = () => {
     const settings = widgetSettings[selectedWidget];
     // Build query string from settings
@@ -83,7 +83,7 @@ const SettingsSection = () => {
     });
     const basePath = `/widget/${selectedWidget}`;
     const queryString = params.toString();
-    const src = `${basePath}?${queryString}`;
+    const src = `${CANONICAL_BASE}${basePath}?${queryString}`;
     return `<iframe src="${src}" style="width:100%;height:600px;border:none;" loading="lazy"></iframe>`;
   };
 
