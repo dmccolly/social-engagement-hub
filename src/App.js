@@ -22,6 +22,9 @@ import AdminDashboard from './components/admin/AdminDashboardIntegration';
 // Settings and widgets
 import SettingsSection from './components/SettingsSection';
 import WidgetPreview from './components/WidgetPreview';
+// Import the standalone newsfeed widget so the news feed embed renders the full community feed
+// instead of the simplified preview. See StandaloneNewsfeedWidget.js for implementation.
+import StandaloneNewsfeedWidget from './components/newsfeed/StandaloneNewsfeedWidget';
 
 // Blog components
 import BlogPostView from './components/BlogPostView';
@@ -124,6 +127,8 @@ const App = () => {
             <Route path="/" element={renderContent()} />
             <Route path="/post/:id" element={<BlogPostView posts={posts} />} />
             <Route path="/admin/*" element={<AdminDashboard />} />
+            {/* Route the newsfeed widget to the full widget instead of the preview. */}
+            <Route path="/widget/newsfeed" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
         </main>
