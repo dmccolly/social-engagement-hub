@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Clock } from 'lucide-react';
+import { getBlogPost } from '../services/xanoService';
 
 /**
  * Updated BlogPostView component
@@ -75,16 +76,11 @@ const BlogPostView = ({ posts }) => {
         }
       }
 
-      // Otherwise fetch the post from Xano
+      // Otherwise fetch the post from Xano using xanoService
       try {
-        const response = await fetch(`${process.env.REACT_APP_XANO_BASE_URL}/blog_posts/${id}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.post) {
-            setPost(data.post);
-          } else {
-            setPost(null);
-          }
+        const result = await getBlogPost(id);
+        if (result.success && result.post) {
+          setPost(result.post);
         } else {
           setPost(null);
         }

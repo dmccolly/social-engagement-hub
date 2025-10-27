@@ -165,6 +165,7 @@
 
     <script>
         (function() {
+            const CANONICAL_BASE = 'https://gleaming-cendol-417bf3.netlify.app';
             const XANO_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/asset';
             
             function extractImage(html) {
@@ -293,7 +294,7 @@
                     const imageUrl = extractImage(post.description);
                     const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
                     const date = new Date(post.created_at).toLocaleDateString();
-                    const readMoreUrl = 'https://gleaming-cendol-417bf3.netlify.app/post/' + post.id;
+                    const readMoreUrl = CANONICAL_BASE + '/post/' + post.id;
                     
                     const postDiv = document.createElement('div');
                     postDiv.className = 'post';
