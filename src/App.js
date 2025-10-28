@@ -1,7 +1,7 @@
 // Updated App.js to render FacebookStyleNewsFeed instead of ProfessionalNewsFeed for the newsfeed section
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 // Icons and services
 import { Home as HomeIcon, FileText, MessageSquare, Mail, Shield, BarChart3, Settings } from 'lucide-react';
@@ -93,8 +93,26 @@ const App = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        {/* Navigation bar */}
+      <AppContent 
+        navigationItems={navigationItems}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        renderContent={renderContent}
+        posts={posts}
+      />
+    </Router>
+  );
+};
+
+// Separate component to use useLocation hook
+const AppContent = ({ navigationItems, activeSection, setActiveSection, renderContent, posts }) => {
+  const location = useLocation();
+  const isWidgetRoute = location.pathname.startsWith('/widget');
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation bar - hidden for widget routes */}
+      {!isWidgetRoute && (
         <nav className="bg-white shadow-lg border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
@@ -120,9 +138,10 @@ const App = () => {
             </div>
           </div>
         </nav>
+      )}
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      {/* Main Content */}
+      <main className={isWidgetRoute ? "" : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"}>
           <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/post/:id" element={<BlogPostView posts={posts} />} />
@@ -131,9 +150,8 @@ const App = () => {
             <Route path="/widget/newsfeed" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
-        </main>
-      </div>
-    </Router>
+      </main>
+    </div>
   );
 };
 
