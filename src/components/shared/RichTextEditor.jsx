@@ -22,6 +22,7 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
   const [selectedBgColor, setSelectedBgColor] = useState('#ffffff');
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [selectedImageId, setSelectedImageId] = useState(null);
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -29,6 +30,22 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
       editorRef.current.innerHTML = value || '';
     }
   }, [value]);
+
+  useEffect(() => {
+    window.selectImage = (imageId) => selectImageInternal(imageId);
+    window.resizeImage = (imageId, size) => resizeImageInternal(imageId, size);
+    window.positionImage = (imageId, position) => positionImageInternal(imageId, position);
+    window.deleteImage = (imageId) => deleteImageInternal(imageId);
+    window.clearImageSelection = () => clearImageSelectionInternal();
+
+    return () => {
+      delete window.selectImage;
+      delete window.resizeImage;
+      delete window.positionImage;
+      delete window.deleteImage;
+      delete window.clearImageSelection;
+    };
+  }, []);
 
   // Handle content changes
   const handleInput = () => {
@@ -182,12 +199,13 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
     handleInput();
   };
 
-  // Insert image
+  // Insert image with controls
   const insertImage = () => {
     if (!imageUrl) return;
     
     const url = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
-    const imageHtml = `<div class="my-4"><img src="${url}" alt="Uploaded image" class="max-w-full h-auto rounded-lg shadow-md" /></div>`;
+    const imageId = Date.now();
+    const imageHtml = `<img id="img-${imageId}" src="${url}" alt="Uploaded image" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" />`;
     
     // Ensure focus and selection before insert
     if (ensureFocusAndSelection()) {
@@ -267,6 +285,144 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
     setShowVideoModal(false);
     setVideoUrl('');
     handleInput();
+  };
+
+  const selectImageInternal = (imageId) => {
+    setSelectedImageId(imageId);
+    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
+    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
+    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
+    
+    const img = document.getElementById(`img-${imageId}`);
+    if (!img) return;
+    img.classList.add('selected-image');
+    
+    const updatePositions = (toolbar, handles) => {
+      const rect = img.getBoundingClientRect();
+      if (toolbar) {
+        toolbar.style.top = `${rect.top - 50}px`;
+        toolbar.style.left = `${rect.left}px`;
+      }
+      if (handles) {
+        handles.forEach(({ pos, el }) => {
+          if (pos.includes('n')) el.style.top = `${rect.top - 6}px`;
+          if (pos.includes('s')) el.style.top = `${rect.bottom - 6}px`;
+          if (pos.includes('w')) el.style.left = `${rect.left - 6}px`;
+          if (pos.includes('e')) el.style.left = `${rect.right - 6}px`;
+        });
+      }
+    };
+    
+    const toolbar = document.createElement('div');
+    toolbar.className = 'floating-toolbar';
+    toolbar.innerHTML = `
+      <button onclick="window.resizeImage('${imageId}', 'small')" class="toolbar-btn">Small</button>
+      <button onclick="window.resizeImage('${imageId}', 'medium')" class="toolbar-btn">Medium</button>
+      <button onclick="window.resizeImage('${imageId}', 'large')" class="toolbar-btn">Large</button>
+      <button onclick="window.resizeImage('${imageId}', 'full')" class="toolbar-btn">Full</button>
+      <span class="toolbar-separator">|</span>
+      <button onclick="window.positionImage('${imageId}', 'left')" class="toolbar-btn">← Left</button>
+      <button onclick="window.positionImage('${imageId}', 'center')" class="toolbar-btn">Center</button>
+      <button onclick="window.positionImage('${imageId}', 'right')" class="toolbar-btn">Right →</button>
+      <span class="toolbar-separator">|</span>
+      <button onclick="window.deleteImage('${imageId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
+      <button onclick="window.clearImageSelection()" class="toolbar-btn close-btn">×</button>
+    `;
+    document.body.appendChild(toolbar);
+    
+    const positions = ['nw', 'ne', 'sw', 'se'];
+    const handles = [];
+    positions.forEach((pos) => {
+      const handle = document.createElement('div');
+      handle.className = `resize-handle resize-handle-${pos}`;
+      handle.style.position = 'fixed';
+      handle.style.width = '12px';
+      handle.style.height = '12px';
+      handle.style.background = '#667eea';
+      handle.style.border = '2px solid white';
+      handle.style.borderRadius = '50%';
+      handle.style.zIndex = '1001';
+      handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      handle.style.cursor = `${pos.includes('n') ? (pos.includes('w') ? 'nw' : 'ne') : (pos.includes('w') ? 'sw' : 'se')}-resize`;
+      
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startWidth = img.offsetWidth;
+        
+        const onMouseMove = (moveEvt) => {
+          const deltaX = moveEvt.clientX - startX;
+          let newWidth = startWidth;
+          if (pos.includes('e')) newWidth = startWidth + deltaX;
+          else if (pos.includes('w')) newWidth = startWidth - deltaX;
+          
+          if (newWidth > 100 && newWidth < 1200) {
+            img.style.width = `${newWidth}px`;
+            img.style.height = 'auto';
+            img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+            img.setAttribute('data-size', 'custom');
+            updatePositions(toolbar, handles);
+          }
+        };
+        
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          handleInput();
+        };
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      
+      document.body.appendChild(handle);
+      handles.push({ pos, el: handle });
+    });
+    
+    updatePositions(toolbar, handles);
+  };
+
+  const resizeImageInternal = (imageId, size) => {
+    const img = document.getElementById(`img-${imageId}`);
+    if (!img) return;
+    img.style.width = '';
+    img.style.height = '';
+    img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+    img.classList.add(`size-${size}`);
+    img.setAttribute('data-size', size);
+    handleInput();
+  };
+
+  const positionImageInternal = (imageId, position) => {
+    const img = document.getElementById(`img-${imageId}`);
+    if (!img) return;
+    img.classList.remove('position-left', 'position-center', 'position-right');
+    img.classList.add(`position-${position}`);
+    img.setAttribute('data-position', position);
+    handleInput();
+  };
+
+  const deleteImageInternal = (imageId) => {
+    const img = document.getElementById(`img-${imageId}`);
+    if (!img) return;
+    const wrapper = img.parentElement;
+    if (wrapper && wrapper.classList.contains('image-wrapper-resizable')) {
+      wrapper.remove();
+    } else {
+      img.remove();
+    }
+    document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
+    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+    setSelectedImageId(null);
+    handleInput();
+  };
+
+  const clearImageSelectionInternal = () => {
+    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
+    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
+    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
+    setSelectedImageId(null);
   };
 
   // Toolbar button component
