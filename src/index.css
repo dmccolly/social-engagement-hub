@@ -1,3 +1,118 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Image size classes */
+img.size-small {
+  width: 200px;
+  height: auto;
+}
+
+img.size-medium {
+  width: 400px;
+  height: auto;
+}
+
+img.size-large {
+  width: 600px;
+  height: auto;
+}
+
+img.size-full {
+  width: 100%;
+  height: auto;
+}
+
+/* Image position classes */
+img.position-left {
+  float: left;
+  margin: 0 15px 15px 0;
+  clear: left;
+}
+
+img.position-right {
+  float: right;
+  margin: 0 0 15px 15px;
+  clear: right;
+}
+
+img.position-center {
+  display: block;
+  margin: 0 auto 15px auto;
+  float: none;
+}
+
+/* Selected image highlight */
+img.selected-image {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Floating toolbar for image controls */
+.floating-toolbar {
+  position: fixed;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.toolbar-btn {
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.toolbar-btn.close-btn {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 4px 10px;
+  color: #6b7280;
+}
+
+.toolbar-separator {
+  color: #d1d5db;
+  margin: 0 4px;
+}
+
+/* Resize handles */
+.resize-handle {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  background: #667eea;
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 1001;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.resize-handle-nw {
+  cursor: nw-resize;
+}
+
+.resize-handle-ne {
+  cursor: ne-resize;
+}
+
+.resize-handle-sw {
+  cursor: sw-resize;
+}
+
+.resize-handle-se {
+  cursor: se-resize;
+}
