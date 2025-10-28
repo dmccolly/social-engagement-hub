@@ -27,6 +27,99 @@ function buildUrl(path = '', params) {
 }
 
 /**
+ * Fetch visitor posts using /visitor/posts endpoint (returns approved posts).
+ */
+export async function getVisitorPosts() {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch visitor posts: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Get visitor posts error:', error);
+    return { success: false, error: error.message, posts: [] };
+  }
+}
+
+/**
+ * Create a visitor post using /visitor/posts endpoint.
+ *
+ * @param {object} postData - { content, visitor_token }
+ */
+export async function createVisitorPost(postData) {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: postData.content,
+        visitor_token: postData.visitor_token
+      })
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create visitor post: ${response.statusText} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Create visitor post error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Toggle like on a visitor post using /visitor/posts/{id}/like endpoint.
+ *
+ * @param {number} postId
+ * @param {string} visitorToken
+ */
+export async function toggleVisitorPostLike(postId, visitorToken) {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts/${postId}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitor_token: visitorToken })
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to toggle like: ${response.statusText} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Toggle visitor post like error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Create a reply to a visitor post using /visitor/posts/{id}/replies endpoint.
+ *
+ * @param {number} postId
+ * @param {object} replyData - { content, visitor_token }
+ */
+export async function createVisitorReply(postId, replyData) {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts/${postId}/replies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: replyData.content,
+        visitor_token: replyData.visitor_token
+      })
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create reply: ${response.statusText} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Create visitor reply error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Fetch a list of posts. Supports optional filters for type, author, search,
  * pagination and visitor email. Returns an object with `success`, `posts`,
  * `total` and `pagination` keys.
@@ -189,6 +282,52 @@ export async function getNewsfeedAnalytics(timeRange = '7d') {
         time_range: timeRange
       }
     };
+  }
+}
+
+/**
+ * Register a new visitor using the Xano /visitor/register endpoint.
+ * Creates a visitor record and returns visitor token for authentication.
+ *
+ * @param {object} visitorData - { email, first_name, last_name }
+ */
+export async function registerVisitor(visitorData) {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: visitorData.email,
+        first_name: visitorData.first_name || visitorData.name?.split(' ')[0] || 'Visitor',
+        last_name: visitorData.last_name || visitorData.name?.split(' ').slice(1).join(' ') || ''
+      }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to register visitor: ${response.statusText} - ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Register visitor error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get visitor profile by token using /visitor/profile endpoint.
+ *
+ * @param {string} visitorToken
+ */
+export async function getVisitorProfile(visitorToken) {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/profile?visitor_token=${visitorToken}`);
+    if (!response.ok) {
+      throw new Error(`Failed to get visitor profile: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Get visitor profile error:', error);
+    return { success: false, error: error.message };
   }
 }
 

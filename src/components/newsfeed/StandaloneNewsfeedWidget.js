@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X } from 'lucide-react';
-import { getNewsfeedPosts, createNewsfeedPost, toggleNewsfeedLike, getNewsfeedAnalytics } from '../../services/newsfeedService';
+import { getVisitorPosts, createVisitorPost, toggleVisitorPostLike, createVisitorReply, registerVisitor, getNewsfeedAnalytics } from '../../services/newsfeedService';
 
 const StandaloneNewsfeedWidget = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -66,15 +66,13 @@ const StandaloneNewsfeedWidget = () => {
     try {
       setIsLoading(true);
       
-      const filters = {
-        type: 'posts_only',
-        limit: maxPosts,
-        visitor_email: visitorSession?.email
-      };
-      
-      const result = await getNewsfeedPosts(filters);
+      // Use visitor posts endpoint
+      const result = await getVisitorPosts();
       
       if (result.success && result.posts) {
+        setPosts(result.posts);
+      } else if (result.posts && Array.isArray(result.posts)) {
+        // Handle case where success flag might not be present
         setPosts(result.posts);
       } else {
         // Fallback to sample data
@@ -101,30 +99,46 @@ const StandaloneNewsfeedWidget = () => {
     }
   };
 
-  const handleAuthSubmit = () => {
+  const handleAuthSubmit = async () => {
     if (!authForm.name.trim() || !authForm.email.trim()) {
       alert('Please enter your name and email');
       return;
     }
 
-    const session = {
-      name: authForm.name,
-      email: authForm.email,
-      session_id: generateSessionId(),
-      authenticated_at: new Date().toISOString()
-    };
+    try {
+      // Register visitor with Xano
+      const result = await registerVisitor({
+        email: authForm.email,
+        name: authForm.name
+      });
 
-    setVisitorSession(session);
-    localStorage.setItem('visitor_session', JSON.stringify(session));
-    setShowAuthModal(false);
-    setAuthForm({ name: '', email: '' });
+      if (result.success && result.visitor) {
+        const session = {
+          name: authForm.name,
+          email: authForm.email,
+          visitor_token: result.visitor.visitor_token,
+          visitor_id: result.visitor.id,
+          authenticated_at: new Date().toISOString()
+        };
+
+        setVisitorSession(session);
+        localStorage.setItem('visitor_session', JSON.stringify(session));
+        setShowAuthModal(false);
+        setAuthForm({ name: '', email: '' });
+      } else {
+        alert('Failed to register: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Auth submit error:', error);
+      alert('Failed to authenticate. Please try again.');
+    }
   };
 
   const handlePostSubmit = async () => {
     if (!newPost.trim()) return;
     
     // Check if visitor is authenticated
-    if (!visitorSession) {
+    if (!visitorSession || !visitorSession.visitor_token) {
       setShowAuthModal(true);
       return;
     }
@@ -133,17 +147,13 @@ const StandaloneNewsfeedWidget = () => {
     
     try {
       const postData = {
-        author_name: visitorSession.name,
-        author_email: visitorSession.email,
-        author_id: visitorSession.member_id || null,
         content: newPost,
-        session_id: visitorSession.session_id || generateSessionId(),
-        post_type: 'post'
+        visitor_token: visitorSession.visitor_token
       };
       
-      const result = await createNewsfeedPost(postData);
+      const result = await createVisitorPost(postData);
       
-      if (result.success) {
+      if (result.success || result.post) {
         setNewPost('');
         setShowCreateForm(false);
         loadPosts(); // Reload to show new post
@@ -156,7 +166,7 @@ const StandaloneNewsfeedWidget = () => {
           }, '*');
         }
       } else {
-        alert('Failed to create post: ' + result.error);
+        alert('Failed to create post: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Widget: Post submit error', error);
@@ -167,20 +177,19 @@ const StandaloneNewsfeedWidget = () => {
   };
 
   const handleLike = async (postId) => {
-    if (!visitorSession) {
+    if (!visitorSession || !visitorSession.visitor_token) {
       setShowAuthModal(true);
       return;
     }
     
     try {
-      const authorEmail = visitorSession.email;
-      const result = await toggleNewsfeedLike(postId, authorEmail);
+      const result = await toggleVisitorPostLike(postId, visitorSession.visitor_token);
       
-      if (result.success) {
+      if (result.success || result.liked !== undefined) {
         // Update local state
         setPosts(prev => prev.map(post => 
           post.id === postId 
-            ? { ...post, likes_count: result.likes_count, visitor_liked: result.liked }
+            ? { ...post, likes_count: result.likes_count || post.likes_count, visitor_liked: result.liked }
             : post
         ));
       }
