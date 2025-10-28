@@ -23,7 +23,10 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState(null);
+  const [imageUploadMode, setImageUploadMode] = useState('url'); // 'url' or 'upload'
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const editorRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (editorRef.current && value !== editorRef.current.innerHTML) {
@@ -205,7 +208,59 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     handleInput();
   };
 
-  // Insert image with controls
+  // Handle file upload to Cloudinary
+  const handleImageFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append(
+        'upload_preset',
+        process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'demo-preset'
+      );
+      const cloudName =
+        process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'demo-cloud-name';
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      const data = await response.json();
+      
+      // Insert the uploaded image
+      const imageId = Date.now();
+      const imageHtml = `<img id="img-${imageId}" src="${data.secure_url}" alt="${file.name}" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" />`;
+      
+      // Ensure focus and selection before insert
+      if (ensureFocusAndSelection()) {
+        const success = document.execCommand('insertHTML', false, imageHtml);
+        console.log('insertImage from upload success:', success);
+      }
+      
+      setShowImageModal(false);
+      setImageUrl('');
+      setImageUploadMode('url');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      handleInput();
+    } catch (error) {
+      console.error('Image upload error:', error);
+      alert('Upload failed. Please try again.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Insert image with controls (from URL)
   const insertImage = () => {
     if (!imageUrl) return;
     
@@ -221,6 +276,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     
     setShowImageModal(false);
     setImageUrl('');
+    setImageUploadMode('url');
     handleInput();
   };
 
@@ -658,44 +714,103 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Insert Image</h3>
-              <button onClick={() => setShowImageModal(false)} className="text-gray-500 hover:text-gray-700">
+              <button onClick={() => { setShowImageModal(false); setImageUploadMode('url'); setImageUrl(''); }} className="text-gray-500 hover:text-gray-700">
                 <X size={20} />
               </button>
             </div>
+            
+            {/* Tab Switcher */}
+            <div className="flex gap-2 mb-4 border-b border-gray-200">
+              <button
+                onClick={() => setImageUploadMode('url')}
+                className={`px-4 py-2 font-medium transition ${
+                  imageUploadMode === 'url'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                From URL
+              </button>
+              <button
+                onClick={() => setImageUploadMode('upload')}
+                className={`px-4 py-2 font-medium transition ${
+                  imageUploadMode === 'upload'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Upload File
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-500 mt-1">Enter the URL of an image from the web</p>
-              </div>
-              {imageUrl && (
-                <div className="border border-gray-200 rounded-lg p-2">
-                  <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                  <img src={imageUrl} alt="Preview" className="max-w-full h-auto rounded" onError={(e) => e.target.style.display = 'none'} />
-                </div>
+              {imageUploadMode === 'url' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                    <input
+                      type="text"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter the URL of an image from the web</p>
+                  </div>
+                  {imageUrl && (
+                    <div className="border border-gray-200 rounded-lg p-2">
+                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                      <img src={imageUrl} alt="Preview" className="max-w-full h-auto rounded" onError={(e) => e.target.style.display = 'none'} />
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => { setShowImageModal(false); setImageUploadMode('url'); setImageUrl(''); }}
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={insertImage}
+                      disabled={!imageUrl}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Insert Image
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image</label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageFileUpload}
+                      accept="image/*"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isUploadingImage}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Upload an image from your computer (via Cloudinary)</p>
+                  </div>
+                  {isUploadingImage && (
+                    <div className="flex items-center justify-center gap-2 py-4">
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-sm text-gray-600">Uploading image...</span>
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => { setShowImageModal(false); setImageUploadMode('url'); setImageUrl(''); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                      disabled={isUploadingImage}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
               )}
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setShowImageModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={insertImage}
-                  disabled={!imageUrl}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Insert Image
-                </button>
-              </div>
             </div>
           </div>
         </div>

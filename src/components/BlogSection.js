@@ -53,8 +53,18 @@ const BlogSection = () => {
    * Handle saving a new or edited post. On save, call the appropriate
    * Xano service and update the local posts state.
    */
-  const handleSavePost = async ({ title, content }) => {
+  const handleSavePost = async ({ title, content, status, scheduled_datetime }) => {
     try {
+      let tags = editingPost?.tags || '';
+      
+      tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
+      
+      if (status === 'draft') {
+        tags = tags ? `${tags},status:draft` : 'status:draft';
+      }
+      
+      const isScheduled = status === 'scheduled' && scheduled_datetime;
+      
       let response;
       if (editingPost) {
         // Updating an existing post
@@ -62,12 +72,12 @@ const BlogSection = () => {
           title,
           content,
           author: editingPost.author,
-          tags: editingPost.tags,
+          tags: tags.trim(),
           featured: editingPost.featured,
           pinned: editingPost.pinned,
           sort_order: editingPost.sort_order,
-          is_scheduled: editingPost.is_scheduled,
-          scheduled_datetime: editingPost.scheduled_datetime,
+          is_scheduled: isScheduled,
+          scheduled_datetime: isScheduled ? scheduled_datetime : null,
         });
       } else {
         // Creating a new post
@@ -75,9 +85,11 @@ const BlogSection = () => {
           title,
           content,
           author: 'Admin',
-          tags: '',
+          tags: tags.trim(),
           featured: false,
           pinned: false,
+          is_scheduled: isScheduled,
+          scheduled_datetime: isScheduled ? scheduled_datetime : null,
         });
       }
       if (response.success) {
@@ -88,6 +100,14 @@ const BlogSection = () => {
         }
         setShowEditor(false);
         setEditingPost(null);
+        
+        if (status === 'draft') {
+          alert('Post saved as draft successfully!');
+        } else if (status === 'scheduled') {
+          alert('Post scheduled successfully!');
+        } else {
+          alert('Post published successfully!');
+        }
       } else {
         alert(response.error || 'Failed to save post');
       }
