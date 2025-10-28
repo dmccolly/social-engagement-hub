@@ -1,14 +1,14 @@
 // Rich Text Editor Component for News Feed
 // Supports: Text formatting, links, images, videos (YouTube/Vimeo), and more
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon,
   Video, List, ListOrdered, Quote, Code, AlignLeft,
   AlignCenter, AlignRight, X, Check, Youtube, Film, Type, Palette
 } from 'lucide-react';
 
-const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" }) => {
+const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on your mind?" }, ref) => {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -177,6 +177,12 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
     
     return true;
   };
+
+  useImperativeHandle(ref, () => ({
+    openLinkModal: () => setShowLinkModal(true),
+    openImageModal: () => setShowImageModal(true),
+    openVideoModal: () => setShowVideoModal(true),
+  }));
 
   // Insert link
   const insertLink = () => {
@@ -752,6 +758,8 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
       )}
     </div>
   );
-};
+});
+
+RichTextEditor.displayName = 'RichTextEditor';
 
 export default RichTextEditor;
