@@ -4,8 +4,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon,
-  Video, List, ListOrdered, Quote, Code, Heading1, Heading2, AlignLeft,
-  AlignCenter, AlignRight, X, Check, Youtube, Film
+  Video, List, ListOrdered, Quote, Code, AlignLeft,
+  AlignCenter, AlignRight, X, Check, Youtube, Film, Type, Palette
 } from 'lucide-react';
 
 const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" }) => {
@@ -16,6 +16,12 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
   const [linkText, setLinkText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [selectedFontFamily, setSelectedFontFamily] = useState('');
+  const [selectedFontSize, setSelectedFontSize] = useState('');
+  const [selectedTextColor, setSelectedTextColor] = useState('#000000');
+  const [selectedBgColor, setSelectedBgColor] = useState('#ffffff');
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -56,6 +62,84 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
       handleInput();
     }
   };
+
+  // Handle font family change
+  const handleFontFamilyChange = (e) => {
+    const fontFamily = e.target.value;
+    setSelectedFontFamily(fontFamily);
+    if (fontFamily) {
+      execCommand('fontName', fontFamily);
+    }
+  };
+
+  // Handle font size change
+  const handleFontSizeChange = (e) => {
+    const fontSize = e.target.value;
+    setSelectedFontSize(fontSize);
+    if (fontSize) {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0 && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = fontSize;
+        range.surroundContents(span);
+        handleInput();
+      }
+    }
+  };
+
+  // Handle text color change
+  const handleTextColorChange = (color) => {
+    setSelectedTextColor(color);
+    execCommand('foreColor', color);
+    setShowTextColorPicker(false);
+  };
+
+  // Handle background color change
+  const handleBgColorChange = (color) => {
+    setSelectedBgColor(color);
+    execCommand('backColor', color);
+    setShowBgColorPicker(false);
+  };
+
+  const fontFamilies = [
+    { value: '', label: 'Default Font' },
+    { value: 'Arial, sans-serif', label: 'Arial' },
+    { value: 'Helvetica, sans-serif', label: 'Helvetica' },
+    { value: 'Times New Roman, serif', label: 'Times New Roman' },
+    { value: 'Georgia, serif', label: 'Georgia' },
+    { value: 'Courier New, monospace', label: 'Courier New' },
+    { value: 'Verdana, sans-serif', label: 'Verdana' },
+    { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS' },
+    { value: 'Comic Sans MS, cursive', label: 'Comic Sans MS' },
+    { value: 'Impact, sans-serif', label: 'Impact' },
+    { value: 'Palatino, serif', label: 'Palatino' },
+    { value: 'Garamond, serif', label: 'Garamond' },
+  ];
+
+  const fontSizes = [
+    { value: '', label: 'Default Size' },
+    { value: '8px', label: '8px' },
+    { value: '10px', label: '10px' },
+    { value: '12px', label: '12px' },
+    { value: '14px', label: '14px' },
+    { value: '16px', label: '16px' },
+    { value: '18px', label: '18px' },
+    { value: '20px', label: '20px' },
+    { value: '24px', label: '24px' },
+    { value: '28px', label: '28px' },
+    { value: '32px', label: '32px' },
+    { value: '36px', label: '36px' },
+    { value: '48px', label: '48px' },
+    { value: '60px', label: '60px' },
+    { value: '72px', label: '72px' },
+  ];
+
+  const commonColors = [
+    '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF',
+    '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
+    '#008000', '#800000', '#808080', '#C0C0C0', '#FFD700',
+  ];
 
   // Insert link
   const insertLink = () => {
@@ -180,7 +264,35 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
         }
       `}</style>
       {/* Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-1">
+      <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-2">
+        {/* Font Family */}
+        <div className="flex items-center gap-1">
+          <select
+            value={selectedFontFamily}
+            onChange={handleFontFamilyChange}
+            className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            title="Font Family"
+          >
+            {fontFamilies.map(font => (
+              <option key={font.value} value={font.value}>{font.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Font Size */}
+        <div className="flex items-center gap-1 border-r border-gray-300 pr-2">
+          <select
+            value={selectedFontSize}
+            onChange={handleFontSizeChange}
+            className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            title="Font Size"
+          >
+            {fontSizes.map(size => (
+              <option key={size.value} value={size.value}>{size.label}</option>
+            ))}
+          </select>
+        </div>
+
         {/* Text Formatting */}
         <div className="flex gap-1 border-r border-gray-300 pr-2">
           <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} title="Bold (Ctrl+B)" />
@@ -189,10 +301,76 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
           <ToolbarButton icon={Strikethrough} onClick={() => execCommand('strikeThrough')} title="Strikethrough" />
         </div>
 
-        {/* Headings */}
-        <div className="flex gap-1 border-r border-gray-300 pr-2">
-          <ToolbarButton icon={Heading1} onClick={() => execCommand('formatBlock', '<h1>')} title="Heading 1" />
-          <ToolbarButton icon={Heading2} onClick={() => execCommand('formatBlock', '<h2>')} title="Heading 2" />
+        {/* Colors */}
+        <div className="flex gap-1 border-r border-gray-300 pr-2 relative">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTextColorPicker(!showTextColorPicker)}
+              onMouseDown={(e) => e.preventDefault()}
+              title="Text Color"
+              className="p-2 rounded hover:bg-gray-200 transition flex items-center gap-1"
+            >
+              <Type size={18} className="text-gray-700" />
+              <div className="w-4 h-1 rounded" style={{ backgroundColor: selectedTextColor }}></div>
+            </button>
+            {showTextColorPicker && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-50">
+                <div className="grid grid-cols-5 gap-1 mb-2">
+                  {commonColors.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => handleTextColorChange(color)}
+                      className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+                <input
+                  type="color"
+                  value={selectedTextColor}
+                  onChange={(e) => handleTextColorChange(e.target.value)}
+                  className="w-full h-8 cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+              onMouseDown={(e) => e.preventDefault()}
+              title="Background Color"
+              className="p-2 rounded hover:bg-gray-200 transition flex items-center gap-1"
+            >
+              <Palette size={18} className="text-gray-700" />
+              <div className="w-4 h-1 rounded" style={{ backgroundColor: selectedBgColor }}></div>
+            </button>
+            {showBgColorPicker && (
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-50">
+                <div className="grid grid-cols-5 gap-1 mb-2">
+                  {commonColors.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => handleBgColorChange(color)}
+                      className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+                <input
+                  type="color"
+                  value={selectedBgColor}
+                  onChange={(e) => handleBgColorChange(e.target.value)}
+                  className="w-full h-8 cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Lists */}
