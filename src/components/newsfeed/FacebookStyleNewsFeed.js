@@ -1,6 +1,6 @@
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   MessageSquare,
   Heart,
@@ -58,6 +58,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   const [analytics, setAnalytics] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeShareMenu, setActiveShareMenu] = useState(null);
+  const editorRef = useRef(null);
 
   // Load visitor session and posts on mount
   useEffect(() => {
@@ -386,6 +387,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
             </div>
             <div className="flex-1">
               <RichTextEditor
+                ref={editorRef}
                 value={newPost}
                 onChange={setNewPost}
                 placeholder="What's on your mind?"
@@ -394,17 +396,17 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
           </div>
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+              <button 
+                onClick={() => editorRef.current?.openImageModal()}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              >
                 <Image size={18} className="text-green-600" /> <span className="text-sm font-medium">Photo</span>
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
+              <button 
+                onClick={() => editorRef.current?.openVideoModal()}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              >
                 <Video size={18} className="text-red-600" /> <span className="text-sm font-medium">Video</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <Smile size={18} className="text-yellow-600" /> <span className="text-sm font-medium">Feeling</span>
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
-                <MapPin size={18} className="text-blue-600" /> <span className="text-sm font-medium">Location</span>
               </button>
             </div>
             <button
