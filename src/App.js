@@ -22,8 +22,8 @@ import AdminDashboard from './components/admin/AdminDashboardIntegration';
 // Settings and widgets
 import SettingsSection from './components/SettingsSection';
 import WidgetPreview from './components/WidgetPreview';
-// Import the standalone newsfeed widget so the news feed embed renders the full community feed
-// instead of the simplified preview. See StandaloneNewsfeedWidget.js for implementation.
+// Import the enhanced newsfeed widget with rich text, attachments, and reply functionality
+import EnhancedNewsfeedWidget from './components/newsfeed/EnhancedNewsfeedWidget';
 import StandaloneNewsfeedWidget from './components/newsfeed/StandaloneNewsfeedWidget';
 
 // Blog components
@@ -146,8 +146,9 @@ const AppContent = ({ navigationItems, activeSection, setActiveSection, renderCo
             <Route path="/" element={renderContent()} />
             <Route path="/post/:id" element={<BlogPostView posts={posts} />} />
             <Route path="/admin/*" element={<AdminDashboard />} />
-            {/* Route the newsfeed widget to the full widget instead of the preview. */}
-            <Route path="/widget/newsfeed" element={<StandaloneNewsfeedWidget />} />
+            {/* Route the newsfeed widget to the enhanced version with full features */}
+            <Route path="/widget/newsfeed" element={<EnhancedNewsfeedWidget />} />
+            <Route path="/widget/newsfeed-simple" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
       </main>

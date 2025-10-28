@@ -94,25 +94,44 @@ export async function createNewsfeedPost(postData) {
     if (!authorName) {
       return { success: false, error: 'Author name is required' };
     }
-    // Build minimal payload expected by the Xano newsfeed_post endpoint.
+    // Build payload with all fields
     const payload = {
       author_name: authorName,
       author_email: postData.author_email || null,
-      content: content
+      content: content,
+      parent_id: postData.parent_id || null,
+      post_type: postData.post_type || 'post',
+      session_id: postData.session_id || null,
+      author_id: postData.author_id || null
     };
+    
+    console.log('Creating post with payload:', payload);
+    
     const response = await fetch(buildUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    
+    console.log('Response status:', response.status);
+    
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText;
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        errorText = 'Unable to read error response';
+      }
+      console.error('API Error:', errorText);
       throw new Error(`Failed to create post: ${response.statusText} - ${errorText}`);
     }
-    return await response.json();
+    
+    const result = await response.json();
+    console.log('Post created successfully:', result);
+    return result;
   } catch (error) {
     console.error('Create newsfeed post error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Unknown error occurred' };
   }
 }
 
