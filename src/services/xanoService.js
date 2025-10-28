@@ -195,8 +195,21 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     const posts = assets
          .filter(asset => {
            const catId = asset.category_id ?? asset.category?.id ?? asset.category;
-           return Number(catId) === 11;
-         }) // Only Blog Posts category
+           if (Number(catId) !== 11) return false; // Only Blog Posts category
+           
+           // Filter out drafts (check tags for status:draft)
+           const tags = asset.tags || '';
+           if (tags.includes('status:draft')) return false;
+           
+           // Filter out scheduled posts that haven't reached their publish time
+           if (asset.is_scheduled && asset.scheduled_datetime) {
+             const scheduledTime = new Date(asset.scheduled_datetime);
+             const now = new Date();
+             if (scheduledTime > now) return false; // Not yet time to publish
+           }
+           
+           return true;
+         })
       .map(asset => {
         console.log('Asset description:', asset.description);
         const excerpt = createExcerpt(asset.description || '', 400);
@@ -215,6 +228,7 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
           sort_order: asset.sort_order || 0,
           is_scheduled: asset.is_scheduled || false,
           scheduled_datetime: asset.scheduled_datetime || null,
+          tags: asset.tags || '',
           status: 'published'
         };
       })
