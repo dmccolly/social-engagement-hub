@@ -141,6 +141,26 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
     '#008000', '#800000', '#808080', '#C0C0C0', '#FFD700',
   ];
 
+  const ensureFocusAndSelection = () => {
+    if (!editorRef.current) return false;
+    
+    // Ensure the editor is focused
+    editorRef.current.focus();
+    
+    // Ensure there's a selection
+    const selection = window.getSelection();
+    if (!selection.rangeCount) {
+      // Create a range at the end of the content
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    
+    return true;
+  };
+
   // Insert link
   const insertLink = () => {
     if (!linkUrl) return;
@@ -149,12 +169,16 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
     const text = linkText || url;
     
     const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${text}</a>`;
-    document.execCommand('insertHTML', false, linkHtml);
+    
+    // Ensure focus and selection before insert
+    if (ensureFocusAndSelection()) {
+      const success = document.execCommand('insertHTML', false, linkHtml);
+      console.log('insertLink success:', success);
+    }
     
     setShowLinkModal(false);
     setLinkUrl('');
     setLinkText('');
-    editorRef.current?.focus();
     handleInput();
   };
 
@@ -164,11 +188,15 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
     
     const url = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
     const imageHtml = `<div class="my-4"><img src="${url}" alt="Uploaded image" class="max-w-full h-auto rounded-lg shadow-md" /></div>`;
-    document.execCommand('insertHTML', false, imageHtml);
+    
+    // Ensure focus and selection before insert
+    if (ensureFocusAndSelection()) {
+      const success = document.execCommand('insertHTML', false, imageHtml);
+      console.log('insertImage success:', success);
+    }
     
     setShowImageModal(false);
     setImageUrl('');
-    editorRef.current?.focus();
     handleInput();
   };
 
@@ -230,11 +258,14 @@ const RichTextEditor = ({ value, onChange, placeholder = "What's on your mind?" 
       `;
     }
     
-    document.execCommand('insertHTML', false, embedHtml);
+    // Ensure focus and selection before insert
+    if (ensureFocusAndSelection()) {
+      const success = document.execCommand('insertHTML', false, embedHtml);
+      console.log('insertVideo success:', success);
+    }
     
     setShowVideoModal(false);
     setVideoUrl('');
-    editorRef.current?.focus();
     handleInput();
   };
 
