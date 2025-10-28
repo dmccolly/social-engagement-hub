@@ -1,7 +1,7 @@
 // src/components/newsfeed/StandaloneNewsfeedWidget.js
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink } from 'lucide-react';
+import { MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X } from 'lucide-react';
 import { getNewsfeedPosts, createNewsfeedPost, toggleNewsfeedLike, getNewsfeedAnalytics } from '../../services/newsfeedService';
 
 const StandaloneNewsfeedWidget = () => {
@@ -23,13 +23,26 @@ const StandaloneNewsfeedWidget = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPost, setNewPost] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authForm, setAuthForm] = useState({ name: '', email: '' });
 
-  // Load visitor session from parent window
+  // Load visitor session from localStorage or parent window
   useEffect(() => {
+    // Check localStorage first
+    const savedSession = localStorage.getItem('visitor_session');
+    if (savedSession) {
+      try {
+        setVisitorSession(JSON.parse(savedSession));
+      } catch (e) {
+        console.error('Failed to parse saved session', e);
+      }
+    }
+
     // Listen for visitor session from parent window
     const handleMessage = (event) => {
       if (event.data.type === 'visitor_session') {
         setVisitorSession(event.data.session);
+        localStorage.setItem('visitor_session', JSON.stringify(event.data.session));
       }
     };
 
@@ -88,15 +101,31 @@ const StandaloneNewsfeedWidget = () => {
     }
   };
 
+  const handleAuthSubmit = () => {
+    if (!authForm.name.trim() || !authForm.email.trim()) {
+      alert('Please enter your name and email');
+      return;
+    }
+
+    const session = {
+      name: authForm.name,
+      email: authForm.email,
+      session_id: generateSessionId(),
+      authenticated_at: new Date().toISOString()
+    };
+
+    setVisitorSession(session);
+    localStorage.setItem('visitor_session', JSON.stringify(session));
+    setShowAuthModal(false);
+    setAuthForm({ name: '', email: '' });
+  };
+
   const handlePostSubmit = async () => {
     if (!newPost.trim()) return;
     
     // Check if visitor is authenticated
     if (!visitorSession) {
-      // Request authentication from parent window
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'request_authentication' }, '*');
-      }
+      setShowAuthModal(true);
       return;
     }
     
@@ -139,10 +168,7 @@ const StandaloneNewsfeedWidget = () => {
 
   const handleLike = async (postId) => {
     if (!visitorSession) {
-      // Request authentication from parent window
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: 'request_authentication' }, '*');
-      }
+      setShowAuthModal(true);
       return;
     }
     
@@ -239,6 +265,60 @@ const StandaloneNewsfeedWidget = () => {
       className="bg-white rounded-lg shadow overflow-hidden"
       style={{ borderRadius: `${borderRadius}px` }}
     >
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Join the Conversation</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Enter your details to interact with the community
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={authForm.name}
+                  onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
+                  placeholder="John Doe"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                  placeholder="john@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <button
+                onClick={handleAuthSubmit}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div 
         className="text-white p-4 text-center font-bold"
@@ -261,12 +341,18 @@ const StandaloneNewsfeedWidget = () => {
         </div>
       )}
 
-      {/* Post Creation (if enabled) */}
-      {showCreateButton && visitorSession && (
+      {/* Post Creation - Always show button */}
+      {showCreateButton && (
         <div className="p-4 border-b bg-gray-50">
           {!showCreateForm ? (
             <button
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => {
+                if (!visitorSession) {
+                  setShowAuthModal(true);
+                } else {
+                  setShowCreateForm(true);
+                }
+              }}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
             >
               <MessageSquare size={16} />
@@ -315,14 +401,18 @@ const StandaloneNewsfeedWidget = () => {
             <p className="text-sm text-gray-600 mb-4">
               Be the first to share something with the community!
             </p>
-            {visitorSession && (
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Create First Post
-              </button>
-            )}
+            <button
+              onClick={() => {
+                if (!visitorSession) {
+                  setShowAuthModal(true);
+                } else {
+                  setShowCreateForm(true);
+                }
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Create First Post
+            </button>
           </div>
         ) : (
           posts.map(post => (
