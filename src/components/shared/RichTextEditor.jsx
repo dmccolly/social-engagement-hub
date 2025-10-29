@@ -30,24 +30,22 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const currentToolbarRef = useRef(null);
   const currentHandlesRef = useRef([]);
 
-  // Process existing images when content is loaded
-  const processExistingImages = () => {
+  // Ensure all images have click handlers
+  const ensureImageHandlers = () => {
     if (!editorRef.current) return;
     
     const images = editorRef.current.querySelectorAll('img');
     images.forEach((img) => {
-      // Skip if already processed
-      if (img.id && img.id.startsWith('img-')) return;
-      
-      // Assign a unique ID if not present
-      if (!img.id) {
+      // Ensure image has an ID
+      if (!img.id || !img.id.startsWith('img-')) {
         const imageId = Date.now() + Math.random();
         img.id = `img-${imageId}`;
       }
       
-      // Add click handler
       const imageId = img.id.replace('img-', '');
-      img.onclick = () => window.selectImage(imageId);
+      
+      // Always set onclick attribute (more reliable than property)
+      img.setAttribute('onclick', `window.selectImage('${imageId}')`);
       img.style.cursor = 'pointer';
       
       // Ensure image has size and position classes
@@ -60,6 +58,11 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         img.setAttribute('data-position', 'center');
       }
     });
+  };
+
+  // Process existing images when content is loaded
+  const processExistingImages = () => {
+    ensureImageHandlers();
   };
 
   useEffect(() => {
@@ -94,6 +97,8 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const handleInput = () => {
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
+      // Ensure all images still have click handlers after content change
+      ensureImageHandlers();
     }
   };
 
@@ -509,6 +514,10 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
     img.classList.add(`size-${size}`);
     img.setAttribute('data-size', size);
+    
+    // Ensure onclick is preserved
+    img.setAttribute('onclick', `window.selectImage('${imageId}')`);
+    
     handleInput();
     
     // Re-select the image to update toolbar and handles
@@ -521,6 +530,10 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     img.classList.remove('position-left', 'position-center', 'position-right');
     img.classList.add(`position-${position}`);
     img.setAttribute('data-position', position);
+    
+    // Ensure onclick is preserved
+    img.setAttribute('onclick', `window.selectImage('${imageId}')`);
+    
     handleInput();
     
     // Re-select the image to update toolbar and handles
