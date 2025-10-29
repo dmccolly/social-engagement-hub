@@ -28,9 +28,43 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Process existing images when content is loaded
+  const processExistingImages = () => {
+    if (!editorRef.current) return;
+    
+    const images = editorRef.current.querySelectorAll('img');
+    images.forEach((img) => {
+      // Skip if already processed
+      if (img.id && img.id.startsWith('img-')) return;
+      
+      // Assign a unique ID if not present
+      if (!img.id) {
+        const imageId = Date.now() + Math.random();
+        img.id = `img-${imageId}`;
+      }
+      
+      // Add click handler
+      const imageId = img.id.replace('img-', '');
+      img.onclick = () => window.selectImage(imageId);
+      img.style.cursor = 'pointer';
+      
+      // Ensure image has size and position classes
+      if (!img.className.includes('size-')) {
+        img.classList.add('size-medium');
+        img.setAttribute('data-size', 'medium');
+      }
+      if (!img.className.includes('position-')) {
+        img.classList.add('position-center');
+        img.setAttribute('data-position', 'center');
+      }
+    });
+  };
+
   useEffect(() => {
     if (editorRef.current && value !== editorRef.current.innerHTML) {
       editorRef.current.innerHTML = value || '';
+      // Process any existing images in the loaded content
+      processExistingImages();
     }
   }, [value]);
 
@@ -648,12 +682,19 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       <div
         ref={editorRef}
         contentEditable
-        onInput={handleInput}
-        onClick={() => editorRef.current?.focus()}
-        className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none prose max-w-none cursor-text"
-        style={{ wordWrap: 'break-word' }}
-        suppressContentEditableWarning
         data-placeholder={placeholder}
+        onInput={handleInput}
+        onClick={(e) => {
+          // Clear image selection when clicking outside images
+          if (e.target.tagName !== 'IMG') {
+            clearImageSelectionInternal();
+          }
+        }}
+        className="p-4 min-h-[300px] max-h-[600px] overflow-y-auto focus:outline-none prose prose-sm max-w-none"
+        style={{
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+        }}
       />
 
       {/* Link Modal */}
