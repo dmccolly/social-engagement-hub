@@ -27,6 +27,8 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
+  const currentToolbarRef = useRef(null);
+  const currentHandlesRef = useRef([]);
 
   // Process existing images when content is loaded
   const processExistingImages = () => {
@@ -75,12 +77,16 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     window.deleteImage = (imageId) => deleteImageInternal(imageId);
     window.clearImageSelection = () => clearImageSelectionInternal();
 
+    // Cleanup on unmount
     return () => {
       delete window.selectImage;
       delete window.resizeImage;
       delete window.positionImage;
       delete window.deleteImage;
       delete window.clearImageSelection;
+      // Clean up any remaining toolbars and handles
+      document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
+      document.querySelectorAll('.resize-handle').forEach(el => el.remove());
     };
   }, []);
 
@@ -384,27 +390,32 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   };
 
   const selectImageInternal = (imageId) => {
+    // First, clean up any existing selection
+    clearImageSelectionInternal();
+    
     setSelectedImageId(imageId);
-    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
-    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
-    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
     
     const img = document.getElementById(`img-${imageId}`);
     if (!img) return;
+    
     img.classList.add('selected-image');
     
-    const updatePositions = (toolbar, handles) => {
+    const updatePositions = () => {
       const rect = img.getBoundingClientRect();
-      if (toolbar) {
-        toolbar.style.top = `${rect.top - 50}px`;
-        toolbar.style.left = `${rect.left}px`;
+      const scrollY = window.scrollY || window.pageYOffset;
+      const scrollX = window.scrollX || window.pageXOffset;
+      
+      if (currentToolbarRef.current) {
+        currentToolbarRef.current.style.top = `${rect.top + scrollY - 50}px`;
+        currentToolbarRef.current.style.left = `${rect.left + scrollX}px`;
       }
-      if (handles) {
-        handles.forEach(({ pos, el }) => {
-          if (pos.includes('n')) el.style.top = `${rect.top - 6}px`;
-          if (pos.includes('s')) el.style.top = `${rect.bottom - 6}px`;
-          if (pos.includes('w')) el.style.left = `${rect.left - 6}px`;
-          if (pos.includes('e')) el.style.left = `${rect.right - 6}px`;
+      
+      if (currentHandlesRef.current && currentHandlesRef.current.length > 0) {
+        currentHandlesRef.current.forEach(({ pos, el }) => {
+          if (pos.includes('n')) el.style.top = `${rect.top + scrollY - 6}px`;
+          if (pos.includes('s')) el.style.top = `${rect.bottom + scrollY - 6}px`;
+          if (pos.includes('w')) el.style.left = `${rect.left + scrollX - 6}px`;
+          if (pos.includes('e')) el.style.left = `${rect.right + scrollX - 6}px`;
         });
       }
     };
@@ -425,13 +436,14 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       <button onclick="window.clearImageSelection()" class="toolbar-btn close-btn">×</button>
     `;
     document.body.appendChild(toolbar);
+    currentToolbarRef.current = toolbar;
     
     const positions = ['nw', 'ne', 'sw', 'se'];
     const handles = [];
     positions.forEach((pos) => {
       const handle = document.createElement('div');
       handle.className = `resize-handle resize-handle-${pos}`;
-      handle.style.position = 'fixed';
+      handle.style.position = 'absolute';
       handle.style.width = '12px';
       handle.style.height = '12px';
       handle.style.background = '#667eea';
@@ -458,7 +470,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
             img.style.height = 'auto';
             img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
             img.setAttribute('data-size', 'custom');
-            updatePositions(toolbar, handles);
+            updatePositions();
           }
         };
         
@@ -476,7 +488,17 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       handles.push({ pos, el: handle });
     });
     
-    updatePositions(toolbar, handles);
+    currentHandlesRef.current = handles;
+    updatePositions();
+    
+    // Update positions on scroll
+    const scrollHandler = () => updatePositions();
+    window.addEventListener('scroll', scrollHandler, true);
+    
+    // Store scroll handler for cleanup
+    if (currentToolbarRef.current) {
+      currentToolbarRef.current._scrollHandler = scrollHandler;
+    }
   };
 
   const resizeImageInternal = (imageId, size) => {
@@ -488,6 +510,9 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     img.classList.add(`size-${size}`);
     img.setAttribute('data-size', size);
     handleInput();
+    
+    // Re-select the image to update toolbar and handles
+    setTimeout(() => selectImageInternal(imageId), 10);
   };
 
   const positionImageInternal = (imageId, position) => {
@@ -497,6 +522,9 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     img.classList.add(`position-${position}`);
     img.setAttribute('data-position', position);
     handleInput();
+    
+    // Re-select the image to update toolbar and handles
+    setTimeout(() => selectImageInternal(imageId), 10);
   };
 
   const deleteImageInternal = (imageId) => {
@@ -508,16 +536,36 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     } else {
       img.remove();
     }
-    document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
-    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+    clearImageSelectionInternal();
     setSelectedImageId(null);
     handleInput();
   };
 
   const clearImageSelectionInternal = () => {
+    // Remove selected class from all images
     document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
-    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
-    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
+    
+    // Remove scroll handler if exists
+    if (currentToolbarRef.current && currentToolbarRef.current._scrollHandler) {
+      window.removeEventListener('scroll', currentToolbarRef.current._scrollHandler, true);
+    }
+    
+    // Remove toolbar
+    if (currentToolbarRef.current) {
+      currentToolbarRef.current.remove();
+      currentToolbarRef.current = null;
+    }
+    
+    // Remove all handles
+    if (currentHandlesRef.current && currentHandlesRef.current.length > 0) {
+      currentHandlesRef.current.forEach(({ el }) => el.remove());
+      currentHandlesRef.current = [];
+    }
+    
+    // Fallback: remove any remaining toolbars and handles
+    document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
+    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
+    
     setSelectedImageId(null);
   };
 
