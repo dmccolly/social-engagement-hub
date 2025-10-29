@@ -50,6 +50,14 @@ const BlogSection = () => {
   };
 
   /**
+   * Handle editing an existing post.
+   */
+  const handleEdit = (post) => {
+    setEditingPost(post);
+    setShowEditor(true);
+  };
+
+  /**
    * Handle saving a new or edited post. On save, call the appropriate
    * Xano service and update the local posts state.
    */
@@ -149,6 +157,8 @@ const BlogSection = () => {
           {editingPost ? 'Edit Post' : 'Create New Post'}
         </h1>
         <PatchedRichBlogEditor
+          initialTitle={editingPost?.title || ''}
+          initialContent={editingPost?.content || ''}
           onSave={handleSavePost}
           onCancel={() => {
             setShowEditor(false);
@@ -203,6 +213,12 @@ const BlogSection = () => {
                   )}
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(post)}
+                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDelete(post)}
                     className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
