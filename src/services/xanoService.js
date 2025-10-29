@@ -323,3 +323,262 @@ export const deleteBlogPost = async (postId) => {
     return { success: false, error: error.message };
   }
 };
+
+// ============================================================================
+// VISITOR ENGAGEMENT HUB - NEW ENDPOINTS
+// ============================================================================
+
+/**
+ * Get visitor profile by token
+ * @param {string} visitorToken - Unique visitor token
+ * @returns {Promise<Object>} Visitor profile data
+ */
+export const getVisitorProfile = async (visitorToken) => {
+  try {
+    const params = new URLSearchParams({ visitor_token: visitorToken });
+    const response = await fetch(`${XANO_BASE_URL}/visitor/profile?${params}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get visitor profile: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get visitor profile error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update visitor profile
+ * @param {string} visitorToken - Unique visitor token
+ * @param {string} firstName - First name
+ * @param {string} lastName - Last name
+ * @returns {Promise<Object>} Updated visitor profile
+ */
+export const updateVisitorProfile = async (visitorToken, firstName, lastName) => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitor_token: visitorToken,
+        first_name: firstName,
+        last_name: lastName,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update visitor profile: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Update visitor profile error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new visitor post
+ * @param {string} visitorToken - Unique visitor token
+ * @param {string} content - Post content
+ * @returns {Promise<Object>} Created post data
+ */
+export const createVisitorPost = async (visitorToken, content) => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitor_token: visitorToken,
+        content: content,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create visitor post: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Create visitor post error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all approved visitor posts
+ * @returns {Promise<Array>} Array of approved posts
+ */
+export const getApprovedVisitorPosts = async () => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get approved posts: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get approved posts error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reply to a visitor post
+ * @param {number} postId - Post ID
+ * @param {string} visitorToken - Unique visitor token
+ * @param {string} content - Reply content
+ * @returns {Promise<Object>} Created reply data
+ */
+export const replyToVisitorPost = async (postId, visitorToken, content) => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts/${postId}/replies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitor_token: visitorToken,
+        content: content,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to reply to post: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Reply to post error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Like a visitor post
+ * @param {number} postId - Post ID
+ * @param {string} visitorToken - Unique visitor token
+ * @returns {Promise<Object>} Like data
+ */
+export const likeVisitorPost = async (postId, visitorToken) => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/visitor/posts/${postId}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitor_token: visitorToken,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to like post: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Like post error:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// ADMIN - VISITOR POST MODERATION
+// ============================================================================
+
+/**
+ * Get all pending posts awaiting approval
+ * @returns {Promise<Array>} Array of pending posts
+ */
+export const getPendingVisitorPosts = async () => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/admin/visitor/posts/pending`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to get pending posts: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Get pending posts error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Approve a visitor post
+ * @param {number} postId - Post ID
+ * @returns {Promise<Object>} Approved post data
+ */
+export const approveVisitorPost = async (postId) => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/admin/visitor/posts/${postId}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to approve post: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Approve post error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reject a visitor post
+ * @param {number} postId - Post ID
+ * @returns {Promise<Object>} Rejected post data
+ */
+export const rejectVisitorPost = async (postId) => {
+  try {
+    const response = await fetch(`${XANO_BASE_URL}/admin/visitor/posts/${postId}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to reject post: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Reject post error:', error);
+    throw error;
+  }
+};
+
+// ============================================================================
+// UTILITY FUNCTIONS FOR VISITOR ENGAGEMENT
+// ============================================================================
+
+/**
+ * Generate a unique visitor token (client-side)
+ * @returns {string} Unique visitor token
+ */
+export const generateVisitorToken = () => {
+  return `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
+ * Get visitor token from localStorage or create new one
+ * @returns {string} Visitor token
+ */
+export const getOrCreateVisitorToken = () => {
+  let token = localStorage.getItem('visitor_token');
+  if (!token) {
+    token = generateVisitorToken();
+    localStorage.setItem('visitor_token', token);
+  }
+  return token;
+};
+
+/**
+ * Clear visitor token from localStorage
+ */
+export const clearVisitorToken = () => {
+  localStorage.removeItem('visitor_token');
+};

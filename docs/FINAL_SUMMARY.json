@@ -1,0 +1,73 @@
+{
+  "total_endpoints": 9,
+  "visitor_endpoints": 6,
+  "admin_endpoints": 3,
+  "endpoints": [
+    {
+      "id": 133,
+      "name": "/visitor/profile",
+      "verb": "GET",
+      "inputs": 1,
+      "type": "Visitor"
+    },
+    {
+      "id": 134,
+      "name": "/visitor/profile",
+      "verb": "PUT",
+      "inputs": 3,
+      "type": "Visitor"
+    },
+    {
+      "id": 135,
+      "name": "/visitor/posts",
+      "verb": "POST",
+      "inputs": 2,
+      "type": "Visitor"
+    },
+    {
+      "id": 136,
+      "name": "/visitor/posts",
+      "verb": "GET",
+      "inputs": 0,
+      "type": "Visitor"
+    },
+    {
+      "id": 137,
+      "name": "/visitor/posts/{id}/replies",
+      "verb": "POST",
+      "inputs": 3,
+      "type": "Visitor"
+    },
+    {
+      "id": 138,
+      "name": "/visitor/posts/{id}/like",
+      "verb": "POST",
+      "inputs": 2,
+      "type": "Visitor"
+    },
+    {
+      "id": 192,
+      "name": "/admin/visitor/posts/pending",
+      "verb": "GET",
+      "inputs": 0,
+      "type": "Admin"
+    },
+    {
+      "id": 193,
+      "name": "/admin/visitor/posts/{id}/approve",
+      "verb": "POST",
+      "inputs": 1,
+      "type": "Admin"
+    },
+    {
+      "id": 194,
+      "name": "/admin/visitor/posts/{id}/reject",
+      "verb": "POST",
+      "inputs": 1,
+      "type": "Admin"
+    }
+  ],
+  "workspace_id": 1,
+  "apigroup_id": 6,
+  "instance": "xajo-bs7d-cagt.n7e.xano.io"
+}
