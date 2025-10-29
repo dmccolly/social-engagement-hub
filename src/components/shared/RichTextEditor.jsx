@@ -29,6 +29,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const fileInputRef = useRef(null);
   const currentToolbarRef = useRef(null);
   const currentHandlesRef = useRef([]);
+  const isInternalChange = useRef(false);
 
   // Ensure all images have click handlers
   const ensureImageHandlers = () => {
@@ -66,6 +67,12 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   };
 
   useEffect(() => {
+    // Skip if this change came from within the editor itself
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    
     if (editorRef.current && value !== editorRef.current.innerHTML) {
       editorRef.current.innerHTML = value || '';
       // Process any existing images in the loaded content
@@ -96,9 +103,14 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   // Handle content changes
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-      // Ensure all images still have click handlers after content change
+      // Mark this as an internal change to prevent useEffect from overwriting
+      isInternalChange.current = true;
+      
+      // Ensure all images have click handlers BEFORE calling onChange
       ensureImageHandlers();
+      
+      // Now update parent with the modified HTML
+      onChange(editorRef.current.innerHTML);
     }
   };
 
