@@ -29,7 +29,7 @@ import {
   getNewsfeedAnalytics
 } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
-import RichTextEditor from './RichTextEditor';
+import RichTextEditor from '../shared/RichTextEditor';
 
 /**
  * FacebookStyleNewsFeed is a fully featured community feed component that includes:
@@ -236,12 +236,19 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         parent_id: null,
         post_type: 'post'
       };
+      console.log('Submitting post data:', postData);
       const result = await createNewsfeedPost(postData);
+      console.log('Post creation result:', result);
       if (result.success) {
         setNewPost('');
+        if (editorRef.current) {
+          editorRef.current.innerHTML = '';
+        }
         loadPosts();
       } else {
-        alert('Failed to create post: ' + result.error);
+        const errorMsg = result.error || result.message || JSON.stringify(result) || 'Unknown error';
+        console.error('Post creation failed:', errorMsg);
+        alert('Failed to create post: ' + errorMsg);
       }
     } catch (error) {
       console.error('Post submit error:', error);

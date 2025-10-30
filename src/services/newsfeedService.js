@@ -210,18 +210,35 @@ export async function createNewsfeedPost(postData) {
     
     if (!response.ok) {
       let errorText;
+      let errorData;
       try {
         errorText = await response.text();
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          // Not JSON, use text
+        }
       } catch (e) {
         errorText = 'Unable to read error response';
       }
-      console.error('API Error:', errorText);
-      throw new Error(`Failed to create post: ${response.statusText} - ${errorText}`);
+      console.error('API Error Response:', { status: response.status, statusText: response.statusText, errorText, errorData });
+      const errorMessage = errorData?.message || errorData?.error || errorText || response.statusText;
+      return { success: false, error: `API Error (${response.status}): ${errorMessage}` };
     }
     
     const result = await response.json();
     console.log('Post created successfully:', result);
-    return result;
+    
+    // Ensure the result has a success field
+    if (result && typeof result === 'object') {
+      if (result.success === undefined) {
+        // If success field is missing, assume success if we got a valid response
+        return { success: true, ...result };
+      }
+      return result;
+    }
+    
+    return { success: true, data: result };
   } catch (error) {
     console.error('Create newsfeed post error:', error);
     return { success: false, error: error.message || 'Unknown error occurred' };
