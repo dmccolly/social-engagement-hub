@@ -286,7 +286,7 @@
                            // Then sort by date (newest first)
                            return b.created_at - a.created_at;
                        })
-                    .slice(0, 1);
+                    .slice(0, 10);
                 
                 container.innerHTML = '';
                 sortedPosts.forEach(function(post) {
