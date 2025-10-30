@@ -582,3 +582,7 @@ export const getOrCreateVisitorToken = () => {
 export const clearVisitorToken = () => {
   localStorage.removeItem('visitor_token');
 };
+
+
+// Alias for backward compatibility
+export const getVisitorPosts = getApprovedVisitorPosts;
