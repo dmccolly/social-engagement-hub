@@ -138,6 +138,7 @@ const App = () => {
           </Routes>
       </main>
     </div>
+  </Router>
   );
 };
 
