@@ -33,13 +33,16 @@ import StandaloneNewsfeedWidget from './components/newsfeed/StandaloneNewsfeedWi
 import BlogPostView from './components/BlogPostView';
 import BlogSection from './components/BlogSection';
 
-// Main App component
-const App = () => {
-  // current user for role-based permissions (simplified)
+// Navigation wrapper component that conditionally shows navigation
+const AppContent = () => {
+  const location = useLocation();
   const [currentUser] = useState({ name: 'Admin User', email: 'admin@example.com', role: 'admin' });
   const [activeSection, setActiveSection] = useState('home');
   const [posts, setPosts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  
+  // Check if we're on a blog post page
+  const isBlogPostPage = location.pathname.startsWith('/blog/');
 
   // Load initial data on mount
   useEffect(() => {
@@ -98,6 +101,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+          {!isBlogPostPage && (
           <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
@@ -126,9 +130,9 @@ const App = () => {
               </div>
             </div>
           </nav>
+          )}
 
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Router>
+          <main className={!isBlogPostPage ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" : ""}>
               <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/blog/:id" element={<BlogPostView />} />
@@ -136,9 +140,17 @@ const App = () => {
             <Route path="/widget/newsfeed-simple" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
-            </Router>
       </main>
     </div>
+  );
+};
+
+// Main App component wraps Router
+const App = () => {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 };
 
