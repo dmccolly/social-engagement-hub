@@ -139,7 +139,28 @@ export async function getNewsfeedPosts(filters = {}) {
     if (!response.ok) {
       throw new Error(`Failed to fetch posts: ${response.statusText}`);
     }
-    return await response.json();
+    const data = await response.json();
+    
+    // Handle both array response and object response formats
+    if (Array.isArray(data)) {
+      // Xano returns a plain array, normalize it to expected format
+      return {
+        success: true,
+        posts: data,
+        total: data.length,
+        pagination: { 
+          limit: filters.limit || 20, 
+          offset: filters.offset || 0, 
+          has_more: false 
+        }
+      };
+    } else if (data.posts) {
+      // Already in expected format
+      return { success: true, ...data };
+    } else {
+      // Unknown format, return as-is with success flag
+      return { success: true, posts: [], ...data };
+    }
   } catch (error) {
     console.error('Get newsfeed posts error:', error);
     return {
