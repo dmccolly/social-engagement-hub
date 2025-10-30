@@ -14,7 +14,7 @@ import {
   createVisitorPost,
   likeVisitorPost,
   replyToVisitorPost
-} from '../services/xanoService';
+} from '../../services/xanoService';
 
 /**
  * FacebookStyleNewsFeedWithVisitor
