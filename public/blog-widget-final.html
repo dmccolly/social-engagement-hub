@@ -293,7 +293,7 @@
                     const imageUrl = extractImage(post.description);
                     const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
                     const date = new Date(post.created_at).toLocaleDateString();
-                    const readMoreUrl = CANONICAL_BASE + '/blog/' + post.id;
+                    const readMoreUrl = CANONICAL_BASE + '/blog-post.html?id=' + post.id;
                     
                     const postDiv = document.createElement('div');
                     postDiv.className = 'post';

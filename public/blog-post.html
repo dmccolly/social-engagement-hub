@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Post</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f9fafb;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .post-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .post-header {
+            padding: 40px 40px 20px 40px;
+        }
+        
+        .post-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+        
+        .post-meta {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .post-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .featured-badge {
+            display: inline-block;
+            background: #fbbf24;
+            color: #78350f;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .post-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .post-content {
+            padding: 0 40px 40px 40px;
+            font-size: 18px;
+            line-height: 1.8;
+            color: #374151;
+        }
+        
+        .post-content p {
+            margin-bottom: 20px;
+        }
+        
+        .post-content h1,
+        .post-content h2,
+        .post-content h3,
+        .post-content h4,
+        .post-content h5,
+        .post-content h6 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            line-height: 1.3;
+            color: #111827;
+        }
+        
+        .post-content h2 {
+            font-size: 28px;
+        }
+        
+        .post-content h3 {
+            font-size: 24px;
+        }
+        
+        .post-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .post-content a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+        
+        .post-content a:hover {
+            color: #1d4ed8;
+        }
+        
+        .post-content ul,
+        .post-content ol {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+        
+        .post-content li {
+            margin-bottom: 10px;
+        }
+        
+        .post-content blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+            color: #6b7280;
+        }
+        
+        .post-content code {
+            background-color: #f3f4f6;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .post-content pre {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .post-content pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+        }
+        
+        /* Preserve XANO HTML formatting */
+        .post-content font {
+            /* Allow font tags to use their color and face attributes */
+        }
+        
+        .post-content span[style*="font-weight: 700"],
+        .post-content span[style*="font-weight:700"] {
+            font-weight: 700 !important;
+        }
+        
+        .post-content span[style*="font-style: italic"],
+        .post-content span[style*="font-style:italic"] {
+            font-style: italic !important;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 100px 40px;
+            color: #6b7280;
+            font-size: 18px;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 100px 40px;
+            color: #dc2626;
+            font-size: 18px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: #2563eb;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 20px 40px;
+            border: 1px solid #2563eb;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .back-link:hover {
+            background: #2563eb;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="post-container">
+        <div id="post-content">
+            <div class="loading">Loading post...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const XANO_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/asset';
+            
+            // Get post ID from URL parameter
+            function getPostId() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('id');
+            }
+            
+            function extractImage(html) {
+                if (!html) return null;
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    const img = tmp.querySelector('img');
+                    return img ? img.src : null;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
+            function cleanContent(html) {
+                if (!html) return '';
+                
+                // Remove image tags from content since we show featured image separately
+                let cleaned = html.replace(/<img[^>]*>/gi, '');
+                
+                // Remove empty paragraphs
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = cleaned;
+                const paragraphs = tempDiv.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    const text = p.textContent.trim();
+                    if (!text || text === '' || /^\s*$/.test(text)) {
+                        p.remove();
+                    }
+                });
+                
+                return tempDiv.innerHTML;
+            }
+            
+            function displayPost(post) {
+                const container = document.getElementById('post-content');
+                
+                if (!post) {
+                    container.innerHTML = '<div class="error">Post not found.</div>';
+                    return;
+                }
+                
+                const imageUrl = extractImage(post.description);
+                const featuredBadge = post.is_featured ? '<span class="featured-badge">FEATURED</span>' : '';
+                const date = new Date(post.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                const content = cleanContent(post.description);
+                
+                container.innerHTML = `
+                    <div class="post-header">
+                        <div class="post-title">
+                            ${post.title || 'Untitled'}
+                            ${featuredBadge}
+                        </div>
+                        <div class="post-meta">
+                            <div class="post-meta-item">
+                                <span>👤</span>
+                                <span>${post.submitted_by || 'Unknown'}</span>
+                            </div>
+                            <div class="post-meta-item">
+                                <span>📅</span>
+                                <span>${date}</span>
+                            </div>
+                        </div>
+                        ${imageUrl ? `<img src="${imageUrl}" alt="${post.title || 'Post image'}" class="post-image">` : ''}
+                    </div>
+                    <div class="post-content">
+                        ${content}
+                    </div>
+                `;
+            }
+            
+            function loadPost() {
+                const postId = getPostId();
+                const container = document.getElementById('post-content');
+                
+                if (!postId) {
+                    container.innerHTML = '<div class="error">No post ID provided.</div>';
+                    return;
+                }
+                
+                fetch(XANO_URL)
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error('HTTP error! status: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(function(assets) {
+                        // Find the post with matching ID
+                        const post = assets.find(function(p) {
+                            return p.id === parseInt(postId);
+                        });
+                        
+                        if (!post) {
+                            container.innerHTML = '<div class="error">Post not found.</div>';
+                            return;
+                        }
+                        
+                        displayPost(post);
+                    })
+                    .catch(function(error) {
+                        console.error('Error loading post:', error);
+                        container.innerHTML = '<div class="error">Error loading post: ' + error.message + '</div>';
+                    });
+            }
+            
+            // Load post when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadPost);
+            } else {
+                loadPost();
+            }
+        })();
+    </script>
+</body>
+</html>
