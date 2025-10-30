@@ -98,7 +98,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Router>
           <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
@@ -129,16 +128,17 @@ const App = () => {
           </nav>
 
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Routes>
+            <Router>
+              <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/blog/:id" element={<BlogPostView />} />
             <Route path="/widget/newsfeed" element={<EnhancedNewsfeedWidget />} />
             <Route path="/widget/newsfeed-simple" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
+            </Router>
       </main>
     </div>
-  </Router>
   );
 };
 
