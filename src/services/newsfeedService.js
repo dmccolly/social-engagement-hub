@@ -473,3 +473,29 @@ export async function searchNewsfeedPosts(query, filters = {}) {
     return { success: false, error: error.message, posts: [] };
   }
 }
+
+/**
+ * Delete a newsfeed post by ID.
+ *
+ * @param {number|string} postId The ID of the post to delete
+ * @returns {Promise<object>} Response object with success status
+ */
+export async function deleteNewsfeedPost(postId) {
+  try {
+    const url = buildUrl(postId);
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete post: ${response.statusText} - ${errorText}`);
+    }
+    
+    return { success: true, message: 'Post deleted successfully' };
+  } catch (error) {
+    console.error('Delete newsfeed post error:', error);
+    return { success: false, error: error.message };
+  }
+}

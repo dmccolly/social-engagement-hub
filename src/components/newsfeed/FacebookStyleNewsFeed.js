@@ -19,14 +19,16 @@ import {
   X,
   Facebook as FacebookIcon,
   Twitter,
-  Linkedin
+  Linkedin,
+  Trash2
 } from 'lucide-react';
 import {
   getNewsfeedPosts,
   createNewsfeedPost,
   toggleNewsfeedLike,
   getNewsfeedReplies,
-  getNewsfeedAnalytics
+  getNewsfeedAnalytics,
+  deleteNewsfeedPost
 } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
 import RichTextEditor from '../shared/RichTextEditor';
@@ -58,6 +60,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   const [analytics, setAnalytics] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeShareMenu, setActiveShareMenu] = useState(null);
+  const [activePostMenu, setActivePostMenu] = useState(null);
   const editorRef = useRef(null);
 
   // Load visitor session and posts on mount
@@ -160,6 +163,32 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
 
   const toggleShareMenu = (postId) => {
     setActiveShareMenu((prev) => (prev === postId ? null : postId));
+  };
+
+  const togglePostMenu = (postId) => {
+    setActivePostMenu((prev) => (prev === postId ? null : postId));
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const result = await deleteNewsfeedPost(postId);
+      if (result.success) {
+        // Remove the post from the local state
+        setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+        setActivePostMenu(null);
+        // Optionally show a success message
+        alert('Post deleted successfully');
+      } else {
+        alert(`Failed to delete post: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Delete post error:', error);
+      alert('An error occurred while deleting the post');
+    }
   };
 
   const shareToNetwork = (post, network) => {
@@ -563,9 +592,24 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                       </p>
                     </div>
                   </div>
-                  <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <MoreVertical size={20} className="text-gray-400" />
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => togglePostMenu(post.id)}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <MoreVertical size={20} className="text-gray-400" />
+                    </button>
+                    {activePostMenu === post.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} /> Delete Post
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="mb-4">
                   <p className="text-gray-800 leading-relaxed text-lg">{post.content}</p>
