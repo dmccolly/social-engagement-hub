@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Engagement Hub - Widget Embed Code</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #10b981;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+            position: relative;
+        }
+        .code-block pre {
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background: #059669;
+        }
+        .copy-btn:active {
+            background: #047857;
+        }
+        .option {
+            background: #f9fafb;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #10b981;
+            border-radius: 4px;
+        }
+        .option strong {
+            color: #10b981;
+        }
+        .preview {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        .note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Social Engagement Hub - Widget Embed Code</h1>
+        
+        <div class="success">
+            <strong>✅ Widget Status:</strong> Now working with the latest fix! Posts are displaying correctly.
+        </div>
+
+        <h2>📋 Basic Embed Code (Recommended)</h2>
+        <p>Copy and paste this code into your Webflow page or any HTML page:</p>
+        
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode('basic')">Copy Code</button>
+            <pre id="basic"><code>&lt;!-- Social Engagement Hub Widget --&gt;
+&lt;iframe 
+    src="https://gleaming-cendol-417bf3.netlify.app/widget/newsfeed?headerColor=%2310b981&amp;headerText=Community%20Feed&amp;maxPosts=10&amp;theme=light"
+    width="100%"
+    height="800"
+    frameborder="0"
+    style="border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"
+    title="Community Feed"
+&gt;&lt;/iframe&gt;</code></pre>
+        </div>
+
+        <h2>🎨 Customization Options</h2>
+        <p>You can customize the widget by modifying the URL parameters:</p>
+
+        <div class="option">
+            <strong>headerColor</strong> - Header background color (hex code, URL encoded)<br>
+            Example: <code>%2310b981</code> (green) or <code>%233b82f6</code> (blue)
+        </div>
+
+        <div class="option">
+            <strong>headerText</strong> - Header text (URL encoded)<br>
+            Example: <code>Community%20Feed</code> or <code>Latest%20Updates</code>
+        </div>
+
+        <div class="option">
+            <strong>maxPosts</strong> - Number of posts to display<br>
+            Example: <code>5</code>, <code>10</code>, <code>20</code>
+        </div>
+
+        <div class="option">
+            <strong>theme</strong> - Color theme<br>
+            Options: <code>light</code> or <code>dark</code>
+        </div>
+
+        <div class="option">
+            <strong>showAvatars</strong> - Show user avatars<br>
+            Options: <code>true</code> or <code>false</code>
+        </div>
+
+        <div class="option">
+            <strong>showInteractions</strong> - Show like/reply buttons<br>
+            Options: <code>true</code> or <code>false</code>
+        </div>
+
+        <div class="option">
+            <strong>showCreateButton</strong> - Show "Share an Update" button<br>
+            Options: <code>true</code> or <code>false</code>
+        </div>
+
+        <div class="option">
+            <strong>borderRadius</strong> - Corner roundness in pixels<br>
+            Example: <code>0</code>, <code>8</code>, <code>16</code>
+        </div>
+
+        <h2>🎯 Alternative: Simplified Widget</h2>
+        <p>For a simpler, lightweight version:</p>
+
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode('simple')">Copy Code</button>
+            <pre id="simple"><code>&lt;!-- Simplified Social Widget --&gt;
+&lt;iframe 
+    src="https://gleaming-cendol-417bf3.netlify.app/widget/newsfeed-simple?maxPosts=5"
+    width="100%"
+    height="600"
+    frameborder="0"
+    style="border: none; border-radius: 8px;"
+    title="Community Feed"
+&gt;&lt;/iframe&gt;</code></pre>
+        </div>
+
+        <h2>🎨 Custom Styled Example</h2>
+        <p>Blue theme with 15 posts:</p>
+
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode('custom')">Copy Code</button>
+            <pre id="custom"><code>&lt;!-- Custom Styled Widget --&gt;
+&lt;iframe 
+    src="https://gleaming-cendol-417bf3.netlify.app/widget/newsfeed?headerColor=%233b82f6&amp;headerText=Latest%20Updates&amp;maxPosts=15&amp;theme=light&amp;borderRadius=12"
+    width="100%"
+    height="900"
+    frameborder="0"
+    style="border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);"
+    title="Latest Updates"
+&gt;&lt;/iframe&gt;</code></pre>
+        </div>
+
+        <h2>📱 Responsive Embed (Recommended for Webflow)</h2>
+        <p>This version automatically adjusts height based on content:</p>
+
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode('responsive')">Copy Code</button>
+            <pre id="responsive"><code>&lt;!-- Responsive Widget with Auto-Height --&gt;
+&lt;div style="position: relative; width: 100%; padding-bottom: 100%; min-height: 600px;"&gt;
+    &lt;iframe 
+        src="https://gleaming-cendol-417bf3.netlify.app/widget/newsfeed?headerColor=%2310b981&amp;headerText=Community%20Feed&amp;maxPosts=10"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 8px;"
+        title="Community Feed"
+    &gt;&lt;/iframe&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+
+        <div class="note">
+            <strong>⚠️ Note:</strong> Make sure to adjust the <code>height</code> parameter based on how many posts you want to display. More posts = more height needed.
+            <ul>
+                <li>5 posts: ~600px</li>
+                <li>10 posts: ~800px</li>
+                <li>15+ posts: ~1000px or use scrolling</li>
+            </ul>
+        </div>
+
+        <h2>🔧 Webflow Integration Steps</h2>
+        <ol>
+            <li>Go to your Webflow page editor</li>
+            <li>Add an <strong>Embed</strong> element where you want the widget</li>
+            <li>Paste one of the embed codes above</li>
+            <li>Publish your site</li>
+            <li>Test the widget on your live site</li>
+        </ol>
+
+        <div class="success">
+            <strong>✅ What's Fixed:</strong>
+            <ul>
+                <li>Posts now display correctly (no more "No posts yet")</li>
+                <li>All 15+ existing posts are visible</li>
+                <li>New posts appear immediately after creation</li>
+                <li>Visitor interactions (likes, replies) work properly</li>
+            </ul>
+        </div>
+
+        <h2>🧪 Test Your Widget</h2>
+        <p>You can test the widget directly here:</p>
+        <ul>
+            <li><a href="https://gleaming-cendol-417bf3.netlify.app/widget/newsfeed" target="_blank">Enhanced Widget (Full Features)</a></li>
+            <li><a href="https://gleaming-cendol-417bf3.netlify.app/widget/newsfeed-simple" target="_blank">Simple Widget (Lightweight)</a></li>
+        </ul>
+    </div>
+
+    <script>
+        function copyCode(id) {
+            const codeBlock = document.getElementById(id);
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.style.background = '#059669';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#10b981';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy. Please select and copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>

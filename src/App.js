@@ -41,8 +41,9 @@ const AppContent = () => {
   const [posts, setPosts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   
-  // Check if we're on a blog post page
+  // Check if we're on a blog post page or widget page
   const isBlogPostPage = location.pathname.startsWith('/blog/');
+  const isWidgetPage = location.pathname.startsWith('/widget/');
 
   // Load initial data on mount
   useEffect(() => {
@@ -101,7 +102,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-          {!isBlogPostPage && (
+          {!isBlogPostPage && !isWidgetPage && (
           <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
@@ -132,7 +133,7 @@ const AppContent = () => {
           </nav>
           )}
 
-          <main className={!isBlogPostPage ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" : ""}>
+          <main className={!isBlogPostPage && !isWidgetPage ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" : ""}>
               <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/blog/:id" element={<BlogPostView />} />

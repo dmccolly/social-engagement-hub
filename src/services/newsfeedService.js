@@ -27,15 +27,36 @@ function buildUrl(path = '', params) {
 }
 
 /**
- * Fetch visitor posts using /visitor/posts endpoint (returns approved posts).
+ * Fetch visitor posts using the main newsfeed endpoint with posts_only filter.
+ * This uses the same endpoint as getNewsfeedPosts but is specifically for visitor-facing widgets.
  */
 export async function getVisitorPosts() {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/visitor/posts`);
+    // Use the main newsfeed endpoint with posts_only filter
+    const response = await fetch(`${XANO_BASE_URL}/newsfeed_post?type=posts_only`);
     if (!response.ok) {
       throw new Error(`Failed to fetch visitor posts: ${response.statusText}`);
     }
-    return await response.json();
+    
+    const data = await response.json();
+    
+    // Normalize response format (same as getNewsfeedPosts)
+    if (Array.isArray(data)) {
+      return {
+        success: true,
+        posts: data,
+        total: data.length,
+        pagination: { 
+          limit: 20, 
+          offset: 0, 
+          has_more: false 
+        }
+      };
+    } else if (data.posts) {
+      return { success: true, ...data };
+    } else {
+      return { success: true, posts: [], ...data };
+    }
   } catch (error) {
     console.error('Get visitor posts error:', error);
     return { success: false, error: error.message, posts: [] };
