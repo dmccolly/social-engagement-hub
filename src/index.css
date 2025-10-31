@@ -116,3 +116,15 @@ img.selected-image {
 .resize-handle-se {
   cursor: se-resize;
 }
+
+/* Hide stray Edit and Save buttons with purple background */
+button[style*="rgb(118, 75, 162)"],
+button[style*="background: rgb(118, 75, 162)"] {
+  display: none !important;
+}
+
+/* Alternative: hide buttons in fixed/absolute position at bottom left */
+button[style*="position: fixed"][style*="bottom"][style*="left"],
+button[style*="position: absolute"][style*="bottom"][style*="left"] {
+  display: none !important;
+}
