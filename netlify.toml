@@ -5,27 +5,6 @@
 [build.environment]
   NODE_VERSION = "18"
 
-[[redirects]]
-  from = "/simple-blog-widget.html"
-  to = "/simple-blog-widget.html"
-  status = 200
-
-[[redirects]]
-  from = "/blog-post.html"
-  to = "/blog-post.html"
-  status = 200
-
-[[redirects]]
-  from = "/xano/*"
-  to = "https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 [[headers]]
   for = "/*"
   [headers.values]
