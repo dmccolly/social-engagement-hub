@@ -1,8 +1,2 @@
-# Serve static HTML files directly (do not redirect to SPA)
-/*.html /:splat.html 200
-
 # XANO API proxy
 /xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
-
-# SPA fallback for everything else
-/* /index.html 200
