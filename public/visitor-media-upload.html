@@ -252,7 +252,8 @@
         resourceType: "auto",
         multiple: false, // One file at a time for better UX
         folder: UPLOAD_FOLDER,
-        maxChunkSize: 20 * 1024 * 1024, // 20MB chunks
+        maxChunkSize: 50 * 1024 * 1024, // 50MB chunks for better large file handling
+        maxFileSize: 100 * 1024 * 1024, // 100MB max file size
         sources: ["local", "url", "camera", "google_drive", "dropbox"],
         clientAllowedFormats: null, // Accept all file types
         // No file size limit - user has purchased storage

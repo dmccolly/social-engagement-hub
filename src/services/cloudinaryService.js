@@ -71,14 +71,17 @@ export const uploadImageToCloudinary = async (file, onProgress = null) => {
 /**
  * Upload with progress tracking (using XMLHttpRequest)
  */
-export const uploadImageWithProgress = (file, onProgress) => {
+export const uploadImageWithProgress = (file, folder = 'blog', onProgress) => {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('folder', 'blog');
+    formData.append('folder', folder);
 
     const xhr = new XMLHttpRequest();
+    
+    // Set timeout to 5 minutes (300000ms) for large file uploads
+    xhr.timeout = 300000;
 
     // Track upload progress
     xhr.upload.addEventListener('progress', (e) => {
@@ -109,6 +112,11 @@ export const uploadImageWithProgress = (file, onProgress) => {
     // Handle errors
     xhr.addEventListener('error', () => {
       reject(new Error('Upload failed'));
+    });
+    
+    // Handle timeout
+    xhr.addEventListener('timeout', () => {
+      reject(new Error('Upload timed out. Please try again or check your connection.'));
     });
 
     xhr.open('POST', CLOUDINARY_UPLOAD_URL);

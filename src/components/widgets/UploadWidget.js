@@ -76,9 +76,9 @@ const UploadWidget = ({ settings = {} }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (10MB limit for free tier)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
+      // Check file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        setError('File size must be less than 100MB');
         return;
       }
       setFormData(prev => ({ ...prev, file }));

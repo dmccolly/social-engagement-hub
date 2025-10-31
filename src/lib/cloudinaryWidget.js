@@ -79,7 +79,8 @@ export function openCloudinaryWidget(onAsset, onClose, options = {}) {
       resourceType: 'auto',
       multiple: options.multiple ?? true,
       folder: options.folder ?? 'uploads',
-      maxChunkSize: options.maxChunkSize ?? 20 * 1024 * 1024, // 20 MB
+      maxChunkSize: options.maxChunkSize ?? 50 * 1024 * 1024, // 50 MB chunks for better large file handling
+      maxFileSize: options.maxFileSize ?? 100 * 1024 * 1024, // 100 MB max file size
       sources: ['local', 'url', 'camera', 'google_drive', 'dropbox']
     },
     (error, result) => {
