@@ -183,11 +183,13 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         // Optionally show a success message
         alert('Post deleted successfully');
       } else {
-        alert(`Failed to delete post: ${result.error || 'Unknown error'}`);
+        const errorMsg = result.error ? String(result.error) : 'Unknown error';
+        alert(`Failed to delete post: ${errorMsg}`);
       }
     } catch (error) {
       console.error('Delete post error:', error);
-      alert('An error occurred while deleting the post');
+      const errorMsg = error.message || String(error) || 'An error occurred';
+      alert(`An error occurred while deleting the post: ${errorMsg}`);
     }
   };
 
