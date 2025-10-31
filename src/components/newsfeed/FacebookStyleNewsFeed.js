@@ -170,17 +170,19 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   };
 
   const handleDeletePost = async (postId) => {
+    console.log('handleDeletePost called with postId:', postId, 'type:', typeof postId);
+    
     if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
       return;
     }
 
     try {
       const result = await deleteNewsfeedPost(postId);
+      console.log('Delete result:', result);
+      
       if (result.success) {
-        // Remove the post from the local state
         setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
         setActivePostMenu(null);
-        // Optionally show a success message
         alert('Post deleted successfully');
       } else {
         const errorMsg = result.error ? String(result.error) : 'Unknown error';

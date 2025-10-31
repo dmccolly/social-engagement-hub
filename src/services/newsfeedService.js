@@ -21,7 +21,7 @@ const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE ||
  */
 function buildUrl(path = '', params) {
   const base = `${XANO_BASE_URL}/newsfeed_post`;
-  const suffix = path ? `/${path.replace(/^\//, '')}` : '';
+  const suffix = path ? `/${String(path).replace(/^\//, '')}` : '';
   const query = params && params.toString() ? `?${params.toString()}` : '';
   return `${base}${suffix}${query}`;
 }
@@ -483,13 +483,16 @@ export async function searchNewsfeedPosts(query, filters = {}) {
 export async function deleteNewsfeedPost(postId) {
   try {
     const url = buildUrl(postId);
+    console.log('DELETE request URL:', url, 'for postId:', postId);
     const response = await fetch(url, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
+      method: 'DELETE'
     });
+    
+    console.log('DELETE response status:', response.status, response.statusText);
     
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('DELETE failed:', response.status, errorText);
       throw new Error(`Failed to delete post: ${response.statusText} - ${errorText}`);
     }
     
