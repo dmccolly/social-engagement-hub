@@ -1,10 +1,5 @@
-# Blog widget and post pages - serve as static files
-/simple-blog-widget.html /simple-blog-widget.html 200
-/blog-post.html /blog-post.html 200
-/blog-widget-final.html /blog-widget-final.html 200
-
 # XANO API proxy
 /xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
 
-# SPA fallback - must be last
-/* /index.html 200
+# SPA fallback - must be last, exclude .html files
+/* /index.html 200!
