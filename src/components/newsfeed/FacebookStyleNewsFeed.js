@@ -114,7 +114,13 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       };
       const result = await getNewsfeedPosts(filters);
       if (result.success && result.posts) {
-        setPosts(result.posts);
+        // Sort posts by created_at descending (newest first)
+        const sortedPosts = [...result.posts].sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA;
+        });
+        setPosts(sortedPosts);
       }
     } catch (error) {
       console.error('Load posts error:', error);
@@ -137,7 +143,13 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         visitor_email: visitorSession?.email
       });
       if (result.success && result.posts) {
-        setPosts(result.posts);
+        // Sort posts by created_at descending (newest first)
+        const sortedPosts = [...result.posts].sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA;
+        });
+        setPosts(sortedPosts);
       }
     } catch (error) {
       console.error('Search posts error:', error);

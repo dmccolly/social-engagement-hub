@@ -70,10 +70,21 @@ const StandaloneNewsfeedWidget = () => {
       const result = await getVisitorPosts();
       
       if (result.success && result.posts) {
-        setPosts(result.posts);
+        // Sort posts by created_at descending (newest first)
+        const sortedPosts = [...result.posts].sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA;
+        });
+        setPosts(sortedPosts);
       } else if (result.posts && Array.isArray(result.posts)) {
         // Handle case where success flag might not be present
-        setPosts(result.posts);
+        const sortedPosts = [...result.posts].sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA;
+        });
+        setPosts(sortedPosts);
       } else {
         // Fallback to sample data
         const samplePosts = getSamplePosts();

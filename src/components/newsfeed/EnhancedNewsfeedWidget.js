@@ -98,7 +98,13 @@ const EnhancedNewsfeedWidget = () => {
       const result = await getNewsfeedPosts(filters);
       
       if (result.success && result.posts) {
-        setPosts(result.posts);
+        // Sort posts by created_at descending (newest first)
+        const sortedPosts = [...result.posts].sort((a, b) => {
+          const dateA = new Date(a.created_at);
+          const dateB = new Date(b.created_at);
+          return dateB - dateA; // Descending order (newest first)
+        });
+        setPosts(sortedPosts);
         
         // Load preview replies for each post (first 2 replies)
         result.posts.forEach(post => {
