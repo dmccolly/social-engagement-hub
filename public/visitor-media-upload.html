@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Media</title>
+  
+  <!-- Cloudinary Upload Widget -->
+  <script src="https://upload-widget.cloudinary.com/latest/global/all.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  
+  <!-- Main Container -->
+  <div id="app" class="min-h-screen">
+    <!-- Loading State -->
+    <div id="loading" class="flex items-center justify-center min-h-screen">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p class="text-gray-600">Loading...</p>
+      </div>
+    </div>
+    
+    <!-- Auth Modal -->
+    <div id="authModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6 relative">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Join to Upload</h3>
+        <p class="text-sm text-gray-600 mb-6">
+          Enter your details to upload media to our community
+        </p>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+            <input 
+              type="text" 
+              id="authName"
+              placeholder="John Doe"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <input 
+              type="email" 
+              id="authEmail"
+              placeholder="john@example.com"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <button 
+            id="authSubmit"
+            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg max-w-md w-full p-6 relative">
+        <div class="text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Upload Successful!</h3>
+          <p class="text-sm text-gray-600 mb-6">
+            Your media has been uploaded successfully and is now available in our library.
+          </p>
+          <button 
+            id="successClose"
+            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            Upload Another
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Upload Interface -->
+    <div id="mainInterface" class="hidden max-w-2xl mx-auto p-4">
+      <!-- Header -->
+      <div class="bg-green-600 text-white p-4 text-center font-bold rounded-t-lg">
+        📤 Upload Media
+      </div>
+      
+      <!-- Upload Form -->
+      <div class="bg-white rounded-b-lg shadow-lg p-6">
+        <p class="text-gray-600 mb-6">
+          Share your photos, videos, or documents with our community. All uploads are stored securely.
+        </p>
+        
+        <!-- Upload Button -->
+        <div class="mb-6">
+          <button 
+            id="uploadBtn"
+            class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-lg flex items-center justify-center gap-2"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            Choose Files to Upload
+          </button>
+        </div>
+        
+        <!-- Selected File Info -->
+        <div id="fileInfo" class="hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-sm font-medium text-blue-900 mb-2">Selected File:</p>
+          <p id="fileName" class="text-sm text-blue-700"></p>
+        </div>
+        
+        <!-- Title Field -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Title <span class="text-red-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="mediaTitle"
+            placeholder="Enter a title for your upload"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        
+        <!-- Description Field -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Description <span class="text-gray-400">(optional)</span>
+          </label>
+          <textarea 
+            id="mediaDescription"
+            rows="4"
+            placeholder="Add a description or notes about this upload"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          ></textarea>
+        </div>
+        
+        <!-- Submit Button -->
+        <button 
+          id="submitBtn"
+          disabled
+          class="w-full px-6 py-3 bg-gray-400 text-white rounded-lg font-medium cursor-not-allowed"
+        >
+          Complete Upload
+        </button>
+        
+        <p class="text-xs text-gray-500 mt-4 text-center">
+          Powered by Social Engagement Hub
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== CONFIGURATION ==========
+    const CLOUD_NAME = "dzrw8nopf";
+    const UPLOAD_PRESET = "HIBF_MASTER";
+    const UPLOAD_FOLDER = "community-uploads"; // Special folder for visitor uploads
+    const XANO_BASE_URL = "https://x8ki-letl-twmt.n7.xano.io/api:OLR6BFMM";
+    
+    // ========== STATE ==========
+    let visitorSession = null;
+    let uploadedAsset = null;
+    let cloudinaryWidget = null;
+    
+    // ========== DOM ELEMENTS ==========
+    const loading = document.getElementById('loading');
+    const authModal = document.getElementById('authModal');
+    const successModal = document.getElementById('successModal');
+    const mainInterface = document.getElementById('mainInterface');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const mediaTitle = document.getElementById('mediaTitle');
+    const mediaDescription = document.getElementById('mediaDescription');
+    
+    // ========== HELPER FUNCTIONS ==========
+    function generateSessionId() {
+      return 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    function loadVisitorSession() {
+      try {
+        const stored = localStorage.getItem('visitor_session');
+        if (stored) {
+          visitorSession = JSON.parse(stored);
+          console.log('Loaded visitor session:', visitorSession);
+        }
+      } catch (error) {
+        console.error('Error loading visitor session:', error);
+      }
+    }
+    
+    function saveVisitorSession(session) {
+      try {
+        localStorage.setItem('visitor_session', JSON.stringify(session));
+        visitorSession = session;
+        console.log('Saved visitor session:', session);
+      } catch (error) {
+        console.error('Error saving visitor session:', error);
+      }
+    }
+    
+    function showAuthModal() {
+      authModal.classList.remove('hidden');
+    }
+    
+    function hideAuthModal() {
+      authModal.classList.add('hidden');
+    }
+    
+    function showSuccessModal() {
+      successModal.classList.remove('hidden');
+    }
+    
+    function hideSuccessModal() {
+      successModal.classList.add('hidden');
+    }
+    
+    function enableSubmitButton() {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+      submitBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+    }
+    
+    function disableSubmitButton() {
+      submitBtn.disabled = true;
+      submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+      submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+    }
+    
+    // ========== CLOUDINARY WIDGET ==========
+    function initCloudinaryWidget() {
+      cloudinaryWidget = window.cloudinary.createUploadWidget({
+        cloudName: CLOUD_NAME,
+        uploadPreset: UPLOAD_PRESET,
+        resourceType: "auto",
+        multiple: false, // One file at a time for better UX
+        folder: UPLOAD_FOLDER,
+        maxChunkSize: 20 * 1024 * 1024, // 20MB chunks
+        sources: ["local", "url", "camera", "google_drive", "dropbox"],
+        // No file size limit - user has purchased storage
+      }, (error, result) => {
+        if (error) {
+          console.error('Cloudinary error:', error);
+          alert('Upload error: ' + (error.message || 'Unknown error'));
+          return;
+        }
+        
+        if (result.event === 'success' && result.info) {
+          uploadedAsset = {
+            name: result.info.original_filename + (result.info.format ? '.' + result.info.format : ''),
+            type: result.info.resource_type,
+            url: result.info.secure_url,
+            publicId: result.info.public_id,
+            format: result.info.format,
+            size: result.info.bytes,
+            width: result.info.width,
+            height: result.info.height,
+            duration: result.info.duration || null,
+            thumbnail: generateThumbnail(result.info)
+          };
+          
+          // Show file info
+          fileInfo.classList.remove('hidden');
+          fileName.textContent = uploadedAsset.name + ' (' + formatBytes(uploadedAsset.size) + ')';
+          
+          // Auto-fill title if empty
+          if (!mediaTitle.value) {
+            mediaTitle.value = result.info.original_filename;
+          }
+          
+          // Enable submit button
+          enableSubmitButton();
+          
+          console.log('File uploaded to Cloudinary:', uploadedAsset);
+        }
+      });
+    }
+    
+    function generateThumbnail(info) {
+      const url = info.secure_url || "";
+      if (!url) return "";
+      
+      if (info.resource_type === "image") {
+        return url.replace("/upload/", "/upload/w_300,h_300,c_fill,q_auto,f_auto/");
+      }
+      
+      if (info.resource_type === "video") {
+        return url
+          .replace("/upload/", "/upload/so_0,w_300,h_300,c_fill,q_auto,f_jpg/")
+          .replace(/\.[^.]+$/, ".jpg");
+      }
+      
+      return "";
+    }
+    
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    // ========== XANO API ==========
+    async function saveMediaToXano(mediaData) {
+      try {
+        const response = await fetch(`${XANO_BASE_URL}/media_upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(mediaData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Saved to Xano:', result);
+        return result;
+      } catch (error) {
+        console.error('Error saving to Xano:', error);
+        throw error;
+      }
+    }
+    
+    // ========== EVENT HANDLERS ==========
+    async function handleAuthSubmit() {
+      const name = document.getElementById('authName').value.trim();
+      const email = document.getElementById('authEmail').value.trim();
+      
+      if (!name || !email) {
+        alert('Please enter both name and email');
+        return;
+      }
+      
+      if (!email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      const session = {
+        name: name,
+        email: email,
+        session_id: generateSessionId(),
+        member_id: null,
+        created_at: new Date().toISOString()
+      };
+      
+      saveVisitorSession(session);
+      hideAuthModal();
+      
+      // Open upload widget after auth
+      cloudinaryWidget.open();
+    }
+    
+    async function handleSubmit() {
+      if (!uploadedAsset) {
+        alert('Please upload a file first');
+        return;
+      }
+      
+      const title = mediaTitle.value.trim();
+      if (!title) {
+        alert('Please enter a title');
+        return;
+      }
+      
+      // Disable button during submission
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
+      
+      try {
+        const mediaData = {
+          title: title,
+          description: mediaDescription.value.trim() || '',
+          file_name: uploadedAsset.name,
+          file_type: uploadedAsset.type,
+          file_url: uploadedAsset.url,
+          file_size: uploadedAsset.size,
+          cloudinary_public_id: uploadedAsset.publicId,
+          cloudinary_format: uploadedAsset.format,
+          thumbnail_url: uploadedAsset.thumbnail,
+          width: uploadedAsset.width,
+          height: uploadedAsset.height,
+          duration: uploadedAsset.duration,
+          folder: UPLOAD_FOLDER,
+          uploaded_by_name: visitorSession.name,
+          uploaded_by_email: visitorSession.email,
+          visitor_session_id: visitorSession.session_id,
+          uploaded_at: new Date().toISOString()
+        };
+        
+        await saveMediaToXano(mediaData);
+        
+        // Show success modal
+        showSuccessModal();
+        
+        // Reset form
+        uploadedAsset = null;
+        mediaTitle.value = '';
+        mediaDescription.value = '';
+        fileInfo.classList.add('hidden');
+        disableSubmitButton();
+        submitBtn.textContent = 'Complete Upload';
+        
+      } catch (error) {
+        alert('Failed to save upload. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Complete Upload';
+      }
+    }
+    
+    // ========== INITIALIZATION ==========
+    function init() {
+      // Load visitor session
+      loadVisitorSession();
+      
+      // Initialize Cloudinary widget
+      initCloudinaryWidget();
+      
+      // Show main interface
+      loading.classList.add('hidden');
+      mainInterface.classList.remove('hidden');
+      
+      // Event listeners
+      uploadBtn.addEventListener('click', () => {
+        if (!visitorSession) {
+          showAuthModal();
+        } else {
+          cloudinaryWidget.open();
+        }
+      });
+      
+      document.getElementById('authSubmit').addEventListener('click', handleAuthSubmit);
+      
+      submitBtn.addEventListener('click', handleSubmit);
+      
+      document.getElementById('successClose').addEventListener('click', () => {
+        hideSuccessModal();
+      });
+      
+      // Enable submit when title is filled and file is uploaded
+      mediaTitle.addEventListener('input', () => {
+        if (mediaTitle.value.trim() && uploadedAsset) {
+          enableSubmitButton();
+        } else {
+          disableSubmitButton();
+        }
+      });
+    }
+    
+    // Start the app when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
