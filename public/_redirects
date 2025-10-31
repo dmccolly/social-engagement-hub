@@ -1,2 +1,5 @@
 # XANO API proxy
 /xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
+
+# SPA fallback for React app - must be last
+/* /index.html 200
