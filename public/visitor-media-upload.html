@@ -254,6 +254,7 @@
         folder: UPLOAD_FOLDER,
         maxChunkSize: 20 * 1024 * 1024, // 20MB chunks
         sources: ["local", "url", "camera", "google_drive", "dropbox"],
+        clientAllowedFormats: null, // Accept all file types
         // No file size limit - user has purchased storage
       }, (error, result) => {
         if (error) {
