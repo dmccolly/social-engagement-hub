@@ -170,7 +170,7 @@
     const CLOUD_NAME = "dzrw8nopf";
     const UPLOAD_PRESET = "HIBF_MASTER";
     const UPLOAD_FOLDER = "community-uploads"; // Special folder for visitor uploads
-    const XANO_BASE_URL = "https://x8ki-letl-twmt.n7.xano.io/api:OLR6BFMM";
+    const SAVE_ASSET_ENDPOINT = "/.netlify/functions/save-asset";
     
     // ========== STATE ==========
     let visitorSession = null;
@@ -321,12 +321,27 @@
     // ========== XANO API ==========
     async function saveMediaToXano(mediaData) {
       try {
-        const response = await fetch(`${XANO_BASE_URL}/media_upload`, {
+        // Transform data to match save-asset function format
+        const assetData = {
+          title: mediaData.title,
+          name: mediaData.file_name,
+          type: mediaData.file_type,
+          url: mediaData.file_url,
+          publicId: mediaData.cloudinary_public_id,
+          format: mediaData.cloudinary_format,
+          size: mediaData.file_size,
+          thumbnail: mediaData.thumbnail_url,
+          width: mediaData.width,
+          height: mediaData.height,
+          duration: mediaData.duration
+        };
+        
+        const response = await fetch(SAVE_ASSET_ENDPOINT, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(mediaData)
+          body: JSON.stringify(assetData)
         });
         
         if (!response.ok) {
