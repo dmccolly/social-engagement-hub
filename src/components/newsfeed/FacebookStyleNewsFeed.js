@@ -117,8 +117,12 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       };
       const result = await getNewsfeedPosts(filters);
       if (result.success && result.posts) {
+        const topLevelPosts = result.posts.filter(p => 
+          (p.parent_id == null || p.parent_id === undefined) && 
+          p.post_type !== 'reply'
+        );
         // Sort posts by created_at descending (newest first)
-        const sortedPosts = [...result.posts].sort((a, b) => {
+        const sortedPosts = [...topLevelPosts].sort((a, b) => {
           const dateA = new Date(a.created_at);
           const dateB = new Date(b.created_at);
           return dateB - dateA;
@@ -146,8 +150,12 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         visitor_email: visitorSession?.email
       });
       if (result.success && result.posts) {
+        const topLevelPosts = result.posts.filter(p => 
+          (p.parent_id == null || p.parent_id === undefined) && 
+          p.post_type !== 'reply'
+        );
         // Sort posts by created_at descending (newest first)
-        const sortedPosts = [...result.posts].sort((a, b) => {
+        const sortedPosts = [...topLevelPosts].sort((a, b) => {
           const dateA = new Date(a.created_at);
           const dateB = new Date(b.created_at);
           return dateB - dateA;
@@ -359,6 +367,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         if (repliesResult.success) {
           setReplies((prev) => ({ ...prev, [postId]: repliesResult.replies }));
         }
+        setShowReplyForm((prev) => ({ ...prev, [postId]: true }));
         loadPosts();
       } else {
         alert('Failed to post reply: ' + result.error);
