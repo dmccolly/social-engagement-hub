@@ -75,6 +75,15 @@
             font-size: 18px;
             line-height: 1.8;
             color: #374151;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+            white-space: normal;
+        }
+        
+        .post-content [style*="white-space:nowrap"],
+        .post-content [style*="white-space: nowrap"] {
+            white-space: normal !important;
         }
         
         .post-content p {
@@ -236,12 +245,21 @@
                 }
             }
             
-            function cleanContent(html) {
+            function cleanContent(html, removeFirstImage) {
                 if (!html) return '';
                 
-                // Remove empty paragraphs but keep all images
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = html;
+                
+                // Remove first image if requested (to avoid duplication with featured image)
+                if (removeFirstImage) {
+                    const firstImg = tempDiv.querySelector('img');
+                    if (firstImg) {
+                        firstImg.remove();
+                    }
+                }
+                
+                // Remove empty paragraphs
                 const paragraphs = tempDiv.querySelectorAll('p');
                 paragraphs.forEach(p => {
                     const text = p.textContent.trim();
@@ -269,7 +287,7 @@
                     day: 'numeric'
                 });
                 
-                const content = cleanContent(post.description);
+                const content = cleanContent(post.description, !!imageUrl);
                 
                 container.innerHTML = `
                     <div class="post-header">
