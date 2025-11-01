@@ -239,12 +239,9 @@
             function cleanContent(html) {
                 if (!html) return '';
                 
-                // Remove image tags from content since we show featured image separately
-                let cleaned = html.replace(/<img[^>]*>/gi, '');
-                
-                // Remove empty paragraphs
+                // Remove empty paragraphs but keep all images
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = cleaned;
+                tempDiv.innerHTML = html;
                 const paragraphs = tempDiv.querySelectorAll('p');
                 paragraphs.forEach(p => {
                     const text = p.textContent.trim();
