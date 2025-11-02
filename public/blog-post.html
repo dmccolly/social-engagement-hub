@@ -86,6 +86,10 @@
             white-space: normal !important;
         }
         
+        .post-content nobr {
+            white-space: normal !important;
+        }
+        
         .post-content p {
             margin-bottom: 20px;
         }
@@ -251,6 +255,33 @@
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = html;
                 
+                // Neutralize <nobr> tags by unwrapping them
+                tempDiv.querySelectorAll('nobr').forEach(function(n) {
+                    const parent = n.parentNode;
+                    while (n.firstChild) {
+                        parent.insertBefore(n.firstChild, n);
+                    }
+                    n.remove();
+                });
+                
+                // Replace non-breaking spaces (U+00A0) with regular spaces in text nodes
+                const walker = document.createTreeWalker(tempDiv, NodeFilter.SHOW_TEXT);
+                let node;
+                while ((node = walker.nextNode())) {
+                    if (node.nodeValue && node.nodeValue.indexOf('\u00A0') !== -1) {
+                        node.nodeValue = node.nodeValue.replace(/\u00A0+/g, ' ');
+                    }
+                }
+                
+                // Unwrap Word's <o:p> tags
+                tempDiv.querySelectorAll('o\\:p').forEach(function(el) {
+                    const parent = el.parentNode;
+                    while (el.firstChild) {
+                        parent.insertBefore(el.firstChild, el);
+                    }
+                    el.remove();
+                });
+                
                 // Remove first image if requested (to avoid duplication with featured image)
                 if (removeFirstImage) {
                     const firstImg = tempDiv.querySelector('img');
@@ -259,11 +290,12 @@
                     }
                 }
                 
-                // Remove empty paragraphs
+                // Remove empty paragraphs (but keep those with images or br tags)
                 const paragraphs = tempDiv.querySelectorAll('p');
-                paragraphs.forEach(p => {
-                    const text = p.textContent.trim();
-                    if (!text || text === '' || /^\s*$/.test(text)) {
+                paragraphs.forEach(function(p) {
+                    const hasMedia = !!p.querySelector('img, br, video, audio, iframe');
+                    const text = (p.textContent || '').replace(/\u00A0/g, ' ').trim();
+                    if (!hasMedia && text === '') {
                         p.remove();
                     }
                 });
