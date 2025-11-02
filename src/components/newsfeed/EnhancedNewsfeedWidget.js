@@ -14,6 +14,7 @@ import {
   getNewsfeedAnalytics,
   getNewsfeedReplies 
 } from '../../services/newsfeedService';
+import RichTextEditor from '../shared/RichTextEditor';
 
 const EnhancedNewsfeedWidget = () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -37,20 +38,56 @@ const EnhancedNewsfeedWidget = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authForm, setAuthForm] = useState({ name: '', email: '' });
   
-  // Rich text and attachments
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [selectedImages, setSelectedImages] = useState([]);
-  const [showFormattingToolbar, setShowFormattingToolbar] = useState(false);
-  const textareaRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const imageInputRef = useRef(null);
-  
   // Reply functionality
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [expandedPosts, setExpandedPosts] = useState({});
   const [postReplies, setPostReplies] = useState({});
   const [loadingReplies, setLoadingReplies] = useState({});
+
+  const sanitizeHTML = (html) => {
+    if (!html) return '';
+    
+    const hasHTMLTags = /<[^>]+>/.test(html);
+    if (!hasHTMLTags) {
+      return html.replace(/&/g, '&amp;')
+                 .replace(/</g, '&lt;')
+                 .replace(/>/g, '&gt;')
+                 .replace(/"/g, '&quot;')
+                 .replace(/'/g, '&#039;');
+    }
+    
+    const allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'a', 'img', 'iframe', 'div', 'span', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'audio'];
+    const allowedAttributes = {
+      'a': ['href', 'target', 'rel', 'class'],
+      'img': ['src', 'alt', 'class', 'style', 'data-size', 'data-position', 'id', 'onclick'],
+      'iframe': ['src', 'frameborder', 'allow', 'allowfullscreen', 'class', 'style'],
+      'div': ['class', 'style'],
+      'span': ['class', 'style'],
+      'audio': ['src', 'controls', 'class', 'style']
+    };
+    
+    const allowedIframeDomains = ['youtube.com', 'youtu.be', 'vimeo.com', 'player.vimeo.com'];
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    const scripts = tempDiv.querySelectorAll('script');
+    scripts.forEach(script => script.remove());
+    
+    const iframes = tempDiv.querySelectorAll('iframe');
+    iframes.forEach(iframe => {
+      const src = iframe.getAttribute('src');
+      if (src) {
+        const isAllowed = allowedIframeDomains.some(domain => src.includes(domain));
+        if (!isAllowed) {
+          iframe.remove();
+        }
+      }
+    });
+    
+    return tempDiv.innerHTML;
+  };
 
   // Load visitor session from localStorage or parent window
   useEffect(() => {
@@ -104,10 +141,15 @@ const EnhancedNewsfeedWidget = () => {
           const dateB = new Date(b.created_at);
           return dateB - dateA; // Descending order (newest first)
         });
-        setPosts(sortedPosts);
+        
+        const filteredPosts = sortedPosts.filter(p => 
+          !p.parent_id && (p.post_type === 'post' || !p.post_type)
+        );
+        
+        setPosts(filteredPosts);
         
         // Load preview replies for each post (first 2 replies)
-        result.posts.forEach(post => {
+        filteredPosts.forEach(post => {
           if (post.comments_count > 0) {
             loadRepliesPreview(post.id);
           }
@@ -131,10 +173,15 @@ const EnhancedNewsfeedWidget = () => {
       const result = await getNewsfeedReplies(postId);
       
       if (result.success && result.replies) {
+        // Sort replies by created_at ascending (oldest first)
+        const sortedReplies = [...result.replies].sort((a, b) => 
+          new Date(a.created_at) - new Date(b.created_at)
+        );
+        
         // Store only first 2 replies as preview
         setPostReplies(prev => ({
           ...prev,
-          [postId]: result.replies.slice(0, limit)
+          [postId]: sortedReplies.slice(0, limit)
         }));
       }
     } catch (error) {
@@ -150,9 +197,14 @@ const EnhancedNewsfeedWidget = () => {
       const result = await getNewsfeedReplies(postId);
       
       if (result.success && result.replies) {
+        // Sort replies by created_at ascending (oldest first)
+        const sortedReplies = [...result.replies].sort((a, b) => 
+          new Date(a.created_at) - new Date(b.created_at)
+        );
+        
         setPostReplies(prev => ({
           ...prev,
-          [postId]: result.replies
+          [postId]: sortedReplies
         }));
       }
     } catch (error) {
@@ -346,59 +398,6 @@ const EnhancedNewsfeedWidget = () => {
     }
   };
 
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedImages(prev => [...prev, ...files]);
-  };
-
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles(prev => [...prev, ...files]);
-  };
-
-  const removeImage = (index) => {
-    setSelectedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const removeFile = (index) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const insertFormatting = (format) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = newPost.substring(start, end);
-    let formattedText = '';
-
-    switch (format) {
-      case 'bold':
-        formattedText = `**${selectedText || 'bold text'}**`;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText || 'italic text'}*`;
-        break;
-      case 'link':
-        const url = prompt('Enter URL:');
-        if (url) {
-          formattedText = `[${selectedText || 'link text'}](${url})`;
-        }
-        break;
-      default:
-        return;
-    }
-
-    const newText = newPost.substring(0, start) + formattedText + newPost.substring(end);
-    setNewPost(newText);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
-    }, 0);
-  };
-
   const generateSessionId = () => {
     return 'widget_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
   };
@@ -577,144 +576,35 @@ const EnhancedNewsfeedWidget = () => {
             </button>
           ) : (
             <div className="space-y-3">
-              {/* Formatting Toolbar */}
-              {showFormattingToolbar && (
-                <div className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg">
-                  <button
-                    onClick={() => insertFormatting('bold')}
-                    className="p-2 hover:bg-gray-100 rounded"
-                    title="Bold"
-                  >
-                    <Bold size={16} />
-                  </button>
-                  <button
-                    onClick={() => insertFormatting('italic')}
-                    className="p-2 hover:bg-gray-100 rounded"
-                    title="Italic"
-                  >
-                    <Italic size={16} />
-                  </button>
-                  <button
-                    onClick={() => insertFormatting('link')}
-                    className="p-2 hover:bg-gray-100 rounded"
-                    title="Insert Link"
-                  >
-                    <LinkIcon size={16} />
-                  </button>
-                  <div className="h-6 w-px bg-gray-300 mx-1"></div>
-                  <button
-                    onClick={() => imageInputRef.current?.click()}
-                    className="p-2 hover:bg-gray-100 rounded"
-                    title="Add Image"
-                  >
-                    <ImageIcon size={16} />
-                  </button>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 hover:bg-gray-100 rounded"
-                    title="Attach File"
-                  >
-                    <Paperclip size={16} />
-                  </button>
-                </div>
-              )}
-              
-              <textarea
-                ref={textareaRef}
+              <RichTextEditor
                 value={newPost}
-                onChange={(e) => setNewPost(e.target.value)}
-                placeholder="What's on your mind?"
-                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="4"
+                onChange={setNewPost}
+                placeholder="What's on your mind? Share text, images, videos, and more..."
               />
               
-              {/* Selected Images Preview */}
-              {selectedImages.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedImages.map((img, idx) => (
-                    <div key={idx} className="relative">
-                      <div className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center text-xs text-gray-600 p-1">
-                        {img.name.substring(0, 15)}...
-                      </div>
-                      <button
-                        onClick={() => removeImage(idx)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Selected Files Preview */}
-              {selectedFiles.length > 0 && (
-                <div className="space-y-1">
-                  {selectedFiles.map((file, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                      <span className="text-sm text-gray-700 flex items-center gap-2">
-                        <Paperclip size={14} />
-                        {file.name}
-                      </span>
-                      <button
-                        onClick={() => removeFile(idx)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">
-                  {newPost.length} characters
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setShowCreateForm(false);
-                      setShowFormattingToolbar(false);
-                      setNewPost('');
-                      setSelectedFiles([]);
-                      setSelectedImages([]);
-                    }}
-                    className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handlePostSubmit}
-                    disabled={(!newPost.trim() && selectedImages.length === 0 && selectedFiles.length === 0) || isSubmitting}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {isSubmitting ? 'Posting...' : (
-                      <>
-                        <Send size={14} />
-                        Post
-                      </>
-                    )}
-                  </button>
-                </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setNewPost('');
+                  }}
+                  className="px-3 py-1 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePostSubmit}
+                  disabled={!newPost.trim() || isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSubmitting ? 'Posting...' : (
+                    <>
+                      <Send size={14} />
+                      Post
+                    </>
+                  )}
+                </button>
               </div>
-              
-              {/* Hidden file inputs */}
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                className="hidden"
-              />
             </div>
           )}
         </div>
@@ -761,7 +651,10 @@ const EnhancedNewsfeedWidget = () => {
                       {formatDate(post.created_at)}
                     </span>
                   </div>
-                  <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                  <div 
+                    className="text-gray-800 text-sm leading-relaxed prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.content) }}
+                  />
                 </div>
               </div>
 
@@ -850,7 +743,10 @@ const EnhancedNewsfeedWidget = () => {
                             <span className="font-semibold text-xs text-gray-900">{reply.author_name}</span>
                             <span className="text-xs text-gray-500">{formatDate(reply.created_at)}</span>
                           </div>
-                          <p className="text-xs text-gray-700 leading-relaxed">{reply.content}</p>
+                          <div 
+                            className="text-xs text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHTML(reply.content) }}
+                          />
                         </div>
                       ))}
                       

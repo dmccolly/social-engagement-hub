@@ -5,17 +5,19 @@ import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } f
 import {
   Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon,
   Video, List, ListOrdered, Quote, Code, AlignLeft,
-  AlignCenter, AlignRight, X, Check, Youtube, Film, Type, Palette
+  AlignCenter, AlignRight, X, Check, Youtube, Film, Type, Palette, Music
 } from 'lucide-react';
 
 const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on your mind?" }, ref) => {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showAudioModal, setShowAudioModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
   const [selectedFontFamily, setSelectedFontFamily] = useState('');
   const [selectedFontSize, setSelectedFontSize] = useState('');
   const [selectedTextColor, setSelectedTextColor] = useState('#000000');
@@ -23,7 +25,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const [showTextColorPicker, setShowTextColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState(null);
-  const [imageUploadMode, setImageUploadMode] = useState('url'); // 'url' or 'upload'
+  const [imageUploadMode, setImageUploadMode] = useState('url');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -349,6 +351,33 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     handleInput();
   };
 
+  // Insert audio embed
+  const insertAudio = () => {
+    if (!audioUrl) return;
+    
+    const url = audioUrl.startsWith('http') ? audioUrl : `https://${audioUrl}`;
+    const audioHtml = `
+      <div class="my-4">
+        <audio controls class="w-full rounded-lg shadow-md" style="max-width: 100%;">
+          <source src="${url}" type="audio/mpeg">
+          <source src="${url}" type="audio/ogg">
+          <source src="${url}" type="audio/wav">
+          Your browser does not support the audio element.
+        </audio>
+      </div>
+    `;
+    
+    // Ensure focus and selection before insert
+    if (ensureFocusAndSelection()) {
+      const success = document.execCommand('insertHTML', false, audioHtml);
+      console.log('insertAudio success:', success);
+    }
+    
+    setShowAudioModal(false);
+    setAudioUrl('');
+    handleInput();
+  };
+
   const selectImageInternal = (imageId) => {
     setSelectedImageId(imageId);
     document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
@@ -641,6 +670,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
           <ToolbarButton icon={LinkIcon} onClick={() => setShowLinkModal(true)} title="Insert Link" />
           <ToolbarButton icon={ImageIcon} onClick={() => setShowImageModal(true)} title="Insert Image" />
           <ToolbarButton icon={Video} onClick={() => setShowVideoModal(true)} title="Insert Video" />
+          <ToolbarButton icon={Music} onClick={() => setShowAudioModal(true)} title="Insert Audio" />
         </div>
       </div>
 
@@ -865,6 +895,63 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   Insert Video
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audio Modal */}
+      {showAudioModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Music size={20} className="text-purple-600" />
+                Insert Audio
+              </h3>
+              <button onClick={() => setShowAudioModal(false)} className="text-gray-500 hover:text-gray-700">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Audio File URL</label>
+                <input
+                  type="text"
+                  value={audioUrl}
+                  onChange={(e) => setAudioUrl(e.target.value)}
+                  placeholder="https://example.com/audio.mp3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the URL of an audio file (MP3, OGG, WAV)
+                </p>
+              </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <p className="text-sm text-purple-800">
+                  <strong>Supported formats:</strong><br />
+                  • MP3 (.mp3)<br />
+                  • OGG (.ogg)<br />
+                  • WAV (.wav)<br />
+                  Perfect for podcasts, music, and radio content!
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowAudioModal(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={insertAudio}
+                  disabled={!audioUrl}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Insert Audio
                 </button>
               </div>
             </div>
