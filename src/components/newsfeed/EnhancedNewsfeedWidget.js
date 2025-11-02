@@ -245,8 +245,11 @@ const EnhancedNewsfeedWidget = () => {
   };
 
   const handlePostSubmit = async () => {
-    if (!newPost.trim() && selectedImages.length === 0 && selectedFiles.length === 0) {
-      alert('Please enter some content or attach a file');
+    const strippedContent = newPost.replace(/<[^>]*>/g, '').trim();
+    const hasMedia = /<img|<iframe|<audio|<video/i.test(newPost);
+    
+    if (!strippedContent && !hasMedia) {
+      alert('Please enter some content');
       return;
     }
     
@@ -258,24 +261,11 @@ const EnhancedNewsfeedWidget = () => {
     setIsSubmitting(true);
     
     try {
-      // Build content with formatting
-      let content = newPost.trim();
-      
-      // Add image references
-      if (selectedImages.length > 0) {
-        content += '\n\n[Images: ' + selectedImages.map(img => img.name).join(', ') + ']';
-      }
-      
-      // Add file references
-      if (selectedFiles.length > 0) {
-        content += '\n\n[Files: ' + selectedFiles.map(file => file.name).join(', ') + ']';
-      }
-      
       const postData = {
         author_name: visitorSession.name,
         author_email: visitorSession.email,
         author_id: visitorSession.member_id || null,
-        content: content,
+        content: newPost,
         session_id: visitorSession.session_id || generateSessionId(),
         post_type: 'post'
       };
@@ -286,10 +276,7 @@ const EnhancedNewsfeedWidget = () => {
       
       if (result.success) {
         setNewPost('');
-        setSelectedFiles([]);
-        setSelectedImages([]);
         setShowCreateForm(false);
-        setShowFormattingToolbar(false);
         loadPosts();
         
         if (window.parent !== window) {
@@ -310,7 +297,10 @@ const EnhancedNewsfeedWidget = () => {
   };
 
   const handleReplySubmit = async (postId) => {
-    if (!replyText.trim()) {
+    const strippedContent = replyText.replace(/<[^>]*>/g, '').trim();
+    const hasMedia = /<img|<iframe|<audio|<video/i.test(replyText);
+    
+    if (!strippedContent && !hasMedia) {
       alert('Please enter a reply');
       return;
     }
@@ -325,7 +315,7 @@ const EnhancedNewsfeedWidget = () => {
         author_name: visitorSession.name,
         author_email: visitorSession.email,
         author_id: visitorSession.member_id || null,
-        content: replyText.trim(),
+        content: replyText,
         parent_id: postId,
         session_id: visitorSession.session_id || generateSessionId(),
         post_type: 'reply'
@@ -706,12 +696,11 @@ const EnhancedNewsfeedWidget = () => {
                   {/* Reply Form */}
                   {replyingTo === post.id && (
                     <div className="ml-12 space-y-2">
-                      <textarea
+                      <RichTextEditor
+                        key={`reply-editor-${post.id}`}
                         value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="Write a reply..."
-                        className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        rows="2"
+                        onChange={setReplyText}
+                        placeholder="Write a reply with text, images, videos, or audio..."
                       />
                       <div className="flex justify-end gap-2">
                         <button
@@ -725,7 +714,7 @@ const EnhancedNewsfeedWidget = () => {
                         </button>
                         <button
                           onClick={() => handleReplySubmit(post.id)}
-                          disabled={!replyText.trim()}
+                          disabled={!replyText.replace(/<[^>]*>/g, '').trim() && !/<img|<iframe|<audio|<video/i.test(replyText)}
                           className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                           Reply
