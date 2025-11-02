@@ -122,6 +122,26 @@
             margin: 20px 0;
         }
         
+        /* Float small images with position classes so text wraps around them */
+        .post-content img.size-small.position-left {
+            float: left;
+            margin: 4px 16px 12px 0;
+            width: min(45%, 240px);
+        }
+        
+        .post-content img.size-small.position-right {
+            float: right;
+            margin: 4px 0 12px 16px;
+            width: min(45%, 240px);
+        }
+        
+        /* Clear floats to prevent container collapse */
+        .post-content::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
         .post-content a {
             color: #2563eb;
             text-decoration: underline;
