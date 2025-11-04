@@ -1,6 +1,7 @@
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
 import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import {
   MessageSquare,
   Heart,
@@ -625,7 +626,10 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                   </div>
                 </div>
                 <div className="mb-4">
-                  <p className="text-gray-800 leading-relaxed text-lg">{post.content}</p>
+                  <div 
+                    className="text-gray-800 leading-relaxed text-lg prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
+                  />
                 </div>
                 {/* Post stats */}
                 <div className="flex items-center justify-between py-3 border-t border-b border-gray-100">
@@ -731,7 +735,10 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                             </div>
                             <div className="flex-1 bg-white rounded-2xl p-3">
                               <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
-                              <p className="text-gray-800 text-sm mt-1">{reply.content}</p>
+                              <div 
+                                className="text-gray-800 text-sm mt-1 prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.content || '') }}
+                              />
                               <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                                 <button className="hover:underline">Like</button>
                                 <button className="hover:underline">Reply</button>

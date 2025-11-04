@@ -2,6 +2,7 @@
 // Enhanced Newsfeed Widget with Rich Text, Attachments, Replies, and Full Facebook-like Features
 
 import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { 
   MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X, 
   Bold, Italic, Link as LinkIcon, Image as ImageIcon, Paperclip,
@@ -48,32 +49,16 @@ const EnhancedNewsfeedWidget = () => {
   const sanitizeHTML = (html) => {
     if (!html) return '';
     
-    const hasHTMLTags = /<[^>]+>/.test(html);
-    if (!hasHTMLTags) {
-      return html.replace(/&/g, '&amp;')
-                 .replace(/</g, '&lt;')
-                 .replace(/>/g, '&gt;')
-                 .replace(/"/g, '&quot;')
-                 .replace(/'/g, '&#039;');
-    }
-    
-    const allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'a', 'img', 'iframe', 'div', 'span', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'audio'];
-    const allowedAttributes = {
-      'a': ['href', 'target', 'rel', 'class'],
-      'img': ['src', 'alt', 'class', 'style', 'data-size', 'data-position', 'id', 'onclick'],
-      'iframe': ['src', 'frameborder', 'allow', 'allowfullscreen', 'class', 'style'],
-      'div': ['class', 'style'],
-      'span': ['class', 'style'],
-      'audio': ['src', 'controls', 'class', 'style']
+    const config = {
+      ADD_TAGS: ['iframe', 'audio'],
+      ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'controls', 'class', 'style', 'id', 'data-size', 'data-position']
     };
     
+    let sanitized = DOMPurify.sanitize(html, config);
+    
     const allowedIframeDomains = ['youtube.com', 'youtu.be', 'vimeo.com', 'player.vimeo.com'];
-    
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    
-    const scripts = tempDiv.querySelectorAll('script');
-    scripts.forEach(script => script.remove());
+    tempDiv.innerHTML = sanitized;
     
     const iframes = tempDiv.querySelectorAll('iframe');
     iframes.forEach(iframe => {
