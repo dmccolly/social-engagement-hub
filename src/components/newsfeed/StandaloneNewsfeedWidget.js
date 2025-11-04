@@ -1,6 +1,7 @@
 // src/components/newsfeed/StandaloneNewsfeedWidget.js
 
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X } from 'lucide-react';
 import { getVisitorPosts, createVisitorPost, toggleVisitorPostLike, createVisitorReply, registerVisitor, getNewsfeedAnalytics } from '../../services/newsfeedService';
 
@@ -452,7 +453,10 @@ const StandaloneNewsfeedWidget = () => {
                       {new Date(post.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-gray-800 text-sm leading-relaxed">{post.content}</p>
+                  <div 
+                    className="text-gray-800 text-sm leading-relaxed prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
+                  />
                 </div>
               </div>
 
