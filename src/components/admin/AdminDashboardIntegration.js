@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import AdminModerationService from '../../services/admin/AdminModerationService';
 import VisitorSecurityService from '../../services/security/visitorSecurityService';
+import AdminNewsfeedList from '../newsfeed/AdminNewsfeedList';
 
 const AdminDashboardIntegration = () => {
   const [currentView, setCurrentView] = useState('overview');
@@ -283,6 +284,13 @@ const AdminDashboardIntegration = () => {
         return renderAnalytics();
       case 'settings':
         return renderSettings();
+      case 'newsfeed':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Newsfeed</h2>
+            <AdminNewsfeedList />
+          </div>
+        );
       default:
         return renderOverview();
     }
@@ -758,7 +766,8 @@ const AdminDashboardIntegration = () => {
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'moderation', label: 'Moderation', icon: Shield },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-              { id: 'settings', label: 'Settings', icon: Settings }
+              { id: 'settings', label: 'Settings', icon: Settings },
+              { id: 'newsfeed', label: 'Newsfeed', icon: MessageSquare }
             ].map((item) => (
               <button
                 key={item.id}
