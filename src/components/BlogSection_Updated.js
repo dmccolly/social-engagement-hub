@@ -8,7 +8,7 @@ import {
   updateBlogPost,
   deleteBlogPost,
 } from '../services/xanoService';
-import { createVisitorSession } from '../services/newsfeedService';
+import { createVisitorSession } from '../services/newsfeed/newsfeedService';
 
 /**
  * BlogSection component with Visitor Session Support
