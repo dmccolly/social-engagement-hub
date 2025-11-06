@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Calendar, X, Users, AlertCircle } from 'lucide-react';
+import { sendTestEmail } from '../../services/email/sendgridService';
 
 const SendCampaignPanel = ({ campaign, subscriberLists, onSend, onClose }) => {
   const [sendOption, setSendOption] = useState('now'); // 'now' or 'schedule'
@@ -7,6 +8,7 @@ const SendCampaignPanel = ({ campaign, subscriberLists, onSend, onClose }) => {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
   const [testEmail, setTestEmail] = useState('');
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   const toggleList = (listId) => {
     setSelectedLists(prev =>
@@ -37,15 +39,36 @@ const SendCampaignPanel = ({ campaign, subscriberLists, onSend, onClose }) => {
     onSend(sendData);
   };
 
-  const handleSendTest = () => {
+  const handleSendTest = async () => {
     if (!testEmail) {
       alert('Please enter a test email address');
       return;
     }
 
-    // Send test email logic
-    console.log('Sending test to:', testEmail);
-    alert(`Test email sent to ${testEmail}`);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmail)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    setIsSendingTest(true);
+
+    try {
+      const result = await sendTestEmail(testEmail, campaign);
+      
+      if (result.success) {
+        alert(`✅ Test email sent successfully to ${testEmail}!\n\nPlease check your inbox (and spam folder).`);
+        setTestEmail(''); // Clear the input after successful send
+      } else {
+        alert(`❌ Failed to send test email:\n\n${result.error}\n\nPlease check your SendGrid configuration.`);
+      }
+    } catch (error) {
+      console.error('Test email error:', error);
+      alert(`❌ Error sending test email:\n\n${error.message}`);
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
   return (
@@ -169,14 +192,19 @@ const SendCampaignPanel = ({ campaign, subscriberLists, onSend, onClose }) => {
                 onChange={(e) => setTestEmail(e.target.value)}
                 className="flex-1 p-2 border rounded"
                 placeholder="your@email.com"
+                disabled={isSendingTest}
               />
               <button
                 onClick={handleSendTest}
-                className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50"
+                disabled={isSendingTest || !testEmail}
+                className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send Test
+                {isSendingTest ? 'Sending...' : 'Send Test'}
               </button>
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Test emails will have [TEST] prefix in the subject line
+            </p>
           </div>
 
           {/* Warning */}
@@ -213,4 +241,3 @@ const SendCampaignPanel = ({ campaign, subscriberLists, onSend, onClose }) => {
 };
 
 export default SendCampaignPanel;
-

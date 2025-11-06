@@ -1,54 +1,74 @@
 // src/services/email/sendgridService.js
 
-const SENDGRID_API_KEY = process.env.REACT_APP_SENDGRID_API_KEY;
-const SENDGRID_FROM_EMAIL = process.env.REACT_APP_SENDGRID_FROM_EMAIL || 'noreply@yourdomain.com';
-const SENDGRID_FROM_NAME = process.env.REACT_APP_SENDGRID_FROM_NAME || 'Your Organization';
+// IMPORTANT: For security, all SendGrid API calls should go through Netlify functions
+// Never expose your SendGrid API key in the frontend code
+
+const NETLIFY_FUNCTIONS_URL = process.env.REACT_APP_NETLIFY_FUNCTIONS_URL || '/.netlify/functions';
 
 /**
- * Send a single email using SendGrid
+ * Send a test email via Netlify function
+ * This is the SECURE way to send emails - API key stays on the server
  */
-export const sendEmail = async (toEmail, subject, htmlContent, plainTextContent = null) => {
+export const sendTestEmail = async (toEmail, campaign) => {
   try {
-    if (!SENDGRID_API_KEY) {
-      throw new Error('SendGrid API key not configured');
-    }
-
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-test-email`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        personalizations: [{
-          to: [{ email: toEmail }],
-          subject: subject
-        }],
-        from: {
-          email: SENDGRID_FROM_EMAIL,
-          name: SENDGRID_FROM_NAME
-        },
-        content: [
-          {
-            type: 'text/html',
-            value: htmlContent
-          },
-          ...(plainTextContent ? [{
-            type: 'text/plain',
-            value: plainTextContent
-          }] : [])
-        ]
+        toEmail,
+        campaign
       })
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`SendGrid error: ${errorData.errors?.[0]?.message || response.statusText}`);
+      throw new Error(data.error || data.message || 'Failed to send test email');
     }
 
     return {
       success: true,
-      messageId: response.headers.get('x-message-id'),
+      messageId: data.messageId,
+      message: data.message || 'Test email sent successfully'
+    };
+  } catch (error) {
+    console.error('Send test email error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Send a single email using SendGrid (via Netlify function)
+ */
+export const sendEmail = async (toEmail, subject, htmlContent, plainTextContent = null) => {
+  try {
+    const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        toEmail,
+        subject,
+        htmlContent,
+        plainTextContent
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send email');
+    }
+
+    return {
+      success: true,
+      messageId: data.messageId,
       message: 'Email sent successfully'
     };
   } catch (error) {
@@ -61,73 +81,30 @@ export const sendEmail = async (toEmail, subject, htmlContent, plainTextContent 
 };
 
 /**
- * Send bulk emails using SendGrid
+ * Send bulk emails using SendGrid (via Netlify function)
  */
 export const sendBulkEmails = async (recipients, subject, htmlContent, plainTextContent = null) => {
   try {
-    if (!SENDGRID_API_KEY) {
-      throw new Error('SendGrid API key not configured');
+    const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-bulk-emails`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        recipients,
+        subject,
+        htmlContent,
+        plainTextContent
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send bulk emails');
     }
 
-    // Split recipients into batches of 1000 (SendGrid limit)
-    const batches = [];
-    for (let i = 0; i < recipients.length; i += 1000) {
-      batches.push(recipients.slice(i, i + 1000));
-    }
-
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [],
-      messageIds: []
-    };
-
-    for (const batch of batches) {
-      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SENDGRID_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          personalizations: batch.map(email => ({
-            to: [{ email }],
-            subject: subject
-          })),
-          from: {
-            email: SENDGRID_FROM_EMAIL,
-            name: SENDGRID_FROM_NAME
-          },
-          content: [
-            {
-              type: 'text/html',
-              value: htmlContent
-            },
-            ...(plainTextContent ? [{
-              type: 'text/plain',
-              value: plainTextContent
-            }] : [])
-          ]
-        })
-      });
-
-      if (response.ok) {
-        results.success += batch.length;
-        const messageId = response.headers.get('x-message-id');
-        if (messageId) {
-          results.messageIds.push(messageId);
-        }
-      } else {
-        results.failed += batch.length;
-        const errorData = await response.json();
-        results.errors.push({
-          batch: batch.length,
-          error: errorData.errors?.[0]?.message || response.statusText
-        });
-      }
-    }
-
-    return results;
+    return data;
   } catch (error) {
     console.error('SendGrid bulk send error:', error);
     return {
@@ -138,36 +115,29 @@ export const sendBulkEmails = async (recipients, subject, htmlContent, plainText
 };
 
 /**
- * Send campaign email with tracking
+ * Send campaign email with tracking (via Netlify function)
  */
 export const sendCampaignEmail = async (contact, campaign) => {
   try {
-    // Add tracking pixel for open tracking
-    const trackingPixel = `<img src="https://your-domain.com/track/open/${campaign.id}/${contact.id}" width="1" height="1" style="display:none;" alt="" />`;
-    const trackedHtmlContent = campaign.html_content + trackingPixel;
+    const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/send-campaign-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contact,
+        campaign
+      })
+    });
 
-    // Replace unsubscribe link
-    const unsubscribeLink = `https://your-domain.com/unsubscribe/${contact.id}`;
-    const finalHtmlContent = trackedHtmlContent.replace(
-      /\[unsubscribe\]/g,
-      `<a href="${unsubscribeLink}">Unsubscribe</a>`
-    );
+    const data = await response.json();
 
-    // Replace personalization tags
-    const personalizedContent = finalHtmlContent
-      .replace(/\[first_name\]/g, contact.first_name || '')
-      .replace(/\[last_name\]/g, contact.last_name || '')
-      .replace(/\[email\]/g, contact.email);
-
-    const result = await sendEmail(
-      contact.email,
-      campaign.subject,
-      personalizedContent,
-      campaign.plain_text_content
-    );
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to send campaign email');
+    }
 
     return {
-      ...result,
+      ...data,
       contactId: contact.id,
       campaignId: campaign.id
     };
@@ -181,67 +151,24 @@ export const sendCampaignEmail = async (contact, campaign) => {
 };
 
 /**
- * Send test email
- */
-export const sendTestEmail = async (toEmail, campaign) => {
-  try {
-    const testSubject = `[TEST] ${campaign.subject}`;
-    const testHtmlContent = campaign.html_content.replace(
-      /\[unsubscribe\]/g,
-      '<em>[Test email - no unsubscribe needed]</em>'
-    );
-
-    return await sendEmail(toEmail, testSubject, testHtmlContent, campaign.plain_text_content);
-  } catch (error) {
-    console.error('Send test email error:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-/**
- * Verify SendGrid setup
+ * Verify SendGrid setup (via Netlify function)
  */
 export const verifySendGridSetup = async () => {
   try {
-    if (!SENDGRID_API_KEY) {
-      return {
-        success: false,
-        error: 'SendGrid API key not configured',
-        details: {
-          apiKey: false,
-          fromEmail: !!SENDGRID_FROM_EMAIL,
-          fromName: !!SENDGRID_FROM_NAME
-        }
-      };
-    }
-
-    const response = await fetch('https://api.sendgrid.com/v3/scopes', {
+    const response = await fetch(`${NETLIFY_FUNCTIONS_URL}/verify-sendgrid`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('Invalid SendGrid API key');
+      throw new Error(data.error || 'Failed to verify SendGrid setup');
     }
 
-    const data = await response.json();
-    
-    return {
-      success: true,
-      message: 'SendGrid setup verified',
-      details: {
-        apiKey: true,
-        fromEmail: SENDGRID_FROM_EMAIL,
-        fromName: SENDGRID_FROM_NAME,
-        scopes: data.scopes
-      }
-    };
+    return data;
   } catch (error) {
     console.error('SendGrid verification error:', error);
     return {
@@ -249,8 +176,8 @@ export const verifySendGridSetup = async () => {
       error: error.message,
       details: {
         apiKey: false,
-        fromEmail: !!SENDGRID_FROM_EMAIL,
-        fromName: !!SENDGRID_FROM_NAME
+        fromEmail: false,
+        fromName: false
       }
     };
   }
