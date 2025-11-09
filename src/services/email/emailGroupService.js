@@ -100,12 +100,17 @@ export const updateGroup = async (groupId, groupData) => {
    * Delete a group
    */
   export const deleteGroup = async (groupId) => {
-    try {
-      // Try with query parameter approach first
-      const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}?search=${groupId}`, {
-        method: 'DELETE',
-      });
-      
+      try {
+        // Send search parameter in request body
+        const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            search: groupId
+          }),
+        });
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Delete group failed:', {
