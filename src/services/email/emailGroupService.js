@@ -9,7 +9,13 @@ const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE ||
  */
 export const getGroups = async () => {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/email_groups`);
+    const response = await fetch(`${XANO_BASE_URL}/email_groups?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch groups: ${response.statusText}`);
@@ -132,7 +138,13 @@ export const deleteGroup = async (groupId) => {
  */
 export const getGroupContacts = async (groupId) => {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}/contacts`);
+    const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}/contacts?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch group contacts: ${response.statusText}`);
