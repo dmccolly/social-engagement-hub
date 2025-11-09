@@ -1,12 +1,13 @@
 // Complete Email Marketing System - FINAL VERSION
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIcon, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIcon, Link as LinkIcon, Sparkles, FolderOpen } from 'lucide-react';
 import BlogToEmailConverter from './BlogToEmailConverter';
 import NewsletterBuilder from './NewsletterBuilder';
 import BlockEditor from './BlockEditor';
 import SubscriberListModal from './SubscriberListModal';
 import SendCampaignPanel from './SendCampaignPanel';
 import ContactManager from './ContactManager';
+import GroupManagement from './GroupManagement';
 import { campaignAPI, contactAPI, groupAPI } from '../../services/emailAPI';
 
 const EmailMarketingSystem = () => {
@@ -399,7 +400,16 @@ Error: ${error.message}`;
   const CampaignListView = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Email Campaigns</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold">Email Campaigns</h2>
+          <button 
+            onClick={() => setActiveView('groups')} 
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <FolderOpen size={20} />
+            Manage Groups
+          </button>
+        </div>
         <div className="flex gap-3">
           <button onClick={() => setShowNewsletterBuilder(true)} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"><Mail size={20} />Create Newsletter</button>
           <button onClick={() => setShowBlogConverter(true)} className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"><FileText size={20} />Blog to Email</button>
@@ -559,12 +569,13 @@ Error: ${error.message}`;
       <div className="mb-6 flex gap-4 border-b">
         <button onClick={() => setActiveView('campaigns')} className={`px-4 py-2 font-semibold ${activeView === 'campaigns' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Campaigns</button>
         <button onClick={() => setActiveView('lists')} className={`px-4 py-2 font-semibold ${activeView === 'lists' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Subscriber Lists</button>
+          <button onClick={() => setActiveView('groups')} className={`px-4 py-2 font-semibold ${activeView === 'groups' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Mailing Lists</button>
       </div>
-      {activeView === 'campaigns' && <CampaignListView />}
-      {activeView === 'builder' && emailBuilderViewJSX}
-      {activeView === 'lists' && <SubscriberListsView />}
-    </div>
-  );
-};
+         {activeView === 'campaigns' && <CampaignListView />}
+         {activeView === 'builder' && emailBuilderViewJSX}
+         {activeView === 'lists' && <SubscriberListsView />}
+         {activeView === 'groups' && <GroupManagement />}
+       </div>
+     );
 
 export default EmailMarketingSystem;
