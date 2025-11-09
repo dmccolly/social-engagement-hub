@@ -82,6 +82,8 @@ export const createGroup = async (groupData) => {
  */
 export const updateGroup = async (groupId, groupData) => {
   try {
+    console.log('PATCH payload:', { id: groupId, body: groupData });
+    
     const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}`, {
       method: 'PATCH',
       headers: {
@@ -91,10 +93,28 @@ export const updateGroup = async (groupId, groupData) => {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to update group: ${response.statusText}`);
+      const errorText = await response.text();
+      let errorMessage;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorText;
+      } catch {
+        errorMessage = errorText;
+      }
+      console.error('Update group failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to update group (${response.status}): ${errorMessage || response.statusText}`);
     }
     
-    const group = await response.json();
+    let group;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      group = await response.json();
+    }
+    
     return { success: true, group };
   } catch (error) {
     console.error('Update group error:', error);
