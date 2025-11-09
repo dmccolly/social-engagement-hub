@@ -12,6 +12,7 @@ import { getPublishedPosts, updateBlogPost, deleteBlogPost, createBlogPost } fro
 // Email components
 import EmailDashboard from './components/email/EmailDashboard';
 import EmailMarketingSystem from './components/email/EmailMarketingSystem';
+import GroupManagement from './components/email/GroupManagement';
 
 // Newsfeed components
 import FacebookStyleNewsFeed from './components/newsfeed/FacebookStyleNewsFeed';
@@ -137,6 +138,7 @@ const AppContent = () => {
               <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/blog/:id" element={<BlogPostView />} />
+              <Route path="/email/groups" element={<GroupManagement />} />
             <Route path="/widget/newsfeed" element={<EnhancedNewsfeedWidget />} />
             <Route path="/widget/newsfeed-simple" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
