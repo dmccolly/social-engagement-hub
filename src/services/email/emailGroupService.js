@@ -98,11 +98,10 @@ export const updateGroup = async (groupId, groupData) => {
 
 /**
  * Delete a group
- * Uses Netlify Function as workaround for misconfigured Xano DELETE endpoint
  */
 export const deleteGroup = async (groupId) => {
   try {
-    const response = await fetch(`/.netlify/functions/delete-email-group/${groupId}`, {
+    const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}`, {
       method: 'DELETE',
     });
     
