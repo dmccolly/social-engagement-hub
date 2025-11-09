@@ -27,6 +27,18 @@ const EmailMarketingSystem = () => {
   const [currentList, setCurrentList] = useState(null);
   const [allContacts, setAllContacts] = useState([]);
 
+  const normalizeBlocks = (blocks) => {
+    if (typeof blocks === 'string') {
+      try {
+        const parsed = JSON.parse(blocks);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(blocks) ? blocks : [];
+  };
+
   // Load data from Xano on mount
   useEffect(() => {
     const loadData = async () => {
@@ -45,7 +57,7 @@ const EmailMarketingSystem = () => {
           fromName: c.from_name,
           fromEmail: c.from_email,
           status: c.status,
-          blocks: c.blocks ? JSON.parse(c.blocks) : [],
+          blocks: normalizeBlocks(c.blocks),
           htmlContent: c.html_content,
           scheduledAt: c.scheduled_at,
           createdAt: c.created_at,
@@ -177,14 +189,14 @@ Error: ${error.message}`;
         savedCampaign = await campaignAPI.create(campaignData);
         setCampaigns(prev => [...prev, {
           ...savedCampaign,
-          blocks: JSON.parse(savedCampaign.blocks || '[]'),
+          blocks: normalizeBlocks(savedCampaign.blocks),
           stats: { sent: 0, opened: 0, clicked: 0 }
         }]);
       } else {
         savedCampaign = await campaignAPI.update(currentCampaign.id, campaignData);
         setCampaigns(prev => prev.map(c => 
           c.id === currentCampaign.id 
-            ? { ...savedCampaign, blocks: JSON.parse(savedCampaign.blocks || '[]') }
+            ? { ...savedCampaign, blocks: normalizeBlocks(savedCampaign.blocks) }
             : c
         ));
       }
@@ -429,7 +441,12 @@ Error: ${error.message}`;
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setCurrentCampaign(campaign); setEmailBlocks(campaign.blocks || []); setActiveView('builder'); }} className="p-2 hover:bg-gray-100 rounded"><Edit size={20} /></button>
+                <button onClick={() => { 
+                  setCurrentCampaign(campaign); 
+                  const blocks = normalizeBlocks(campaign.blocks);
+                  setEmailBlocks(blocks.length > 0 ? blocks : (campaign.htmlContent ? [{ id: Date.now(), type: 'html', content: { html: campaign.htmlContent } }] : [])); 
+                  setActiveView('builder'); 
+                }} className="p-2 hover:bg-gray-100 rounded"><Edit size={20} /></button>
                 <button onClick={() => { if (confirm('Delete this campaign?')) setCampaigns(campaigns.filter(c => c.id !== campaign.id)); }} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
               </div>
             </div>
