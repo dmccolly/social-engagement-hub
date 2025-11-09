@@ -97,39 +97,38 @@ export const updateGroup = async (groupId, groupData) => {
 };
 
 /**
- * Delete a group
- */
-export const deleteGroup = async (groupId) => {
-  try {
-    const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}`, {
-      method: 'DELETE',
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Delete group failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
+   * Delete a group
+   */
+  export const deleteGroup = async (groupId) => {
+    try {
+      // Try with query parameter approach first
+      const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}?search=${groupId}`, {
+        method: 'DELETE',
       });
-      throw new Error(`Failed to delete group (${response.status}): ${errorText || response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Delete group failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Failed to delete group (${response.status}): ${errorText || response.statusText}`);
+      }
+      
+      // Try to parse response, but don't fail if it's empty
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      }
+      
+      return { success: true, message: 'Group deleted successfully', result };
+    } catch (error) {
+      console.error('Delete group error:', error);
+      return { success: false, error: error.message };
     }
-    
-    // Try to parse response, but don't fail if it's empty
-    let result;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      result = await response.json();
-    }
-    
-    return { success: true, message: 'Group deleted successfully', result };
-  } catch (error) {
-    console.error('Delete group error:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-/**
+  };/**
  * Get all contacts in a group
  */
 export const getGroupContacts = async (groupId) => {
