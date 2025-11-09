@@ -174,7 +174,6 @@ const GroupManagement = () => {
         alert(`❌ Error deleting mailing list:\n\n${error.message}\n\nCheck browser console for details.`);
       }
     };
-  };
 
   const openCreateModal = () => {
     setFormData({ name: '', description: '' });
@@ -202,16 +201,16 @@ const GroupManagement = () => {
     setShowContactManager(true);
   };
 
-     const handleSaveContacts = async ({ contacts, members, memberIds }) => {
-       // Update all contacts
-       setAllContacts(contacts);
-       
-       // Reload groups to get fresh data from server
-       await loadGroups();
-       
-       setShowContactManager(false);
-       setCurrentGroup(null);
-     };
+    const handleSaveContacts = async ({ contacts, members, memberIds }) => {
+      // Update all contacts
+      setAllContacts(contacts);
+      
+      // Reload groups to get fresh data from server
+      await loadGroups();
+      
+      setShowContactManager(false);
+      setCurrentGroup(null);
+    };
 
   // Filter groups by search term
   const filteredGroups = groups.filter(group => {
