@@ -9,8 +9,7 @@ import {
   createGroup, 
   updateGroup, 
   deleteGroup,
-  getGroupContacts,
-  removeContactFromGroup
+  getGroupContacts
 } from '../../services/email/emailGroupService';
 import { getContacts } from '../../services/email/emailContactService';
 import ContactManager from './ContactManager';
@@ -134,7 +133,6 @@ const GroupManagement = () => {
       setSaving(false);
     }
   };
-
     const handleDeleteGroup = async (group) => {
       if (!window.confirm(`Are you sure you want to delete "${group.name}"?\n\nThis will remove the list but not the contacts themselves.`)) {
         return;
@@ -143,22 +141,7 @@ const GroupManagement = () => {
       console.log('Attempting to delete group:', { id: group.id, name: group.name });
       
       try {
-        // First, get all contacts in the group
-        const contactsResult = await getGroupContacts(group.id);
-        console.log('Group contacts:', contactsResult);
-        
-        // Remove all contacts from the group before deleting
-        if (contactsResult.success && contactsResult.contacts.length > 0) {
-          console.log(`Removing ${contactsResult.contacts.length} contacts from group before deletion`);
-          for (const contact of contactsResult.contacts) {
-            const removeResult = await removeContactFromGroup(group.id, contact.id);
-            if (!removeResult.success) {
-              console.error(`Failed to remove contact ${contact.id}:`, removeResult.error);
-            }
-          }
-        }
-        
-        // Now delete the group
+        // Try to delete the group directly
         const result = await deleteGroup(group.id);
         console.log('Delete result:', result);
   
