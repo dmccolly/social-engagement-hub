@@ -180,21 +180,16 @@ const GroupManagement = () => {
     setShowContactManager(true);
   };
 
-  const handleSaveContacts = async ({ contacts, members, memberIds }) => {
-    // Update all contacts
-    setAllContacts(contacts);
-    
-    // Update the current group with new member count and members
-    setGroups(prev => prev.map(g => 
-      g.id === currentGroup.id 
-        ? { ...g, count: memberIds.length, members: memberIds }
-        : g
-    ));
-    
-    setShowContactManager(false);
-    setCurrentGroup(null);
-    alert(`✅ List updated with ${memberIds.length} contacts`);
-  };
+     const handleSaveContacts = async ({ contacts, members, memberIds }) => {
+       // Update all contacts
+       setAllContacts(contacts);
+       
+       // Reload groups to get fresh data from server
+       await loadGroups();
+       
+       setShowContactManager(false);
+       setCurrentGroup(null);
+     };
 
   // Filter groups by search term
   const filteredGroups = groups.filter(group => {
