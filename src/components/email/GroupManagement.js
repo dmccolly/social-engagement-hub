@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FolderOpen, Plus, Edit, Trash2, Users, ArrowLeft, 
-  Search, AlertCircle, Check, X 
+  Search, AlertCircle, Check, X, Upload, Download 
 } from 'lucide-react';
 import { 
   getGroups, 
@@ -11,6 +11,8 @@ import {
   deleteGroup,
   getGroupContacts 
 } from '../../services/email/emailGroupService';
+import { getContacts } from '../../services/email/emailContactService';
+import ContactManager from './ContactManager';
 
 const GroupManagement = () => {
   const [groups, setGroups] = useState([]);
@@ -22,9 +24,12 @@ const GroupManagement = () => {
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [showContactManager, setShowContactManager] = useState(false);
+  const [allContacts, setAllContacts] = useState([]);
 
   useEffect(() => {
     loadGroups();
+    loadContacts();
   }, []);
 
   const loadGroups = async () => {
@@ -40,7 +45,8 @@ const GroupManagement = () => {
             const contactsResult = await getGroupContacts(group.id);
             return {
               ...group,
-              count: contactsResult.success ? contactsResult.contacts.length : 0
+              count: contactsResult.success ? contactsResult.contacts.length : 0,
+              members: contactsResult.success ? contactsResult.contacts.map(c => c.id) : []
             };
           })
         );
@@ -55,6 +61,17 @@ const GroupManagement = () => {
       setGroups([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadContacts = async () => {
+    try {
+      const result = await getContacts();
+      if (result.success) {
+        setAllContacts(result.contacts || []);
+      }
+    } catch (error) {
+      console.error('Error loading contacts:', error);
     }
   };
 
@@ -156,6 +173,27 @@ const GroupManagement = () => {
     setShowEditModal(false);
     setCurrentGroup(null);
     setFormData({ name: '', description: '' });
+  };
+
+  const openContactManager = (group) => {
+    setCurrentGroup(group);
+    setShowContactManager(true);
+  };
+
+  const handleSaveContacts = async ({ contacts, members, memberIds }) => {
+    // Update all contacts
+    setAllContacts(contacts);
+    
+    // Update the current group with new member count and members
+    setGroups(prev => prev.map(g => 
+      g.id === currentGroup.id 
+        ? { ...g, count: memberIds.length, members: memberIds }
+        : g
+    ));
+    
+    setShowContactManager(false);
+    setCurrentGroup(null);
+    alert(`✅ List updated with ${memberIds.length} contacts`);
   };
 
   // Filter groups by search term
@@ -289,21 +327,30 @@ const GroupManagement = () => {
                   </p>
                 )}
 
-                <div className="flex gap-2 pt-4 border-t">
+                <div className="space-y-2 pt-4 border-t">
                   <button
-                    onClick={() => openEditModal(group)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    onClick={() => openContactManager(group)}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
-                    <Edit size={16} />
-                    Edit
+                    <Users size={16} />
+                    Manage Contacts
                   </button>
-                  <button
-                    onClick={() => handleDeleteGroup(group)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm"
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEditModal(group)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      <Edit size={16} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGroup(group)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -445,7 +492,18 @@ const GroupManagement = () => {
         </div>
       )}
     </div>
-  );
-};
 
-export default GroupManagement;
+        {/* Contact Manager Modal */}
+        {showContactManager && currentGroup && (
+          <ContactManager
+            list={currentGroup}
+            allContacts={allContacts}
+            onSave={handleSaveContacts}
+            onClose={() => { setShowContactManager(false); setCurrentGroup(null); }}
+          />
+        )}
+      </div>
+    );
+  };
+  
+  export default GroupManagement;
