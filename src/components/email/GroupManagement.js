@@ -217,6 +217,7 @@ const GroupManagement = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -494,16 +495,16 @@ const GroupManagement = () => {
     </div>
 
         {/* Contact Manager Modal */}
-        {showContactManager && currentGroup && (
-          <ContactManager
-            list={currentGroup}
-            allContacts={allContacts}
-            onSave={handleSaveContacts}
-            onClose={() => { setShowContactManager(false); setCurrentGroup(null); }}
-          />
-        )}
-      </div>
-    );
-  };
-  
-  export default GroupManagement;
+      {showContactManager && currentGroup && (
+        <ContactManager
+          list={currentGroup}
+          allContacts={allContacts}
+          onSave={handleSaveContacts}
+          onClose={() => { setShowContactManager(false); setCurrentGroup(null); }}
+        />
+      )}
+    </>
+  );
+};
+
+export default GroupManagement;
