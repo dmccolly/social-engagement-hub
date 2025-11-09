@@ -577,5 +577,6 @@ Error: ${error.message}`;
          {activeView === 'groups' && <GroupManagement />}
        </div>
      );
+  };
 
 export default EmailMarketingSystem;
