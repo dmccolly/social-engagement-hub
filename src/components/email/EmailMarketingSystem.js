@@ -1,5 +1,6 @@
 // Complete Email Marketing System - FINAL VERSION
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Mail, Plus, Edit, Trash2, Save, Users, FileText, Type, Image as ImageIcon, Link as LinkIcon, Sparkles, FolderOpen } from 'lucide-react';
 import BlogToEmailConverter from './BlogToEmailConverter';
 import NewsletterBuilder from './NewsletterBuilder';
@@ -103,6 +104,16 @@ Error: ${error.message}`;
     
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (showNewsletterBuilder || showBlogConverter) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [showNewsletterBuilder, showBlogConverter]);
 
   const createNewCampaign = () => {
     const newCampaign = { id: Date.now(), name: "New Campaign", subject: "", status: "draft", fromName: "", fromEmail: "", stats: { sent: 0, opened: 0, clicked: 0 } };
@@ -486,8 +497,8 @@ Error: ${error.message}`;
           ) : (
             <div className="space-y-4">
               {emailBlocks.map((block, index) => (
-                <div key={block.id} className="relative group">
-                  <div className="absolute -left-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity space-y-1">
+                <div key={block.id} className="relative group pl-12">
+                  <div className="absolute left-0 top-0 z-10 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity duration-150 space-y-1 pointer-events-auto">
                     <button onClick={() => moveBlock(block.id, 'up')} disabled={index === 0} className="block p-1 bg-white rounded shadow hover:bg-gray-100 disabled:opacity-50">↑</button>
                     <button onClick={() => moveBlock(block.id, 'down')} disabled={index === emailBlocks.length - 1} className="block p-1 bg-white rounded shadow hover:bg-gray-100 disabled:opacity-50">↓</button>
                     <button onClick={() => deleteBlock(block.id)} className="block p-1 bg-white rounded shadow hover:bg-red-100 text-red-600"><Trash2 size={16} /></button>
@@ -550,15 +561,27 @@ Error: ${error.message}`;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {showNewsletterBuilder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <NewsletterBuilder onCreateNewsletter={handleNewsletterCreate} onCancel={() => setShowNewsletterBuilder(false)} />
-        </div>
+      {showNewsletterBuilder && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4"
+          onClick={() => setShowNewsletterBuilder(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <NewsletterBuilder onCreateNewsletter={handleNewsletterCreate} onCancel={() => setShowNewsletterBuilder(false)} />
+          </div>
+        </div>,
+        document.body
       )}
-      {showBlogConverter && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <BlogToEmailConverter onConvert={handleBlogToEmail} onCancel={() => setShowBlogConverter(false)} />
-        </div>
+      {showBlogConverter && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4"
+          onClick={() => setShowBlogConverter(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <BlogToEmailConverter onConvert={handleBlogToEmail} onCancel={() => setShowBlogConverter(false)} />
+          </div>
+        </div>,
+        document.body
       )}
       {showListModal && (
         <SubscriberListModal
