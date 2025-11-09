@@ -101,15 +101,16 @@ export const updateGroup = async (groupId, groupData) => {
    */
   export const deleteGroup = async (groupId) => {
       try {
-        // Send search parameter in request body
+        // Send search parameter as form data
+        const formData = new URLSearchParams();
+        formData.append('search', groupId);
+        
         const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}`, {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: JSON.stringify({
-            search: groupId
-          }),
+          body: formData.toString(),
         });
       if (!response.ok) {
         const errorText = await response.text();
