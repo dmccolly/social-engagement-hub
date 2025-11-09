@@ -9,7 +9,8 @@ import {
   createGroup, 
   updateGroup, 
   deleteGroup,
-  getGroupContacts 
+  getGroupContacts,
+  removeContactFromGroup
 } from '../../services/email/emailGroupService';
 import { getContacts } from '../../services/email/emailContactService';
 import ContactManager from './ContactManager';
@@ -134,24 +135,45 @@ const GroupManagement = () => {
     }
   };
 
-  const handleDeleteGroup = async (group) => {
-    if (!window.confirm(`Are you sure you want to delete "${group.name}"?\n\nThis will remove the list but not the contacts themselves.`)) {
-      return;
-    }
-
-    try {
-      const result = await deleteGroup(group.id);
-
-      if (result.success) {
-        await loadGroups();
-        alert('✅ Mailing list deleted successfully!');
-      } else {
-        alert(`❌ Failed to delete mailing list:\n\n${result.error}`);
+    const handleDeleteGroup = async (group) => {
+      if (!window.confirm(`Are you sure you want to delete "${group.name}"?\n\nThis will remove the list but not the contacts themselves.`)) {
+        return;
       }
-    } catch (error) {
-      console.error('Error deleting group:', error);
-      alert(`❌ Error deleting mailing list:\n\n${error.message}`);
-    }
+  
+      console.log('Attempting to delete group:', { id: group.id, name: group.name });
+      
+      try {
+        // First, get all contacts in the group
+        const contactsResult = await getGroupContacts(group.id);
+        console.log('Group contacts:', contactsResult);
+        
+        // Remove all contacts from the group before deleting
+        if (contactsResult.success && contactsResult.contacts.length > 0) {
+          console.log(`Removing ${contactsResult.contacts.length} contacts from group before deletion`);
+          for (const contact of contactsResult.contacts) {
+            const removeResult = await removeContactFromGroup(group.id, contact.id);
+            if (!removeResult.success) {
+              console.error(`Failed to remove contact ${contact.id}:`, removeResult.error);
+            }
+          }
+        }
+        
+        // Now delete the group
+        const result = await deleteGroup(group.id);
+        console.log('Delete result:', result);
+  
+        if (result.success) {
+          await loadGroups();
+          alert('✅ Mailing list deleted successfully!');
+        } else {
+          console.error('Delete failed with error:', result.error);
+          alert(`❌ Failed to delete mailing list:\n\n${result.error}\n\nCheck browser console for details.`);
+        }
+      } catch (error) {
+        console.error('Error deleting group:', error);
+        alert(`❌ Error deleting mailing list:\n\n${error.message}\n\nCheck browser console for details.`);
+      }
+    };
   };
 
   const openCreateModal = () => {
