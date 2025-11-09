@@ -489,7 +489,6 @@ const GroupManagement = () => {
           </div>
         </div>
       )}
-    </div>
 
         {/* Contact Manager Modal */}
       {showContactManager && currentGroup && (
