@@ -358,6 +358,8 @@ const GroupManagement = () => {
           </div>
         )}
       </div>
+      </div>
+
 
       {/* Create Modal */}
       {showCreateModal && (
