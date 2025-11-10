@@ -29,15 +29,24 @@ const EmailMarketingSystem = () => {
   const [allContacts, setAllContacts] = useState([]);
 
   const normalizeBlocks = (blocks) => {
+    if (!blocks) return [];
+    
+    if (Array.isArray(blocks)) return blocks;
+    
     if (typeof blocks === 'string') {
+      const trimmed = blocks.trim();
+      if (!trimmed) return [];
       try {
-        const parsed = JSON.parse(blocks);
+        const parsed = JSON.parse(trimmed);
         return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
     }
-    return Array.isArray(blocks) ? blocks : [];
+    
+    if (typeof blocks === 'object') return [];
+    
+    return [];
   };
 
   // Load data from Xano on mount
@@ -50,53 +59,63 @@ const EmailMarketingSystem = () => {
           contactAPI.getAll()
         ]);
         
-        // Transform Xano data to component format
-        const transformedCampaigns = campaignsData.map(c => ({
-          id: c.id,
-          name: c.name,
-          subject: c.subject,
-          fromName: c.from_name,
-          fromEmail: c.from_email,
-          status: c.status,
-          blocks: normalizeBlocks(c.blocks),
-          htmlContent: c.html_content,
-          scheduledAt: c.scheduled_at,
-          createdAt: c.created_at,
-          stats: { sent: c.sent_count || 0, opened: c.opened_count || 0, clicked: c.clicked_count || 0 }
-        }));
+        let transformedCampaigns = [];
+        try {
+          transformedCampaigns = campaignsData.map(c => ({
+            id: c.id,
+            name: c.name,
+            subject: c.subject,
+            fromName: c.from_name,
+            fromEmail: c.from_email,
+            status: c.status,
+            blocks: normalizeBlocks(c.blocks),
+            htmlContent: c.html_content,
+            scheduledAt: c.scheduled_at,
+            createdAt: c.created_at,
+            stats: { sent: c.sent_count || 0, opened: c.opened_count || 0, clicked: c.clicked_count || 0 }
+          }));
+        } catch (error) {
+          console.error('Error transforming campaigns:', error);
+        }
         
-        const transformedGroups = groupsData.map(g => ({
-          id: g.id,
-          name: g.name,
-          description: g.description,
-          tags: g.tags,
-          count: g.member_count || 0,
-          members: g.members || [],
-          growth: '',
-          engagement: { openRate: 0, clickRate: 0 }
-        }));
+        let transformedGroups = [];
+        try {
+          transformedGroups = groupsData.map(g => ({
+            id: g.id,
+            name: g.name,
+            description: g.description,
+            tags: g.tags,
+            count: g.member_count || 0,
+            members: g.members || [],
+            growth: '',
+            engagement: { openRate: 0, clickRate: 0 }
+          }));
+        } catch (error) {
+          console.error('Error transforming groups:', error);
+        }
         
-        const transformedContacts = contactsData.map(c => ({
-          id: c.id,
-          email: c.email,
-          firstName: c.first_name,
-          lastName: c.last_name,
-          company: c.company,
-          status: c.status
-        }));
+        let transformedContacts = [];
+        try {
+          transformedContacts = contactsData.map(c => ({
+            id: c.id,
+            email: c.email,
+            firstName: c.first_name,
+            lastName: c.last_name,
+            company: c.company,
+            status: c.status
+          }));
+        } catch (error) {
+          console.error('Error transforming contacts:', error);
+        }
         
         setCampaigns(transformedCampaigns);
         setSubscriberLists(transformedGroups);
         setAllContacts(transformedContacts);
       } catch (error) {
         console.error('Error loading data:', error);
-        // More helpful error message
-          const errorMessage = `Unable to connect to server. Working in offline mode.
-
-Note: Email sending requires server connection.
-
-Error: ${error.message}`;
-          alert(errorMessage);
+        setCampaigns([]);
+        setSubscriberLists([]);
+        setAllContacts([]);
       } finally {
         setLoading(false);
       }
