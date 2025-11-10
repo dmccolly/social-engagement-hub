@@ -51,6 +51,8 @@ const EmailMarketingSystem = () => {
 
   // Load data from Xano on mount
   useEffect(() => {
+    console.log('EmailMarketingSystem build: 5b01f5fa - Campaign rendering fix active');
+    
     const loadData = async () => {
       try {
         const [campaignsData, groupsData, contactsData] = await Promise.all([
