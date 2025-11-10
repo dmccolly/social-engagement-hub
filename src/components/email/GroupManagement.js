@@ -1,5 +1,6 @@
 // src/components/email/GroupManagement.js
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FolderOpen, Plus, Edit, Trash2, Users, ArrowLeft, 
   Search, AlertCircle, Check, X, Upload, Download 
@@ -31,6 +32,16 @@ const GroupManagement = () => {
     loadGroups();
     loadContacts();
   }, []);
+
+  useEffect(() => {
+    if (showCreateModal || showEditModal || showContactManager) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [showCreateModal, showEditModal, showContactManager]);
 
   const loadGroups = async () => {
     try {
@@ -361,9 +372,15 @@ const GroupManagement = () => {
 
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      {showCreateModal && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4"
+          onClick={closeModals}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-2xl font-bold">Create Mailing List</h2>
               <button onClick={closeModals} className="p-2 hover:bg-gray-100 rounded">
@@ -424,13 +441,20 @@ const GroupManagement = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Modal */}
-      {showEditModal && currentGroup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+      {showEditModal && currentGroup && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4"
+          onClick={closeModals}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-2xl font-bold">Edit Mailing List</h2>
               <button onClick={closeModals} className="p-2 hover:bg-gray-100 rounded">
@@ -491,7 +515,8 @@ const GroupManagement = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
         {/* Contact Manager Modal */}
