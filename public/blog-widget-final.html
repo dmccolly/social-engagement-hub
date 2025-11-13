@@ -277,14 +277,21 @@
                        return post.category_id === 11;
                    });
                    
-                   // Sort: featured posts first, then by date (newest first)
+                   // Sort: pinned first, then featured, then by sort_order, then by date (newest first)
                    const sortedPosts = blogPosts
                        .sort(function(a, b) {
-                           // First, sort by featured status (featured = true comes first)
+                           // First, sort by pinned status (pinned = true comes first)
+                           if (a.pinned && !b.pinned) return -1;
+                           if (!a.pinned && b.pinned) return 1;
+                           // Second, sort by featured status (featured = true comes first)
                            if (a.is_featured && !b.is_featured) return -1;
                            if (!a.is_featured && b.is_featured) return 1;
-                           // Then sort by date (newest first)
-                           return b.created_at - a.created_at;
+                           // Third, sort by sort_order (lower numbers first)
+                           var orderA = a.sort_order || 0;
+                           var orderB = b.sort_order || 0;
+                           if (orderA !== orderB) return orderA - orderB;
+                           // Finally, sort by date (newest first)
+                           return new Date(b.created_at) - new Date(a.created_at);
                        })
                     .slice(0, 10);
                 

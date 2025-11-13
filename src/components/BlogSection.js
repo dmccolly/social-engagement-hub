@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, X } from 'lucide-react';
+import { User, X, ChevronUp, ChevronDown } from 'lucide-react';
 import PatchedRichBlogEditor from '../PatchedRichBlogEditor';
 import {
   getPublishedPosts,
@@ -142,7 +142,7 @@ const BlogSection = () => {
    * Xano service and update the local posts state.
    * Now uses visitor session for author attribution.
    */
-  const handleSavePost = async ({ title, content, status, scheduled_datetime }) => {
+  const handleSavePost = async ({ title, content, status, scheduled_datetime, featured, pinned, sort_order }) => {
     try {
       let tags = editingPost?.tags || '';
       
@@ -161,27 +161,28 @@ const BlogSection = () => {
       
       let response;
       if (editingPost) {
-        // Updating an existing post - keep original author
+        // Updating an existing post - use values from editor
         response = await updateBlogPost(editingPost.id, {
           title,
           content,
           author: editingPost.author,
           tags: tags.trim(),
-          featured: editingPost.featured,
-          pinned: editingPost.pinned,
-          sort_order: editingPost.sort_order,
+          featured: featured !== undefined ? featured : editingPost.featured,
+          pinned: pinned !== undefined ? pinned : editingPost.pinned,
+          sort_order: sort_order !== undefined ? sort_order : editingPost.sort_order,
           is_scheduled: isScheduled,
           scheduled_datetime: isScheduled ? scheduled_datetime : null,
         });
       } else {
-        // Creating a new post - use visitor session name
+        // Creating a new post - use values from editor
         response = await createBlogPost({
           title,
           content,
           author: authorName,  // Use visitor's actual name
           tags: tags.trim(),
-          featured: false,
-          pinned: false,
+          featured: featured !== undefined ? featured : false,
+          pinned: pinned !== undefined ? pinned : false,
+          sort_order: sort_order !== undefined ? sort_order : 0,
           is_scheduled: isScheduled,
           scheduled_datetime: isScheduled ? scheduled_datetime : null,
         });
@@ -226,6 +227,68 @@ const BlogSection = () => {
     }
   };
 
+  /**
+   * Handle moving a post up in the sort order
+   */
+  const handleMoveUp = async (post, index) => {
+    if (index === 0) return; // Already at top
+    
+    const prevPost = posts[index - 1];
+    const newSortOrder = prevPost.sort_order - 1;
+    
+    const response = await updateBlogPost(post.id, {
+      title: post.title,
+      content: post.content,
+      author: post.author,
+      tags: post.tags,
+      featured: post.featured,
+      pinned: post.pinned,
+      sort_order: newSortOrder,
+      is_scheduled: post.is_scheduled,
+      scheduled_datetime: post.scheduled_datetime,
+    });
+    
+    if (response.success) {
+      const postsResult = await getPublishedPosts(100, 0);
+      if (postsResult.success) {
+        setPosts(postsResult.posts);
+      }
+    } else {
+      alert(response.error || 'Failed to reorder post');
+    }
+  };
+
+  /**
+   * Handle moving a post down in the sort order
+   */
+  const handleMoveDown = async (post, index) => {
+    if (index === posts.length - 1) return; // Already at bottom
+    
+    const nextPost = posts[index + 1];
+    const newSortOrder = nextPost.sort_order + 1;
+    
+    const response = await updateBlogPost(post.id, {
+      title: post.title,
+      content: post.content,
+      author: post.author,
+      tags: post.tags,
+      featured: post.featured,
+      pinned: post.pinned,
+      sort_order: newSortOrder,
+      is_scheduled: post.is_scheduled,
+      scheduled_datetime: post.scheduled_datetime,
+    });
+    
+    if (response.success) {
+      const postsResult = await getPublishedPosts(100, 0);
+      if (postsResult.success) {
+        setPosts(postsResult.posts);
+      }
+    } else {
+      alert(response.error || 'Failed to reorder post');
+    }
+  };
+
   // Render loading state
   if (isLoading) {
     return (
@@ -252,6 +315,9 @@ const BlogSection = () => {
         <PatchedRichBlogEditor
           initialTitle={editingPost?.title || ''}
           initialContent={editingPost?.content || ''}
+          initialFeatured={editingPost?.featured || false}
+          initialPinned={editingPost?.pinned || false}
+          initialSortOrder={editingPost?.sort_order || 0}
           onSave={handleSavePost}
           onCancel={() => {
             setShowEditor(false);
@@ -360,24 +426,61 @@ const BlogSection = () => {
         <p>No blog posts yet. Click "New Post" to create one.</p>
       ) : (
         <ul className="space-y-4">
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <li key={post.id} className="bg-white shadow p-4 rounded-lg">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-bold mb-1">
-                    <Link to={`/post/${post.id}`} className="text-blue-600 hover:underline">
-                      {post.title}
-                    </Link>
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
-                  </p>
-                  {post.excerpt && (
-                    <div
-                      className="mt-2 text-gray-700"
-                      dangerouslySetInnerHTML={{ __html: post.excerpt }}
-                    />
-                  )}
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <div className="flex items-start gap-2">
+                    <div className="flex flex-col gap-1 mt-1">
+                      <button
+                        onClick={() => handleMoveUp(post, index)}
+                        disabled={index === 0}
+                        className="p-1 text-gray-600 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                        title="Move up"
+                      >
+                        <ChevronUp size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleMoveDown(post, index)}
+                        disabled={index === posts.length - 1}
+                        className="p-1 text-gray-600 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                        title="Move down"
+                      >
+                        <ChevronDown size={16} />
+                      </button>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold mb-1">
+                        <Link to={`/post/${post.id}`} className="text-blue-600 hover:underline">
+                          {post.title}
+                        </Link>
+                        {post.pinned && (
+                          <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            PINNED
+                          </span>
+                        )}
+                        {post.featured && (
+                          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            FEATURED
+                          </span>
+                        )}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
+                        {post.sort_order !== 0 && (
+                          <span className="ml-2 text-xs text-gray-400">
+                            (Order: {post.sort_order})
+                          </span>
+                        )}
+                      </p>
+                      {post.excerpt && (
+                        <div
+                          className="mt-2 text-gray-700"
+                          dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
