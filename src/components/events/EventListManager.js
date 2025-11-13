@@ -1,8 +1,8 @@
 // Event List Manager - Manage all events in one place
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin, MessageSquare } from 'lucide-react';
 import { getStatusColor, getCategoryColor, formatShortDate } from '../../utils/eventUtils';
-import { shareEventToEmail, shareEventToBlog } from '../../services/eventShareService';
+import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../../services/eventShareService';
 import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
 
@@ -191,6 +191,23 @@ const EventListManager = ({ currentUser }) => {
     } catch (err) {
       console.error('Share to blog error:', err);
       alert('Error creating blog post');
+    }
+  };
+
+  const handleShareToNewsfeed = async (eventItem) => {
+    if (!confirm('Create a newsfeed post from this event?')) {
+      return;
+    }
+    try {
+      const result = await shareEventToNewsfeed(eventItem.id);
+      if (result && result.success) {
+        alert('Newsfeed post created successfully!');
+      } else {
+        alert(`Failed to create newsfeed post: ${result?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Share to newsfeed error:', err);
+      alert('Error creating newsfeed post');
     }
   };
 
@@ -384,6 +401,14 @@ const EventListManager = ({ currentUser }) => {
                         >
                           <FileText size={14} />
                           Blog
+                        </button>
+                        {/* Share to Newsfeed */}
+                        <button
+                          onClick={() => handleShareToNewsfeed(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <MessageSquare size={14} />
+                          Newsfeed
                         </button>
                         {/* Share to Social Networks */}
                         <div className="relative">
