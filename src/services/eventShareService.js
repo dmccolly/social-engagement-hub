@@ -9,6 +9,7 @@
 import { getEventById } from './calendarService.js';
 import { createCampaign } from './email/emailCampaignService';
 import { createBlogPost } from './xanoService';
+import { createNewsfeedPost } from './newsfeedService';
 import { generateEventEmailHTML } from '../components/events/EventEmailBlock';
 import { formatEventDate } from '../utils/eventUtils';
 
@@ -76,14 +77,78 @@ export async function shareEventToBlog(eventId) {
       content += `<p>${event.description}</p>`;
     }
     // Append call to action linking back to the full event page
-    const baseURL = (typeof process !== 'undefined' && process.env && process.env.REACT_APP_BASE_URL) || '';
+    const baseURL = (typeof process !== 'undefined' && process.env && process.env.REACT_APP_BASE_URL) || window.location.origin;
     content += `<p><a href="${baseURL}/events/${event.id}" style="color:#2563eb;font-weight:bold;">RSVP / More details</a></p>`;
     const tags = Array.isArray(event.tags) ? event.tags.join(',') : event.tags || '';
-    const postData = { title: event.title, content, tags };
+    const tagWithTracking = tags ? `${tags},from:event:${event.id}` : `from:event:${event.id}`;
+    const postData = { title: event.title, content, tags: tagWithTracking };
     const result = await createBlogPost(postData);
     return result;
   } catch (err) {
     console.error('shareEventToBlog error:', err);
+    return { success: false, error: err.message || 'Unknown error' };
+  }
+}
+
+/**
+ * Share an event to the newsfeed by creating a new newsfeed post.
+ * The post will contain a plain text excerpt of the event with date,
+ * location, and a link to the full event details page.
+ *
+ * @param {number} eventId - The ID of the event to convert into a newsfeed post
+ * @returns {Promise<object>} result of the newsfeed post creation
+ */
+export async function shareEventToNewsfeed(eventId) {
+  try {
+    const event = await getEventById(eventId);
+    if (!event) {
+      return { success: false, error: 'Event not found' };
+    }
+    
+    const dateInfo = formatEventDate(event.start_date, event.end_date, event.timezone);
+    
+    const stripHtml = (html) => {
+      if (!html) return '';
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return tmp.textContent || tmp.innerText || '';
+    };
+    
+    const plainDescription = stripHtml(event.description);
+    const excerpt = plainDescription.length > 200 
+      ? plainDescription.substring(0, 200) + '...' 
+      : plainDescription;
+    
+    const baseURL = (typeof process !== 'undefined' && process.env && process.env.REACT_APP_BASE_URL) || window.location.origin;
+    let content = `📅 ${event.title}\n\n`;
+    content += `🗓️ ${dateInfo}\n`;
+    
+    if (event.location_type === 'virtual') {
+      content += `📍 Virtual Event\n`;
+    } else if (event.location) {
+      content += `📍 ${event.location}\n`;
+    }
+    
+    if (excerpt) {
+      content += `\n${excerpt}\n`;
+    }
+    
+    content += `\n🔗 View details and RSVP: ${baseURL}/events/${event.id}`;
+    
+    if (event.image_url) {
+      content += `\n\n🖼️ ${event.image_url}`;
+    }
+    
+    const postData = {
+      content,
+      author_name: event.organizer_name || 'Events Manager',
+      author_email: event.organizer_email || null
+    };
+    
+    const result = await createNewsfeedPost(postData);
+    return result;
+  } catch (err) {
+    console.error('shareEventToNewsfeed error:', err);
     return { success: false, error: err.message || 'Unknown error' };
   }
 }

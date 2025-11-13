@@ -22,6 +22,7 @@ import AdminDashboard from './components/admin/AdminDashboardIntegration';
 
 // Calendar components
 import EventListManager from './components/events/EventListManager';
+import EventDetails from './components/events/EventDetails';
 
 // Settings and widgets
 import SettingsSection from './components/SettingsSection';
@@ -42,8 +43,9 @@ const AppContent = () => {
   const [posts, setPosts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   
-  // Check if we're on a blog post page or widget page
+  // Check if we're on a blog post page, event detail page, or widget page
   const isBlogPostPage = location.pathname.startsWith('/blog/');
+  const isEventDetailPage = location.pathname.startsWith('/events/');
   const isWidgetPage = location.pathname.startsWith('/widget/');
 
   // Load initial data on mount
@@ -70,7 +72,7 @@ const AppContent = () => {
     { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'blog', label: 'Blog', icon: FileText },
     { id: 'newsfeed', label: 'News Feed', icon: MessageSquare },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'calendar', label: 'Events', icon: Calendar },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'admin', label: 'Admin', icon: Shield },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -87,7 +89,7 @@ const AppContent = () => {
       case 'newsfeed':
         return <FacebookStyleNewsFeed currentUser={currentUser} />;
       case 'calendar':
-        return <EventListManager />;
+        return <EventListManager currentUser={currentUser} />;
       case 'email':
         return <EmailSection campaigns={campaigns} setCampaigns={setCampaigns} />;
       case 'admin':
@@ -103,7 +105,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-          {!isBlogPostPage && !isWidgetPage && (
+          {!isBlogPostPage && !isEventDetailPage && !isWidgetPage && (
           <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
@@ -134,10 +136,11 @@ const AppContent = () => {
           </nav>
           )}
 
-          <main className={!isBlogPostPage && !isWidgetPage ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" : ""}>
+          <main className={!isBlogPostPage && !isEventDetailPage && !isWidgetPage ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" : ""}>
               <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/blog/:id" element={<BlogPostView />} />
+            <Route path="/events/:id" element={<EventDetails />} />
               <Route path="/email/groups" element={<GroupManagement />} />
             <Route path="/widget/newsfeed" element={<EnhancedNewsfeedWidget />} />
             <Route path="/widget/newsfeed-simple" element={<StandaloneNewsfeedWidget />} />

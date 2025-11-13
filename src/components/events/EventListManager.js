@@ -1,8 +1,8 @@
 // Event List Manager - Manage all events in one place
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin, MessageSquare } from 'lucide-react';
 import { getStatusColor, getCategoryColor, formatShortDate } from '../../utils/eventUtils';
-import { shareEventToEmail, shareEventToBlog } from '../../services/eventShareService';
+import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../../services/eventShareService';
 import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
 
@@ -10,6 +10,7 @@ const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCreator, setShowCreator] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingRSVPs, setViewingRSVPs] = useState(null);
@@ -33,15 +34,23 @@ const EventListManager = ({ currentUser }) => {
   const loadEvents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`${XANO_BASE_URL}/events`);
       if (response.ok) {
         const data = await response.json();
         // Sort by start date (newest first)
         data.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
         setEvents(data);
+      } else {
+        setError(`Failed to load events: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.error('Failed to load events:', error);
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        setError('Cannot reach Events API. This may be a CORS configuration issue. Please ensure the Xano API allows requests from this domain.');
+      } else {
+        setError(`Failed to load events: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -194,6 +203,23 @@ const EventListManager = ({ currentUser }) => {
     }
   };
 
+  const handleShareToNewsfeed = async (eventItem) => {
+    if (!confirm('Create a newsfeed post from this event?')) {
+      return;
+    }
+    try {
+      const result = await shareEventToNewsfeed(eventItem.id);
+      if (result && result.success) {
+        alert('Newsfeed post created successfully!');
+      } else {
+        alert(`Failed to create newsfeed post: ${result?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Share to newsfeed error:', err);
+      alert('Error creating newsfeed post');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -241,6 +267,29 @@ const EventListManager = ({ currentUser }) => {
           </button>
         )}
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 text-red-600">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800">Error Loading Events</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <button
+                onClick={loadEvents}
+                className="mt-3 text-sm font-medium text-red-600 hover:text-red-800"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4">
@@ -384,6 +433,14 @@ const EventListManager = ({ currentUser }) => {
                         >
                           <FileText size={14} />
                           Blog
+                        </button>
+                        {/* Share to Newsfeed */}
+                        <button
+                          onClick={() => handleShareToNewsfeed(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <MessageSquare size={14} />
+                          Newsfeed
                         </button>
                         {/* Share to Social Networks */}
                         <div className="relative">
