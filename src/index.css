@@ -27,13 +27,11 @@ img.size-full {
 img.position-left {
   float: left;
   margin: 0 15px 15px 0;
-  clear: left;
 }
 
 img.position-right {
   float: right;
   margin: 0 0 15px 15px;
-  clear: right;
 }
 
 img.position-center {

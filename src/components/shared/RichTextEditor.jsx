@@ -29,6 +29,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
+  const throttleFrameRef = useRef(null);
 
   useEffect(() => {
     if (editorRef.current && value !== editorRef.current.innerHTML) {
@@ -52,10 +53,16 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     };
   }, []);
 
-  // Handle content changes
+  // Handle content changes with throttling
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      if (throttleFrameRef.current) {
+        cancelAnimationFrame(throttleFrameRef.current);
+      }
+      throttleFrameRef.current = requestAnimationFrame(() => {
+        onChange(editorRef.current.innerHTML);
+        throttleFrameRef.current = null;
+      });
     }
   };
 
@@ -472,6 +479,13 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     });
     
     updatePositions(toolbar, handles);
+    
+    const onScrollOrResize = () => updatePositions(toolbar, handles);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    
+    toolbar.dataset.scrollListener = 'true';
+    toolbar.dataset.resizeListener = 'true';
   };
 
   const resizeImageInternal = (imageId, size) => {
@@ -512,7 +526,15 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const clearImageSelectionInternal = () => {
     document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
     document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
-    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
+    document.querySelectorAll('.floating-toolbar').forEach((el) => {
+      if (el.dataset.scrollListener) {
+        window.removeEventListener('scroll', () => {}, true);
+      }
+      if (el.dataset.resizeListener) {
+        window.removeEventListener('resize', () => {});
+      }
+      el.remove();
+    });
     setSelectedImageId(null);
   };
 

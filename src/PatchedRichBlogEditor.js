@@ -12,12 +12,24 @@ import RichTextEditor from './components/shared/RichTextEditor';
  *
  * To persist the result, supply onSave and onCancel callbacks.
  */
-const PatchedRichBlogEditor = ({ onSave, onCancel, initialTitle = '', initialContent = '' }) => {
+const PatchedRichBlogEditor = ({ 
+  onSave, 
+  onCancel, 
+  initialTitle = '', 
+  initialContent = '',
+  initialFeatured = false,
+  initialPinned = false,
+  initialSortOrder = 0
+}) => {
   // Title and content state
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduledDateTime, setScheduledDateTime] = useState('');
+  
+  const [featured, setFeatured] = useState(initialFeatured);
+  const [pinned, setPinned] = useState(initialPinned);
+  const [sortOrder, setSortOrder] = useState(initialSortOrder);
 
   /**
    * Handle save as draft
@@ -29,6 +41,9 @@ const PatchedRichBlogEditor = ({ onSave, onCancel, initialTitle = '', initialCon
         content: content.trim(),
         status: 'draft',
         scheduled_datetime: null,
+        featured,
+        pinned,
+        sort_order: sortOrder,
       });
     }
   };
@@ -43,6 +58,9 @@ const PatchedRichBlogEditor = ({ onSave, onCancel, initialTitle = '', initialCon
         content: content.trim(),
         status: 'published',
         scheduled_datetime: null,
+        featured,
+        pinned,
+        sort_order: sortOrder,
       });
     }
   };
@@ -61,6 +79,9 @@ const PatchedRichBlogEditor = ({ onSave, onCancel, initialTitle = '', initialCon
         content: content.trim(),
         status: 'scheduled',
         scheduled_datetime: scheduledDateTime,
+        featured,
+        pinned,
+        sort_order: sortOrder,
       });
     }
     setShowScheduleModal(false);
@@ -83,6 +104,49 @@ const PatchedRichBlogEditor = ({ onSave, onCancel, initialTitle = '', initialCon
           placeholder="Enter post title..."
           className="w-full px-4 py-3 text-2xl font-bold border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+      </div>
+
+      {/* Premium Listing and Ordering Controls */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">Post Options</h3>
+        <div className="flex flex-wrap gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(e) => setFeatured(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Premium Listing (Featured)
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={pinned}
+              onChange={(e) => setPinned(e.target.checked)}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Pin to Top
+            </span>
+          </label>
+          <div className="flex items-center gap-2">
+            <label htmlFor="sort-order" className="text-sm font-medium text-gray-700">
+              Sort Order:
+            </label>
+            <input
+              id="sort-order"
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
+              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min="0"
+            />
+            <span className="text-xs text-gray-500">(lower numbers appear first)</span>
+          </div>
+        </div>
       </div>
 
       {/* Rich Text Editor for Content */}
