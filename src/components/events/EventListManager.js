@@ -10,6 +10,7 @@ const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showCreator, setShowCreator] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingRSVPs, setViewingRSVPs] = useState(null);
@@ -33,15 +34,23 @@ const EventListManager = ({ currentUser }) => {
   const loadEvents = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`${XANO_BASE_URL}/events`);
       if (response.ok) {
         const data = await response.json();
         // Sort by start date (newest first)
         data.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
         setEvents(data);
+      } else {
+        setError(`Failed to load events: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       console.error('Failed to load events:', error);
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        setError('Cannot reach Events API. This may be a CORS configuration issue. Please ensure the Xano API allows requests from this domain.');
+      } else {
+        setError(`Failed to load events: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -258,6 +267,29 @@ const EventListManager = ({ currentUser }) => {
           </button>
         )}
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 text-red-600">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800">Error Loading Events</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <button
+                onClick={loadEvents}
+                className="mt-3 text-sm font-medium text-red-600 hover:text-red-800"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4">

@@ -89,7 +89,7 @@ const AppContent = () => {
       case 'newsfeed':
         return <FacebookStyleNewsFeed currentUser={currentUser} />;
       case 'calendar':
-        return <EventListManager />;
+        return <EventListManager currentUser={currentUser} />;
       case 'email':
         return <EmailSection campaigns={campaigns} setCampaigns={setCampaigns} />;
       case 'admin':
