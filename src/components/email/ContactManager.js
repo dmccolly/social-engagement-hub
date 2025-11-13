@@ -10,6 +10,64 @@ import {
   getGroupContacts 
 } from '../../services/email/emailGroupService';
 
+const normalizeId = (id) => {
+  const num = Number(id);
+  return isNaN(num) ? id : num;
+};
+
+const parseCSVLine = (line) => {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        current += '"';
+        i++; // Skip next quote
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+};
+
+const splitFullName = (fullName) => {
+  if (!fullName || !fullName.trim()) {
+    return { first_name: '', last_name: '' };
+  }
+  
+  const trimmed = fullName.trim();
+  
+  if (trimmed.includes(',')) {
+    const parts = trimmed.split(',').map(p => p.trim());
+    return {
+      first_name: parts[1] || '',
+      last_name: parts[0] || ''
+    };
+  }
+  
+  const spaceIndex = trimmed.indexOf(' ');
+  if (spaceIndex === -1) {
+    return { first_name: trimmed, last_name: '' };
+  }
+  
+  return {
+    first_name: trimmed.substring(0, spaceIndex).trim(),
+    last_name: trimmed.substring(spaceIndex + 1).trim()
+  };
+};
+
 const ContactManager = ({ list, allContacts, onSave, onClose }) => {
   const [contacts, setContacts] = useState(allContacts);
   const [listMembers, setListMembers] = useState([]);
@@ -35,14 +93,20 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
     
     setLoading(true);
     try {
+      console.log(`[ContactManager] Loading contacts for group ${list.id}`);
       const result = await getGroupContacts(list.id);
+      console.log(`[ContactManager] getGroupContacts result:`, result);
+      
       if (result.success) {
-        const memberIds = result.contacts.map(c => c.id);
+        const memberIds = result.contacts.map(c => normalizeId(c.id));
+        console.log(`[ContactManager] Loaded ${memberIds.length} contacts:`, memberIds);
         setListMembers(memberIds);
         setOriginalMembers(memberIds);
+      } else {
+        console.error('[ContactManager] Failed to load group contacts:', result.error);
       }
     } catch (error) {
-      console.error('Error loading group contacts:', error);
+      console.error('[ContactManager] Error loading group contacts:', error);
     } finally {
       setLoading(false);
     }
@@ -55,29 +119,66 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       const text = event.target.result;
-      const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        alert('❌ CSV file is empty or has no data rows');
+        return;
+      }
+      
+      const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+      console.log('[ContactManager] CSV headers:', headers);
       
       setLoading(true);
       const imported = [];
+      const skipped = [];
       
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        const email = values[headers.indexOf('email')] || '';
+        const values = parseCSVLine(lines[i]);
         
-        if (!email) continue;
+        const emailIndex = headers.findIndex(h => 
+          h === 'email' || h === 'e-mail' || h === 'email address'
+        );
+        const email = emailIndex !== -1 ? values[emailIndex]?.trim() : '';
         
-        const firstNameIndex = headers.indexOf('first name');
-        const firstnameIndex = headers.indexOf('firstname');
-        const lastNameIndex = headers.indexOf('last name');
-        const lastnameIndex = headers.indexOf('lastname');
+        if (!email) {
+          skipped.push({ row: i + 1, reason: 'No email address' });
+          continue;
+        }
+        
+        const firstNameIndex = headers.findIndex(h => 
+          h === 'first name' || h === 'firstname' || h === 'first' || h === 'given name'
+        );
+        const lastNameIndex = headers.findIndex(h => 
+          h === 'last name' || h === 'lastname' || h === 'last' || h === 'surname' || h === 'family name'
+        );
+        
+        let first_name = '';
+        let last_name = '';
+        
+        if (firstNameIndex !== -1 || lastNameIndex !== -1) {
+          first_name = firstNameIndex !== -1 ? (values[firstNameIndex]?.trim() || '') : '';
+          last_name = lastNameIndex !== -1 ? (values[lastNameIndex]?.trim() || '') : '';
+        } else {
+          const nameIndex = headers.findIndex(h => 
+            h === 'name' || h === 'full name' || h === 'fullname'
+          );
+          
+          if (nameIndex !== -1) {
+            const fullName = values[nameIndex]?.trim() || '';
+            const nameParts = splitFullName(fullName);
+            first_name = nameParts.first_name;
+            last_name = nameParts.last_name;
+            console.log(`[ContactManager] Split "${fullName}" into first="${first_name}", last="${last_name}"`);
+          }
+        }
         
         const contactData = {
           email: email,
-          first_name: values[firstNameIndex !== -1 ? firstNameIndex : firstnameIndex] || '',
-          last_name: values[lastNameIndex !== -1 ? lastNameIndex : lastnameIndex] || '',
+          first_name: first_name,
+          last_name: last_name,
           member_type: 'non-member',
           status: 'subscribed'
         };
@@ -86,29 +187,53 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
           const result = await createContact(contactData);
           if (result.success) {
             imported.push(result.contact);
+          } else {
+            skipped.push({ row: i + 1, reason: result.error || 'Failed to create contact' });
           }
         } catch (error) {
           console.error('Error creating contact:', error);
+          skipped.push({ row: i + 1, reason: error.message });
         }
       }
       
       if (imported.length > 0) {
+        console.log(`[ContactManager] Successfully imported ${imported.length} contacts`);
+        
         // Reload all contacts
         const contactsResult = await getContacts();
         if (contactsResult.success) {
           setContacts(contactsResult.contacts);
         }
         
+        const importedIds = imported.map(c => normalizeId(c.id));
+        console.log('[ContactManager] Imported contact IDs:', importedIds);
+        
         // Add imported contacts to this list (in state)
-        const importedIds = imported.map(c => Number(c.id));
         setListMembers(prev => [...prev, ...importedIds]);
         
         if (list?.id) {
           try {
+            console.log(`[ContactManager] Adding ${importedIds.length} contacts to group ${list.id}`);
             const addResult = await addContactsToGroup(list.id, importedIds);
+            console.log('[ContactManager] addContactsToGroup result:', addResult);
+            
             if (addResult.success) {
-              setOriginalMembers(prev => [...prev, ...importedIds]);
-              alert(`✅ Imported and saved ${imported.length} contacts to the list`);
+              const verifyResult = await getGroupContacts(list.id);
+              if (verifyResult.success) {
+                const verifiedIds = verifyResult.contacts.map(c => normalizeId(c.id));
+                console.log(`[ContactManager] Verified ${verifiedIds.length} contacts in group after import`);
+                setOriginalMembers(verifiedIds);
+                setListMembers(verifiedIds);
+              }
+              
+              let message = `✅ Successfully imported ${imported.length} contact(s) to "${list.name}"`;
+              if (skipped.length > 0) {
+                message += `\n\n⚠️ Skipped ${skipped.length} row(s):\n${skipped.slice(0, 5).map(s => `Row ${s.row}: ${s.reason}`).join('\n')}`;
+                if (skipped.length > 5) {
+                  message += `\n... and ${skipped.length - 5} more`;
+                }
+              }
+              alert(message);
             } else {
               alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list:\n\n${addResult.error}\n\nPlease click "Save Changes" to retry.`);
             }
@@ -118,7 +243,11 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
           }
         }
       } else {
-        alert('❌ No contacts were imported');
+        let message = '❌ No contacts were imported';
+        if (skipped.length > 0) {
+          message += `\n\nSkipped ${skipped.length} row(s):\n${skipped.slice(0, 10).map(s => `Row ${s.row}: ${s.reason}`).join('\n')}`;
+        }
+        alert(message);
       }
       
       setLoading(false);
@@ -135,6 +264,7 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
 
     setLoading(true);
     try {
+      console.log('[ContactManager] Creating new contact:', newContact);
       const result = await createContact({
         email: newContact.email,
         first_name: newContact.first_name || '',
@@ -144,14 +274,17 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
       });
 
       if (result.success) {
+        console.log('[ContactManager] Contact created:', result.contact);
+        
         // Reload all contacts
         const contactsResult = await getContacts();
         if (contactsResult.success) {
           setContacts(contactsResult.contacts);
         }
         
-        // Add to this list
-        setListMembers(prev => [...prev, result.contact.id]);
+        // Normalize ID and add to this list
+        const contactId = normalizeId(result.contact.id);
+        setListMembers(prev => [...prev, contactId]);
         
         setNewContact({ email: '', first_name: '', last_name: '', member_type: 'non-member' });
         setShowAddContact(false);
@@ -168,16 +301,18 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
   };
 
   const toggleMember = (contactId) => {
-    setListMembers(prev =>
-      prev.includes(contactId)
-        ? prev.filter(id => id !== contactId)
-        : [...prev, contactId]
-    );
+    const normalizedId = normalizeId(contactId);
+    setListMembers(prev => {
+      const normalizedPrev = prev.map(id => normalizeId(id));
+      return normalizedPrev.includes(normalizedId)
+        ? prev.filter(id => normalizeId(id) !== normalizedId)
+        : [...prev, normalizedId];
+    });
   };
 
   const hasUnsavedChanges = () => {
-    const currentSet = new Set(listMembers.map(id => Number(id)));
-    const originalSet = new Set(originalMembers.map(id => Number(id)));
+    const currentSet = new Set(listMembers.map(id => normalizeId(id)));
+    const originalSet = new Set(originalMembers.map(id => normalizeId(id)));
     
     if (currentSet.size !== originalSet.size) return true;
     
@@ -205,40 +340,64 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
 
     setSaving(true);
     try {
+      // Normalize all IDs for comparison
+      const normalizedListMembers = listMembers.map(id => normalizeId(id));
+      const normalizedOriginalMembers = originalMembers.map(id => normalizeId(id));
+      
       // Find contacts to add (in listMembers but not in originalMembers)
-      const toAdd = listMembers.filter(id => !originalMembers.includes(id));
+      const toAdd = normalizedListMembers.filter(id => !normalizedOriginalMembers.includes(id));
       
       // Find contacts to remove (in originalMembers but not in listMembers)
-      const toRemove = originalMembers.filter(id => !listMembers.includes(id));
+      const toRemove = normalizedOriginalMembers.filter(id => !normalizedListMembers.includes(id));
+
+      console.log(`[ContactManager] Saving changes: ${toAdd.length} to add, ${toRemove.length} to remove`);
 
       // Add new contacts to group
       if (toAdd.length > 0) {
+        console.log(`[ContactManager] Adding contacts to group ${list.id}:`, toAdd);
         const addResult = await addContactsToGroup(list.id, toAdd);
+        console.log('[ContactManager] addContactsToGroup result:', addResult);
+        
         if (!addResult.success) {
           throw new Error(`Failed to add contacts: ${addResult.error}`);
         }
       }
 
       // Remove contacts from group
-      for (const contactId of toRemove) {
-        const removeResult = await removeContactFromGroup(list.id, contactId);
-        if (!removeResult.success) {
-          console.error(`Failed to remove contact ${contactId}:`, removeResult.error);
+      if (toRemove.length > 0) {
+        console.log(`[ContactManager] Removing contacts from group ${list.id}:`, toRemove);
+        for (const contactId of toRemove) {
+          const removeResult = await removeContactFromGroup(list.id, contactId);
+          if (!removeResult.success) {
+            console.error(`Failed to remove contact ${contactId}:`, removeResult.error);
+          }
         }
       }
 
-      // Reload contacts to get fresh data
-      const contactsResult = await getContacts();
-      if (contactsResult.success) {
-        setContacts(contactsResult.contacts);
-      }
+      console.log('[ContactManager] Verifying changes by reloading group contacts');
+      const verifyResult = await getGroupContacts(list.id);
+      if (verifyResult.success) {
+        const verifiedIds = verifyResult.contacts.map(c => normalizeId(c.id));
+        console.log(`[ContactManager] Verified ${verifiedIds.length} contacts in group after save`);
+        
+        setListMembers(verifiedIds);
+        setOriginalMembers(verifiedIds);
+        
+        // Reload all contacts to get fresh data
+        const contactsResult = await getContacts();
+        if (contactsResult.success) {
+          setContacts(contactsResult.contacts);
+        }
 
-      const members = contacts.filter(c => listMembers.includes(c.id));
-      onSave({ contacts: contactsResult.contacts, members, memberIds: listMembers });
-      
-      alert(`✅ Successfully updated list with ${listMembers.length} contacts`);
+        const members = contacts.filter(c => verifiedIds.includes(normalizeId(c.id)));
+        onSave({ contacts: contactsResult.contacts || contacts, members, memberIds: verifiedIds });
+        
+        alert(`✅ Successfully updated "${list.name}" with ${verifiedIds.length} contact(s)`);
+      } else {
+        throw new Error('Failed to verify changes after save');
+      }
     } catch (error) {
-      console.error('Error saving contacts:', error);
+      console.error('[ContactManager] Error saving contacts:', error);
       alert(`❌ Error saving contacts:\n\n${error.message}`);
     } finally {
       setSaving(false);
@@ -422,7 +581,7 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                       checked={listMembers.length === filteredContacts.length && filteredContacts.length > 0}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setListMembers(filteredContacts.map(c => c.id));
+                          setListMembers(filteredContacts.map(c => normalizeId(c.id)));
                         } else {
                           setListMembers([]);
                         }
@@ -442,7 +601,7 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                     <td className="p-3">
                       <input
                         type="checkbox"
-                        checked={listMembers.includes(contact.id)}
+                        checked={listMembers.map(id => normalizeId(id)).includes(normalizeId(contact.id))}
                         onChange={() => toggleMember(contact.id)}
                         disabled={loading}
                       />
@@ -456,11 +615,11 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                     </td>
                     <td className="p-3">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        listMembers.includes(contact.id)
+                        listMembers.map(id => normalizeId(id)).includes(normalizeId(contact.id))
                           ? 'bg-green-100 text-green-700'
                           : 'bg-gray-100 text-gray-600'
                       }`}>
-                        {listMembers.includes(contact.id) ? 'In List' : 'Not in List'}
+                        {listMembers.map(id => normalizeId(id)).includes(normalizeId(contact.id)) ? 'In List' : 'Not in List'}
                       </span>
                     </td>
                   </tr>
