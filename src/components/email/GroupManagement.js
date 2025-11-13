@@ -47,27 +47,40 @@ const GroupManagement = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('[GroupManagement] Loading groups...');
       const result = await getGroups();
+      console.log('[GroupManagement] getGroups result:', result);
       
       if (result.success) {
-        // Load contact counts for each group
         const groupsWithCounts = await Promise.all(
           result.groups.map(async (group) => {
+            console.log(`[GroupManagement] Loading contacts for group ${group.id} (${group.name})`);
             const contactsResult = await getGroupContacts(group.id);
+            console.log(`[GroupManagement] Group ${group.id} contacts result:`, contactsResult);
+            
+            const normalizedMembers = contactsResult.success 
+              ? contactsResult.contacts.map(c => {
+                  const num = Number(c.id);
+                  return isNaN(num) ? c.id : num;
+                })
+              : [];
+            
             return {
               ...group,
               count: contactsResult.success ? contactsResult.contacts.length : 0,
-              members: contactsResult.success ? contactsResult.contacts.map(c => c.id) : []
+              members: normalizedMembers
             };
           })
         );
+        console.log('[GroupManagement] Loaded groups with counts:', groupsWithCounts);
         setGroups(groupsWithCounts);
       } else {
+        console.error('[GroupManagement] Failed to load groups:', result.error);
         setError(result.error || 'Failed to load groups');
         setGroups([]);
       }
     } catch (error) {
-      console.error('Error loading groups:', error);
+      console.error('[GroupManagement] Error loading groups:', error);
       setError('Failed to connect to server');
       setGroups([]);
     } finally {
