@@ -1,6 +1,7 @@
 // Event Creator - Multi-step form for creating and editing events
 import React, { useState } from 'react';
 import { Calendar, MapPin, Users, Settings, Eye, Save, X, Globe, Video, Building } from 'lucide-react';
+import { createEvent, updateEvent } from '../../services/calendarService';
 
 const EventCreator = ({ event = null, onSave, onClose }) => {
   const [step, setStep] = useState(1);
@@ -25,8 +26,6 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
   });
 
   const [errors, setErrors] = useState({});
-
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 
   const categories = [
     { value: 'conference', label: 'Conference', icon: '🎤' },
@@ -94,29 +93,21 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
     };
 
     try {
-      const url = event 
-        ? `${XANO_BASE_URL}/events/${event.id}`
-        : `${XANO_BASE_URL}/events`;
+      let savedEvent;
       
-      const method = event ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSave)
-      });
-
-      if (response.ok) {
-        const savedEvent = await response.json();
-        alert(publish ? 'Event published successfully!' : 'Event saved as draft!');
-        onSave(savedEvent);
-        onClose();
+      if (event) {
+        savedEvent = await updateEvent(event.id, dataToSave);
       } else {
-        alert('Failed to save event');
+        savedEvent = await createEvent(dataToSave);
       }
+
+      alert(publish ? 'Event published successfully!' : 'Event saved as draft!');
+      onSave(savedEvent);
+      onClose();
     } catch (error) {
       console.error('Error saving event:', error);
-      alert('Error saving event');
+      const errorMessage = error.message || 'Error saving event';
+      alert(`Failed to save event: ${errorMessage}`);
     }
   };
 

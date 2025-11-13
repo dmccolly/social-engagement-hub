@@ -82,3 +82,106 @@ export async function getEventById(eventId) {
     return null;
   }
 }
+
+/**
+ * Create a new event in the backend. Returns the created event object
+ * on success, or throws an error with details on failure.
+ *
+ * @param {Object} eventData - Event data to create
+ * @returns {Promise<Object>} The created event object
+ * @throws {Error} If the request fails, with status and error details
+ */
+export async function createEvent(eventData) {
+  try {
+    const normalizedData = {
+      ...eventData,
+      start_date: eventData.start_date ? new Date(eventData.start_date).toISOString() : null,
+      end_date: eventData.end_date ? new Date(eventData.end_date).toISOString() : null,
+      rsvp_deadline: eventData.rsvp_deadline ? new Date(eventData.rsvp_deadline).toISOString() : null,
+      max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees, 10) : null
+    };
+
+    const response = await fetch(`${XANO_BASE_URL}/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(normalizedData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `Failed to create event (${response.status})`;
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        errorMessage = errorText || errorMessage;
+      }
+      
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.details = errorText;
+      throw error;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    console.error('calendarService: failed to create event', err);
+    throw err;
+  }
+}
+
+/**
+ * Update an existing event in the backend. Returns the updated event
+ * object on success, or throws an error with details on failure.
+ *
+ * @param {number} eventId - ID of the event to update
+ * @param {Object} eventData - Event data to update
+ * @returns {Promise<Object>} The updated event object
+ * @throws {Error} If the request fails, with status and error details
+ */
+export async function updateEvent(eventId, eventData) {
+  try {
+    const normalizedData = {
+      ...eventData,
+      start_date: eventData.start_date ? new Date(eventData.start_date).toISOString() : null,
+      end_date: eventData.end_date ? new Date(eventData.end_date).toISOString() : null,
+      rsvp_deadline: eventData.rsvp_deadline ? new Date(eventData.rsvp_deadline).toISOString() : null,
+      max_attendees: eventData.max_attendees ? parseInt(eventData.max_attendees, 10) : null
+    };
+
+    const response = await fetch(`${XANO_BASE_URL}/events/${eventId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(normalizedData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `Failed to update event (${response.status})`;
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        errorMessage = errorText || errorMessage;
+      }
+      
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.details = errorText;
+      throw error;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    console.error('calendarService: failed to update event', err);
+    throw err;
+  }
+}
