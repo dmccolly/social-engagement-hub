@@ -17,6 +17,6 @@
 
 [[redirects]]
   from = "/xano/*"
-  to = "https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat"
+  to = "/.netlify/functions/xano-proxy/:splat"
   status = 200
   force = true
