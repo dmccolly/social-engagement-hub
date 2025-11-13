@@ -69,10 +69,15 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
         
         if (!email) continue;
         
+        const firstNameIndex = headers.indexOf('first name');
+        const firstnameIndex = headers.indexOf('firstname');
+        const lastNameIndex = headers.indexOf('last name');
+        const lastnameIndex = headers.indexOf('lastname');
+        
         const contactData = {
           email: email,
-          first_name: values[headers.indexOf('first name') || headers.indexOf('firstname')] || '',
-          last_name: values[headers.indexOf('last name') || headers.indexOf('lastname')] || '',
+          first_name: values[firstNameIndex !== -1 ? firstNameIndex : firstnameIndex] || '',
+          last_name: values[lastNameIndex !== -1 ? lastNameIndex : lastnameIndex] || '',
           member_type: 'non-member',
           status: 'subscribed'
         };
@@ -87,8 +92,6 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
         }
       }
       
-      setLoading(false);
-      
       if (imported.length > 0) {
         // Reload all contacts
         const contactsResult = await getContacts();
@@ -96,14 +99,29 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
           setContacts(contactsResult.contacts);
         }
         
-        // Add imported contacts to this list
-        const importedIds = imported.map(c => c.id);
+        // Add imported contacts to this list (in state)
+        const importedIds = imported.map(c => Number(c.id));
         setListMembers(prev => [...prev, ...importedIds]);
         
-        alert(`✅ Imported ${imported.length} contacts`);
+        if (list?.id) {
+          try {
+            const addResult = await addContactsToGroup(list.id, importedIds);
+            if (addResult.success) {
+              setOriginalMembers(prev => [...prev, ...importedIds]);
+              alert(`✅ Imported and saved ${imported.length} contacts to the list`);
+            } else {
+              alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list:\n\n${addResult.error}\n\nPlease click "Save Changes" to retry.`);
+            }
+          } catch (error) {
+            console.error('Error adding imported contacts to group:', error);
+            alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list:\n\n${error.message}\n\nPlease click "Save Changes" to retry.`);
+          }
+        }
       } else {
         alert('❌ No contacts were imported');
       }
+      
+      setLoading(false);
     };
     
     reader.readAsText(file);
@@ -155,6 +173,28 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
         ? prev.filter(id => id !== contactId)
         : [...prev, contactId]
     );
+  };
+
+  const hasUnsavedChanges = () => {
+    const currentSet = new Set(listMembers.map(id => Number(id)));
+    const originalSet = new Set(originalMembers.map(id => Number(id)));
+    
+    if (currentSet.size !== originalSet.size) return true;
+    
+    for (const id of currentSet) {
+      if (!originalSet.has(id)) return true;
+    }
+    
+    return false;
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges()) {
+      if (!window.confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
+        return;
+      }
+    }
+    onClose();
   };
 
   const handleSave = async () => {
@@ -251,7 +291,7 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
             <h2 className="text-2xl font-bold">Manage Contacts</h2>
             <p className="text-gray-600">{list?.name}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
+          <button onClick={handleClose} className="p-2 hover:bg-gray-100 rounded">
             <X size={20} />
           </button>
         </div>
@@ -447,7 +487,7 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
             )}
           </button>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={saving}
             className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
           >
