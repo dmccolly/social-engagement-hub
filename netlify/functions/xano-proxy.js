@@ -19,13 +19,23 @@ exports.handler = async (event) => {
 
   try {
     const apiKey = process.env.XANO_API_KEY;
-    const xanoBaseUrl = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
+    const base = (process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV').replace(/\/+$/, '');
 
-    const path = event.path.replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '');
-    
-    const xanoUrl = `${xanoBaseUrl}/${path}`;
-    
-    console.log(`Proxying ${event.httpMethod} request to: ${xanoUrl}`);
+    let path = (event.path || '')
+      .replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '')
+      .replace(/^\/xano\/?/, '')
+      .replace(/^\/+/, ''); // remove any remaining leading slash
+
+    const qs = event.rawQuery ? `?${event.rawQuery}` : '';
+    const xanoUrl = path ? `${base}/${path}${qs}` : `${base}${qs}`;
+
+    console.log('Proxy debug:', {
+      method: event.httpMethod,
+      eventPath: event.path,
+      rawUrl: event.rawUrl,
+      computedPath: path,
+      xanoUrl
+    });
 
     const headers = {
       'Content-Type': 'application/json'
@@ -38,7 +48,7 @@ exports.handler = async (event) => {
     const response = await fetch(xanoUrl, {
       method: event.httpMethod,
       headers: headers,
-      body: event.body || undefined
+      body: event.httpMethod === 'GET' || event.httpMethod === 'HEAD' ? undefined : event.body || undefined
     });
 
     const responseText = await response.text();
