@@ -1,7 +1,9 @@
 // Event Creator - Multi-step form for creating and editing events
 import React, { useState } from 'react';
-import { Calendar, MapPin, Users, Settings, Eye, Save, X, Globe, Video, Building } from 'lucide-react';
+import { Calendar, MapPin, Users, Settings, Eye, Save, X, Globe, Video, Building, Upload } from 'lucide-react';
 import { createEvent, updateEvent } from '../../services/calendarService';
+import { openCloudinaryWidget } from '../../lib/cloudinaryWidget';
+import ProfessionalRichEditor from '../../ProfessionalRichEditor';
 
 const EventCreator = ({ event = null, onSave, onClose }) => {
   const [step, setStep] = useState(1);
@@ -26,6 +28,10 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [imageError, setImageError] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingDescriptionImage, setIsUploadingDescriptionImage] = useState(false);
+  const descriptionRef = React.useRef(null);
 
   const categories = [
     { value: 'conference', label: 'Conference', icon: '🎤' },
@@ -84,6 +90,73 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
     setStep(step - 1);
   };
 
+  const handleCloudinaryUpload = () => {
+    setIsUploadingImage(true);
+    setImageError(null);
+    
+    openCloudinaryWidget(
+      (asset) => {
+        setFormData({ ...formData, image_url: asset.url });
+        setIsUploadingImage(false);
+      },
+      () => {
+        setIsUploadingImage(false);
+      },
+      {
+        multiple: false,
+        folder: 'events',
+        resourceType: 'image'
+      }
+    );
+  };
+
+  const handleImageError = () => {
+    setImageError('Failed to load image. Please check the URL or upload a new image.');
+  };
+
+  const handleInsertDescriptionImage = () => {
+    setIsUploadingDescriptionImage(true);
+    
+    openCloudinaryWidget(
+      (asset) => {
+        const img = `<img src="${asset.url}" alt="Event image" style="max-width: 400px; height: auto; margin: 16px auto; display: block; border-radius: 8px;" class="event-description-image" />`;
+        
+        if (descriptionRef.current) {
+          const selection = window.getSelection();
+          const range = selection.getRangeAt(0);
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = img;
+          const imgNode = tempDiv.firstChild;
+          
+          range.deleteContents();
+          range.insertNode(imgNode);
+          range.setStartAfter(imgNode);
+          range.setEndAfter(imgNode);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          setFormData({ ...formData, description: descriptionRef.current.innerHTML });
+        }
+        
+        setIsUploadingDescriptionImage(false);
+      },
+      () => {
+        setIsUploadingDescriptionImage(false);
+      },
+      {
+        multiple: false,
+        folder: 'events/descriptions',
+        resourceType: 'image'
+      }
+    );
+  };
+
+  const handleDescriptionChange = () => {
+    if (descriptionRef.current) {
+      setFormData({ ...formData, description: descriptionRef.current.innerHTML });
+    }
+  };
+
   const handleSave = async (publish = false) => {
     if (!validateStep(step)) return;
 
@@ -136,13 +209,31 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Description
         </label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg"
-          rows="4"
-          placeholder="Tell people what this event is about..."
-        />
+        <div className="space-y-2">
+          <div
+            ref={descriptionRef}
+            contentEditable
+            onBlur={handleDescriptionChange}
+            onInput={handleDescriptionChange}
+            className="w-full px-3 py-2 border rounded-lg min-h-[100px] max-h-[300px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+            dangerouslySetInnerHTML={{ __html: formData.description || '' }}
+            style={{ whiteSpace: 'pre-wrap' }}
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleInsertDescriptionImage}
+              disabled={isUploadingDescriptionImage}
+              className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded flex items-center gap-2 disabled:opacity-50"
+            >
+              <Upload size={16} />
+              {isUploadingDescriptionImage ? 'Uploading...' : 'Insert Image'}
+            </button>
+            <span className="text-xs text-gray-500 flex items-center">
+              Click to insert images. Images can be resized by clicking and dragging.
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -317,20 +408,49 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Event Image URL (optional)
+          Event Image (optional)
         </label>
-        <input
-          type="url"
-          value={formData.image_url}
-          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg"
-          placeholder="https://example.com/event-image.jpg"
-        />
-        {formData.image_url && (
-          <div className="mt-2">
-            <img src={formData.image_url} alt="Event preview" className="w-full h-48 object-cover rounded-lg" />
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={formData.image_url}
+              onChange={(e) => {
+                setFormData({ ...formData, image_url: e.target.value });
+                setImageError(null);
+              }}
+              className="flex-1 px-3 py-2 border rounded-lg"
+              placeholder="https://example.com/event-image.jpg"
+            />
+            <button
+              type="button"
+              onClick={handleCloudinaryUpload}
+              disabled={isUploadingImage}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Upload size={18} />
+              {isUploadingImage ? 'Uploading...' : 'Upload'}
+            </button>
           </div>
-        )}
+          <p className="text-sm text-gray-500">Enter an image URL or upload from your computer</p>
+          
+          {imageError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {imageError}
+            </div>
+          )}
+          
+          {formData.image_url && !imageError && (
+            <div className="mt-2">
+              <img 
+                src={formData.image_url} 
+                alt="Event preview" 
+                className="w-full h-48 object-cover rounded-lg"
+                onError={handleImageError}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <div>
