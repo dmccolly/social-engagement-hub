@@ -27,11 +27,8 @@ const SettingsSection = () => {
   const widgetList = [
     'blog',
     'newsfeed',
-    'calendar',
-    'socialhub',
     'signup',
-    'upload',
-    'station'
+    'upload'
   ];
 
   // Default settings for each widget. These values determine the initial
@@ -40,19 +37,8 @@ const SettingsSection = () => {
   const defaultSettings = {
     blog: { headerText: 'Latest Posts', postCount: 5, showImages: true },
     newsfeed: { headerText: 'Community Feed', postCount: 10, showImages: true },
-    calendar: {
-      headerText: 'Upcoming Events',
-      eventCount: 5,
-      showTime: true,
-      showLocation: true,
-      showImages: true,
-      tag: '',
-      theme: 'light'
-    },
-    socialhub: { headerText: 'Social Hub', showBlog: true, showNewsfeed: true, showCalendar: true },
     signup: { headerText: 'Join Our Community', buttonText: 'Sign Up' },
-    upload: { headerText: 'Upload Files', buttonText: 'Upload' },
-    station: { headerText: 'Station Control', showAdmin: true }
+    upload: { headerText: 'Upload Content', buttonText: 'Upload File' }
   };
 
   // State to track which widget is currently selected and its settings.
@@ -159,7 +145,7 @@ const SettingsSection = () => {
             </label>
           </div>
         );
-      case 'calendar':
+      case 'signup':
         return (
           <div className="space-y-4">
             <label className="block">
@@ -167,76 +153,44 @@ const SettingsSection = () => {
               <input
                 type="text"
                 value={settings.headerText}
-                onChange={(e) => handleSettingChange('calendar', 'headerText', e.target.value)}
+                onChange={(e) => handleSettingChange('signup', 'headerText', e.target.value)}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
               />
             </label>
             <label className="block">
-              <span className="text-sm text-gray-700">Number of events</span>
-              <input
-                type="number"
-                min={1}
-                value={settings.eventCount}
-                onChange={(e) => handleSettingChange('calendar', 'eventCount', parseInt(e.target.value, 10))}
-                className="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-              />
-            </label>
-            <div className="flex space-x-4">
-              <label className="inline-flex items-center">
-                <input
-                  type="checkbox"
-                  checked={settings.showTime}
-                  onChange={(e) => handleSettingChange('calendar', 'showTime', e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-offset-0 focus:ring-blue-200 focus:ring-opacity-50"
-                />
-                <span className="ml-2 text-sm text-gray-700">Show time</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="checkbox"
-                  checked={settings.showLocation}
-                  onChange={(e) => handleSettingChange('calendar', 'showLocation', e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-offset-0 focus:ring-blue-200 focus:ring-opacity-50"
-                />
-                <span className="ml-2 text-sm text-gray-700">Show location</span>
-              </label>
-              <label className="inline-flex items-center">
-                <input
-                  type="checkbox"
-                  checked={settings.showImages}
-                  onChange={(e) => handleSettingChange('calendar', 'showImages', e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-offset-0 focus:ring-blue-200 focus:ring-opacity-50"
-                />
-                <span className="ml-2 text-sm text-gray-700">Show images</span>
-              </label>
-            </div>
-            <label className="block">
-              <span className="text-sm text-gray-700">Tag filter</span>
+              <span className="text-sm text-gray-700">Button text</span>
               <input
                 type="text"
-                value={settings.tag}
-                onChange={(e) => handleSettingChange('calendar', 'tag', e.target.value)}
+                value={settings.buttonText}
+                onChange={(e) => handleSettingChange('signup', 'buttonText', e.target.value)}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                placeholder="e.g. community"
               />
-            </label>
-            <label className="block">
-              <span className="text-sm text-gray-700">Theme</span>
-              <select
-                value={settings.theme}
-                onChange={(e) => handleSettingChange('calendar', 'theme', e.target.value)}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-              >
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
             </label>
           </div>
         );
-      case 'socialhub':
-      case 'signup':
       case 'upload':
-      case 'station':
+        return (
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-sm text-gray-700">Header text</span>
+              <input
+                type="text"
+                value={settings.headerText}
+                onChange={(e) => handleSettingChange('upload', 'headerText', e.target.value)}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-gray-700">Button text</span>
+              <input
+                type="text"
+                value={settings.buttonText}
+                onChange={(e) => handleSettingChange('upload', 'buttonText', e.target.value)}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              />
+            </label>
+          </div>
+        );
       default:
         return (
           <p className="text-sm text-gray-700">

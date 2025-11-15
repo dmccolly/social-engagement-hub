@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import NewsFeedWidget from './widgets/NewsFeedWidget';
 import SignupWidget from './widgets/SignupWidget';
 import UploadWidget from './widgets/UploadWidget';
+import BlogWidget from './widgets/BlogWidget';
 import CalendarMiniWidget from './calendar/CalendarMiniWidget';
 
 const WidgetPreview = () => {
@@ -23,45 +24,7 @@ const WidgetPreview = () => {
       case 'blog':
         return (
           <div className="max-w-4xl mx-auto p-6">
-            <div 
-              className="bg-white rounded-lg shadow-lg overflow-hidden"
-              style={{ borderRadius: `${settings.borderRadius || 8}px` }}
-            >
-              <div 
-                className="p-6 text-white font-bold text-2xl"
-                style={{ backgroundColor: settings.headerColor || '#2563eb' }}
-              >
-                {settings.headerText || '📋 Latest Blog Posts'}
-              </div>
-              <div className="p-6">
-                <div className="space-y-6">
-                  {[1, 2, 3].slice(0, settings.postCount || 3).map((i) => (
-                    <div key={i} className="border-b pb-4 last:border-b-0">
-                      {settings.showImages && (
-                        <img 
-                          src={`https://picsum.photos/seed/${i}/800/400`}
-                          alt={`Blog post ${i}`}
-                          className="w-full h-48 object-cover rounded-lg mb-4"
-                        />
-                      )}
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        Sample Blog Post Title {i}
-                      </h3>
-                      {settings.showDates && (
-                        <p className="text-sm text-gray-500 mb-2">
-                          Published on {new Date(Date.now() - i * 86400000).toLocaleDateString()}
-                        </p>
-                      )}
-                      {settings.showExcerpts && (
-                        <p className="text-gray-600">
-                          This is a sample excerpt for blog post {i}. It provides a brief overview of the content...
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <BlogWidget settings={settings} />
           </div>
         );
 
