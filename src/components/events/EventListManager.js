@@ -21,7 +21,17 @@ const EventListManager = ({ currentUser }) => {
   // State to manage which event's share menu is open
   const [shareMenuEvent, setShareMenuEvent] = useState(null);
 
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+  const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE || 
+    (typeof window !== 'undefined' ? '/xano' : 
+      ((typeof process !== 'undefined' && process.env && process.env.REACT_APP_XANO_BASE_URL) || 
+        'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5'));
+
+  const stripHtmlTags = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
 
   useEffect(() => {
     loadEvents();
@@ -71,10 +81,11 @@ const EventListManager = ({ currentUser }) => {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(e =>
-        e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (e.description && e.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+      filtered = filtered.filter(e => {
+        const plainDescription = stripHtmlTags(e.description);
+        return e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (plainDescription && plainDescription.toLowerCase().includes(searchTerm.toLowerCase()));
+      });
     }
 
     setFilteredEvents(filtered);
@@ -391,7 +402,7 @@ const EventListManager = ({ currentUser }) => {
 
                   {event.description && (
                     <p className="text-gray-600 text-sm line-clamp-2 mb-3">
-                      {event.description}
+                      {stripHtmlTags(event.description)}
                     </p>
                   )}
 

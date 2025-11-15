@@ -3,6 +3,13 @@ import { Calendar, MapPin } from 'lucide-react';
 import { formatEventDate } from '../../../utils/eventUtils';
 import { getEventById } from '../../../services/calendarService.js';
 
+const stripHtmlTags = (html) => {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
 /*
  * EventBlock
  *
@@ -63,7 +70,7 @@ function EventBlock({ event, eventId, baseURL = '' }) {
           )}
         </div>
         {data.description && (
-          <p className="text-gray-600 mb-4 line-clamp-3">{data.description}</p>
+          <p className="text-gray-600 mb-4 line-clamp-3">{stripHtmlTags(data.description)}</p>
         )}
         <div className="flex gap-3">
           {data.rsvp_enabled && (

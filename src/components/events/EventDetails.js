@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock, ArrowLeft, Globe, Video, Building } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { getEventById } from '../../services/calendarService';
 import { formatShortDate, getCategoryColor } from '../../utils/eventUtils';
 import EventRSVPForm from './EventRSVPForm';
@@ -158,7 +159,14 @@ const EventDetails = () => {
               <h2 className="text-2xl font-bold mb-4">About This Event</h2>
               <div 
                 className="text-gray-700 whitespace-pre-wrap"
-                dangerouslySetInnerHTML={{ __html: event.description }}
+                dangerouslySetInnerHTML={{ 
+                  __html: DOMPurify.sanitize(event.description, {
+                    ADD_TAGS: ['iframe', 'audio', 'video'],
+                    ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'controls', 'class', 'style', 'id'],
+                    ALLOWED_ATTR: ['src', 'alt', 'title', 'href', 'target', 'rel', 'class', 'style', 'width', 'height', 'allow', 'allowfullscreen', 'frameborder', 'controls'],
+                    ALLOW_DATA_ATTR: false
+                  })
+                }}
               />
             </div>
           )}
