@@ -25,7 +25,7 @@ exports.handler = async (event, context) => {
     }
 
     // Get campaign from Xano
-    const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+    const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
     
     const campaignResponse = await fetch(`${XANO_BASE_URL}/email_campaigns/${campaignId}`);
     if (!campaignResponse.ok) {

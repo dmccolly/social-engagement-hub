@@ -9,7 +9,7 @@
 // This provides flexibility if your build uses one or the other.
 const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE || 
   (typeof window !== 'undefined' ? '/xano' : 
-    (process.env.REACT_APP_XANO_BASE_URL || process.env.REACT_APP_XANO_API_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5'));
+    (process.env.REACT_APP_XANO_BASE_URL || process.env.REACT_APP_XANO_API_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV'));
 
 /**
  * Build a URL for the newsfeed API. Uses the singular `newsfeed_post` slug,

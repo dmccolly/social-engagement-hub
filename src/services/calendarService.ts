@@ -25,7 +25,7 @@ export interface CalendarEvent {
 
 const XANO_BASE_URL: string =
   (typeof process !== 'undefined' && process.env && process.env.REACT_APP_XANO_BASE_URL) ||
-  'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+  'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 
 /**
  * Fetch a list of events from the backend. Only published events are

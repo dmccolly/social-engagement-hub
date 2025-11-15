@@ -3,7 +3,7 @@
 
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
-const XANO_BASE_URL = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+const XANO_BASE_URL = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   // Extract tracking token from path
