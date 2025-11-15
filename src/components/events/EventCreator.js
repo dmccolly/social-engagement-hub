@@ -32,6 +32,8 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingDescriptionImage, setIsUploadingDescriptionImage] = useState(false);
   const descriptionRef = React.useRef(null);
+  const savedRangeRef = React.useRef(null);
+  const isInitializedRef = React.useRef(false);
 
   const categories = [
     { value: 'conference', label: 'Conference', icon: '🎤' },
@@ -114,28 +116,48 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
     setImageError('Failed to load image. Please check the URL or upload a new image.');
   };
 
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
   const handleInsertDescriptionImage = () => {
+    saveSelection();
     setIsUploadingDescriptionImage(true);
     
     openCloudinaryWidget(
       (asset) => {
-        const img = `<img src="${asset.url}" alt="Event image" style="max-width: 400px; height: auto; margin: 16px auto; display: block; border-radius: 8px;" class="event-description-image" />`;
+        const url = asset.secure_url || asset.url;
+        
+        const imgNode = document.createElement('img');
+        imgNode.src = url;
+        imgNode.alt = 'Event image';
+        imgNode.className = 'event-description-image';
+        imgNode.style.cssText = 'max-width:400px;height:auto;margin:16px auto;display:block;border-radius:8px;';
         
         if (descriptionRef.current) {
-          const selection = window.getSelection();
-          const range = selection.getRangeAt(0);
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = img;
-          const imgNode = tempDiv.firstChild;
+          descriptionRef.current.focus();
           
-          range.deleteContents();
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          
+          let range = savedRangeRef.current;
+          if (!range || !descriptionRef.current.contains(range.startContainer)) {
+            range = document.createRange();
+            range.selectNodeContents(descriptionRef.current);
+            range.collapse(false);
+          }
+          
+          sel.addRange(range);
           range.insertNode(imgNode);
           range.setStartAfter(imgNode);
           range.setEndAfter(imgNode);
-          selection.removeAllRanges();
-          selection.addRange(range);
+          sel.removeAllRanges();
+          sel.addRange(range);
           
-          setFormData({ ...formData, description: descriptionRef.current.innerHTML });
+          setFormData(prev => ({ ...prev, description: descriptionRef.current.innerHTML }));
         }
         
         setIsUploadingDescriptionImage(false);
@@ -151,11 +173,24 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
     );
   };
 
-  const handleDescriptionChange = () => {
+  const handleDescriptionChange = React.useCallback(() => {
     if (descriptionRef.current) {
-      setFormData({ ...formData, description: descriptionRef.current.innerHTML });
+      setFormData(prev => ({ ...prev, description: descriptionRef.current.innerHTML }));
     }
-  };
+  }, []);
+
+  React.useEffect(() => {
+    if (descriptionRef.current && !isInitializedRef.current) {
+      descriptionRef.current.innerHTML = formData.description || '';
+      isInitializedRef.current = true;
+    }
+  }, []);
+  
+  React.useEffect(() => {
+    return () => {
+      isInitializedRef.current = false;
+    };
+  }, []);
 
   const handleSave = async (publish = false) => {
     if (!validateStep(step)) return;
@@ -214,10 +249,9 @@ const EventCreator = ({ event = null, onSave, onClose }) => {
             ref={descriptionRef}
             contentEditable
             onBlur={handleDescriptionChange}
-            onInput={handleDescriptionChange}
             className="w-full px-3 py-2 border rounded-lg min-h-[100px] max-h-[300px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
-            dangerouslySetInnerHTML={{ __html: formData.description || '' }}
             style={{ whiteSpace: 'pre-wrap' }}
+            suppressContentEditableWarning
           />
           <div className="flex gap-2">
             <button
