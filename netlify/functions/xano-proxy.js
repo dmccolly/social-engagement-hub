@@ -19,7 +19,7 @@ exports.handler = async (event) => {
 
   try {
     const apiKey = process.env.XANO_API_KEY;
-    const xanoBaseUrl = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+    const xanoBaseUrl = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 
     const path = event.path.replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '');
     

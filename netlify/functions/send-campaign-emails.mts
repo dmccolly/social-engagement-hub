@@ -4,7 +4,7 @@
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const XANO_BASE_URL = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+const XANO_BASE_URL = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 const APP_URL = process.env.URL || 'http://localhost:3000';
 
 interface Recipient {

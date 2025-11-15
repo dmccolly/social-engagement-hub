@@ -21,7 +21,7 @@ const EventListManager = ({ currentUser }) => {
   // State to manage which event's share menu is open
   const [shareMenuEvent, setShareMenuEvent] = useState(null);
 
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 
   useEffect(() => {
     loadEvents();

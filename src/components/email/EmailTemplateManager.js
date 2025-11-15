@@ -14,7 +14,7 @@ const EmailTemplateManager = ({ onLoadTemplate, onClose, currentBlocks, currentC
     category: 'general'
   });
 
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 
   // Load templates from Xano
   useEffect(() => {
