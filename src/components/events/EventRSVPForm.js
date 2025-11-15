@@ -18,7 +18,10 @@ const EventRSVPForm = ({ eventId, onClose }) => {
   });
   const [errors, setErrors] = useState({});
 
-  const XANO_BASE_URL = process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+  const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE || 
+    (typeof window !== 'undefined' ? '/xano' : 
+      ((typeof process !== 'undefined' && process.env && process.env.REACT_APP_XANO_BASE_URL) || 
+        'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5'));
 
   useEffect(() => {
     loadEvent();
