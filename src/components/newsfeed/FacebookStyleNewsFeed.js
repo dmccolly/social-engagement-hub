@@ -394,7 +394,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
           line-height: 1.5;
         }
         .post-content p,
-        .post-content div,
+        .post-content div:not(.media-wrapper),
         .post-content ul,
         .post-content ol {
           margin: 0 0 0.6em;
@@ -407,9 +407,46 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         .post-content ol {
           padding-left: 1.5em;
         }
-        .post-content img {
+        
+        /* Media (images, videos, iframes) spacing and sizing */
+        .post-content img,
+        .post-content .media-wrapper {
+          display: block;
+          margin: 0 0 0.6em;
           max-width: 100%;
+        }
+        .post-content img {
           height: auto;
+        }
+        
+        /* Media size classes */
+        .post-content .size-small { width: 25%; }
+        .post-content .size-medium { width: 50%; }
+        .post-content .size-large { width: 75%; }
+        .post-content .size-full { width: 100%; }
+        
+        /* Media position classes */
+        .post-content .position-left { margin-left: 0; margin-right: auto; }
+        .post-content .position-center { margin-left: auto; margin-right: auto; }
+        .post-content .position-right { margin-left: auto; margin-right: 0; }
+        
+        /* Media wrap classes for text wrapping */
+        .post-content .position-wrap-left {
+          float: left;
+          margin-right: 1em;
+          margin-bottom: 0.6em;
+        }
+        .post-content .position-wrap-right {
+          float: right;
+          margin-left: 1em;
+          margin-bottom: 0.6em;
+        }
+        
+        /* Clear floats after wrapped media */
+        .post-content::after {
+          content: "";
+          display: table;
+          clear: both;
         }
       `}</style>
       {/* Header with tab buttons */}

@@ -43,6 +43,11 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     window.positionImage = (imageId, position) => positionImageInternal(imageId, position);
     window.deleteImage = (imageId) => deleteImageInternal(imageId);
     window.clearImageSelection = () => clearImageSelectionInternal();
+    window.selectMedia = (mediaId) => selectMediaInternal(mediaId);
+    window.resizeMedia = (mediaId, size) => resizeMediaInternal(mediaId, size);
+    window.positionMedia = (mediaId, position) => positionMediaInternal(mediaId, position);
+    window.deleteMedia = (mediaId) => deleteMediaInternal(mediaId);
+    window.clearMediaSelection = () => clearMediaSelectionInternal();
 
     return () => {
       delete window.selectImage;
@@ -50,6 +55,11 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       delete window.positionImage;
       delete window.deleteImage;
       delete window.clearImageSelection;
+      delete window.selectMedia;
+      delete window.resizeMedia;
+      delete window.positionMedia;
+      delete window.deleteMedia;
+      delete window.clearMediaSelection;
     };
   }, []);
 
@@ -320,28 +330,31 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       return;
     }
     
+    const mediaId = Date.now();
     let embedHtml = '';
     if (videoInfo.type === 'youtube') {
       embedHtml = `
-        <div class="my-4 relative" style="padding-bottom: 56.25%; height: 0; overflow: hidden;">
+        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
           <iframe 
             src="https://www.youtube.com/embed/${videoInfo.id}" 
             frameborder="0" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowfullscreen
             class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
+            style="pointer-events: none;"
           ></iframe>
         </div>
       `;
     } else if (videoInfo.type === 'vimeo') {
       embedHtml = `
-        <div class="my-4 relative" style="padding-bottom: 56.25%; height: 0; overflow: hidden;">
+        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
           <iframe 
             src="https://player.vimeo.com/video/${videoInfo.id}" 
             frameborder="0" 
             allow="autoplay; fullscreen; picture-in-picture" 
             allowfullscreen
             class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
+            style="pointer-events: none;"
           ></iframe>
         </div>
       `;
@@ -385,18 +398,21 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     handleInput();
   };
 
-  const selectImageInternal = (imageId) => {
-    setSelectedImageId(imageId);
+  const selectMediaInternal = (mediaId) => {
+    setSelectedImageId(mediaId);
     document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
     document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
     document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
     
-    const img = document.getElementById(`img-${imageId}`);
-    if (!img) return;
-    img.classList.add('selected-image');
+    const img = document.getElementById(`img-${mediaId}`);
+    const media = document.getElementById(`media-${mediaId}`);
+    const element = img || media;
+    
+    if (!element) return;
+    element.classList.add('selected-image');
     
     const updatePositions = (toolbar, handles) => {
-      const rect = img.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
       if (toolbar) {
         toolbar.style.top = `${rect.top - 50}px`;
         toolbar.style.left = `${rect.left}px`;
@@ -414,17 +430,20 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     const toolbar = document.createElement('div');
     toolbar.className = 'floating-toolbar';
     toolbar.innerHTML = `
-      <button onclick="window.resizeImage('${imageId}', 'small')" class="toolbar-btn">Small</button>
-      <button onclick="window.resizeImage('${imageId}', 'medium')" class="toolbar-btn">Medium</button>
-      <button onclick="window.resizeImage('${imageId}', 'large')" class="toolbar-btn">Large</button>
-      <button onclick="window.resizeImage('${imageId}', 'full')" class="toolbar-btn">Full</button>
+      <button onclick="window.resizeMedia('${mediaId}', 'small')" class="toolbar-btn">Small</button>
+      <button onclick="window.resizeMedia('${mediaId}', 'medium')" class="toolbar-btn">Medium</button>
+      <button onclick="window.resizeMedia('${mediaId}', 'large')" class="toolbar-btn">Large</button>
+      <button onclick="window.resizeMedia('${mediaId}', 'full')" class="toolbar-btn">Full</button>
       <span class="toolbar-separator">|</span>
-      <button onclick="window.positionImage('${imageId}', 'left')" class="toolbar-btn">← Left</button>
-      <button onclick="window.positionImage('${imageId}', 'center')" class="toolbar-btn">Center</button>
-      <button onclick="window.positionImage('${imageId}', 'right')" class="toolbar-btn">Right →</button>
+      <button onclick="window.positionMedia('${mediaId}', 'left')" class="toolbar-btn">← Left</button>
+      <button onclick="window.positionMedia('${mediaId}', 'center')" class="toolbar-btn">Center</button>
+      <button onclick="window.positionMedia('${mediaId}', 'right')" class="toolbar-btn">Right →</button>
       <span class="toolbar-separator">|</span>
-      <button onclick="window.deleteImage('${imageId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
-      <button onclick="window.clearImageSelection()" class="toolbar-btn close-btn">×</button>
+      <button onclick="window.positionMedia('${mediaId}', 'wrap-left')" class="toolbar-btn">Wrap Left</button>
+      <button onclick="window.positionMedia('${mediaId}', 'wrap-right')" class="toolbar-btn">Wrap Right</button>
+      <span class="toolbar-separator">|</span>
+      <button onclick="window.deleteMedia('${mediaId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
+      <button onclick="window.clearMediaSelection()" class="toolbar-btn close-btn">×</button>
     `;
     document.body.appendChild(toolbar);
     
@@ -488,34 +507,40 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     toolbar.dataset.resizeListener = 'true';
   };
 
-  const resizeImageInternal = (imageId, size) => {
-    const img = document.getElementById(`img-${imageId}`);
-    if (!img) return;
-    img.style.width = '';
-    img.style.height = '';
-    img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
-    img.classList.add(`size-${size}`);
-    img.setAttribute('data-size', size);
+  const resizeMediaInternal = (mediaId, size) => {
+    const img = document.getElementById(`img-${mediaId}`);
+    const media = document.getElementById(`media-${mediaId}`);
+    const element = img || media;
+    if (!element) return;
+    element.style.width = '';
+    element.style.height = '';
+    element.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+    element.classList.add(`size-${size}`);
+    element.setAttribute('data-size', size);
     handleInput();
   };
 
-  const positionImageInternal = (imageId, position) => {
-    const img = document.getElementById(`img-${imageId}`);
-    if (!img) return;
-    img.classList.remove('position-left', 'position-center', 'position-right');
-    img.classList.add(`position-${position}`);
-    img.setAttribute('data-position', position);
+  const positionMediaInternal = (mediaId, position) => {
+    const img = document.getElementById(`img-${mediaId}`);
+    const media = document.getElementById(`media-${mediaId}`);
+    const element = img || media;
+    if (!element) return;
+    element.classList.remove('position-left', 'position-center', 'position-right', 'position-wrap-left', 'position-wrap-right');
+    element.classList.add(`position-${position}`);
+    element.setAttribute('data-position', position);
     handleInput();
   };
 
-  const deleteImageInternal = (imageId) => {
-    const img = document.getElementById(`img-${imageId}`);
-    if (!img) return;
-    const wrapper = img.parentElement;
+  const deleteMediaInternal = (mediaId) => {
+    const img = document.getElementById(`img-${mediaId}`);
+    const media = document.getElementById(`media-${mediaId}`);
+    const element = img || media;
+    if (!element) return;
+    const wrapper = element.parentElement;
     if (wrapper && wrapper.classList.contains('image-wrapper-resizable')) {
       wrapper.remove();
     } else {
-      img.remove();
+      element.remove();
     }
     document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
     document.querySelectorAll('.resize-handle').forEach(el => el.remove());
@@ -523,7 +548,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     handleInput();
   };
 
-  const clearImageSelectionInternal = () => {
+  const clearMediaSelectionInternal = () => {
     document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
     document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
     document.querySelectorAll('.floating-toolbar').forEach((el) => {
@@ -537,6 +562,12 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     });
     setSelectedImageId(null);
   };
+
+  const resizeImageInternal = resizeMediaInternal;
+  const positionImageInternal = positionMediaInternal;
+  const deleteImageInternal = deleteMediaInternal;
+  const clearImageSelectionInternal = clearMediaSelectionInternal;
+  const selectImageInternal = selectMediaInternal;
 
   // Toolbar button component
   const ToolbarButton = ({ icon: Icon, onClick, title, active = false }) => (
@@ -568,7 +599,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
           line-height: 1.5;
         }
         .editor-content p,
-        .editor-content div,
+        .editor-content div:not(.media-wrapper),
         .editor-content ul,
         .editor-content ol {
           margin: 0 0 0.6em;
@@ -580,6 +611,47 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         .editor-content ul,
         .editor-content ol {
           padding-left: 1.5em;
+        }
+        
+        /* Media (images, videos, iframes) spacing and sizing */
+        .editor-content img,
+        .editor-content .media-wrapper {
+          display: block;
+          margin: 0 0 0.6em;
+          max-width: 100%;
+        }
+        .editor-content img {
+          height: auto;
+        }
+        
+        /* Media size classes */
+        .size-small { width: 25%; }
+        .size-medium { width: 50%; }
+        .size-large { width: 75%; }
+        .size-full { width: 100%; }
+        
+        /* Media position classes */
+        .position-left { margin-left: 0; margin-right: auto; }
+        .position-center { margin-left: auto; margin-right: auto; }
+        .position-right { margin-left: auto; margin-right: 0; }
+        
+        /* Media wrap classes for text wrapping */
+        .position-wrap-left {
+          float: left;
+          margin-right: 1em;
+          margin-bottom: 0.6em;
+        }
+        .position-wrap-right {
+          float: right;
+          margin-left: 1em;
+          margin-bottom: 0.6em;
+        }
+        
+        /* Clear floats after wrapped media */
+        .editor-content::after {
+          content: "";
+          display: table;
+          clear: both;
         }
       `}</style>
       {/* Toolbar */}
