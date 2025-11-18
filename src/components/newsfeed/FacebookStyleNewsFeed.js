@@ -448,6 +448,11 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
           display: table;
           clear: both;
         }
+        
+        /* Clear both class for blocks after wrapped media */
+        .post-content .clear-both {
+          clear: both;
+        }
       `}</style>
       {/* Header with tab buttons */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
