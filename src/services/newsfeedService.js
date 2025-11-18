@@ -475,6 +475,44 @@ export async function searchNewsfeedPosts(query, filters = {}) {
 }
 
 /**
+ * Update an existing newsfeed post by ID.
+ *
+ * @param {number|string} postId The ID of the post to update
+ * @param {object} postData Updated post data (content, etc.)
+ * @returns {Promise<object>} Response object with success status
+ */
+export async function updateNewsfeedPost(postId, postData) {
+  try {
+    const url = buildUrl(postId);
+    console.log('PATCH request URL:', url, 'for postId:', postId);
+    
+    const payload = {
+      content: postData.content
+    };
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    console.log('PATCH response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PATCH failed:', response.status, errorText);
+      throw new Error(`Failed to update post: ${response.statusText} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Update newsfeed post error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Delete a newsfeed post by ID.
  *
  * @param {number|string} postId The ID of the post to delete
