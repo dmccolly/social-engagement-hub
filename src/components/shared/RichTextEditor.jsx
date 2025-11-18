@@ -562,6 +562,25 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
           color: #9CA3AF;
           pointer-events: none;
         }
+        
+        /* Editor content spacing - fix excessive paragraph gaps */
+        .editor-content {
+          line-height: 1.5;
+        }
+        .editor-content p,
+        .editor-content div,
+        .editor-content ul,
+        .editor-content ol {
+          margin: 0 0 0.6em;
+        }
+        .editor-content p:last-child,
+        .editor-content div:last-child {
+          margin-bottom: 0;
+        }
+        .editor-content ul,
+        .editor-content ol {
+          padding-left: 1.5em;
+        }
       `}</style>
       {/* Toolbar */}
       <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-2">
@@ -702,7 +721,14 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         contentEditable
         onInput={handleInput}
         onClick={() => editorRef.current?.focus()}
-        className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none prose max-w-none cursor-text"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.execCommand(e.shiftKey ? 'insertLineBreak' : 'insertParagraph');
+            handleInput();
+          }
+        }}
+        className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none editor-content cursor-text"
         style={{ wordWrap: 'break-word' }}
         suppressContentEditableWarning
         data-placeholder={placeholder}

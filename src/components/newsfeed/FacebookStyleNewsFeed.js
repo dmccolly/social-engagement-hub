@@ -388,6 +388,30 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4">
+      <style>{`
+        /* Post content spacing - fix excessive paragraph gaps in viewer */
+        .post-content {
+          line-height: 1.5;
+        }
+        .post-content p,
+        .post-content div,
+        .post-content ul,
+        .post-content ol {
+          margin: 0 0 0.6em;
+        }
+        .post-content p:last-child,
+        .post-content div:last-child {
+          margin-bottom: 0;
+        }
+        .post-content ul,
+        .post-content ol {
+          padding-left: 1.5em;
+        }
+        .post-content img {
+          max-width: 100%;
+          height: auto;
+        }
+      `}</style>
       {/* Header with tab buttons */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
         <div className="flex justify-between items-center mb-4">
@@ -627,7 +651,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                 </div>
                 <div className="mb-4">
                   <div 
-                    className="text-gray-800 leading-relaxed text-lg prose max-w-none"
+                    className="text-gray-800 leading-relaxed text-lg post-content"
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
                   />
                 </div>
@@ -736,7 +760,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                             <div className="flex-1 bg-white rounded-2xl p-3">
                               <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
                               <div 
-                                className="text-gray-800 text-sm mt-1 prose prose-sm max-w-none"
+                                className="text-gray-800 text-sm mt-1 post-content"
                                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.content || '') }}
                               />
                               <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
