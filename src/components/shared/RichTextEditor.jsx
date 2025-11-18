@@ -256,7 +256,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       
       // Insert the uploaded image
       const imageId = Date.now();
-      const imageHtml = `<img id="img-${imageId}" src="${data.secure_url}" alt="${file.name}" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" />`;
+      const imageHtml = `<img id="img-${imageId}" src="${data.secure_url}" alt="${file.name}" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" /><p><br></p>`;
       
       // Ensure focus and selection before insert
       if (ensureFocusAndSelection()) {
@@ -285,7 +285,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     
     const url = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
     const imageId = Date.now();
-    const imageHtml = `<img id="img-${imageId}" src="${url}" alt="Uploaded image" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" />`;
+    const imageHtml = `<img id="img-${imageId}" src="${url}" alt="Uploaded image" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" /><p><br></p>`;
     
     // Ensure focus and selection before insert
     if (ensureFocusAndSelection()) {
@@ -334,7 +334,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     let embedHtml = '';
     if (videoInfo.type === 'youtube') {
       embedHtml = `
-        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
+        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
           <iframe 
             src="https://www.youtube.com/embed/${videoInfo.id}" 
             frameborder="0" 
@@ -343,11 +343,11 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
             class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
             style="pointer-events: none;"
           ></iframe>
-        </div>
+        </div><p><br></p>
       `;
     } else if (videoInfo.type === 'vimeo') {
       embedHtml = `
-        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
+        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
           <iframe 
             src="https://player.vimeo.com/video/${videoInfo.id}" 
             frameborder="0" 
@@ -356,7 +356,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
             class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
             style="pointer-events: none;"
           ></iframe>
-        </div>
+        </div><p><br></p>
       `;
     }
     
@@ -447,55 +447,58 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     `;
     document.body.appendChild(toolbar);
     
-    const positions = ['nw', 'ne', 'sw', 'se'];
     const handles = [];
-    positions.forEach((pos) => {
-      const handle = document.createElement('div');
-      handle.className = `resize-handle resize-handle-${pos}`;
-      handle.style.position = 'fixed';
-      handle.style.width = '12px';
-      handle.style.height = '12px';
-      handle.style.background = '#667eea';
-      handle.style.border = '2px solid white';
-      handle.style.borderRadius = '50%';
-      handle.style.zIndex = '1001';
-      handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-      handle.style.cursor = `${pos.includes('n') ? (pos.includes('w') ? 'nw' : 'ne') : (pos.includes('w') ? 'sw' : 'se')}-resize`;
-      
-      handle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const startX = e.clientX;
-        const startWidth = img.offsetWidth;
+    if (img) {
+      const positions = ['nw', 'ne', 'sw', 'se'];
+      positions.forEach((pos) => {
+        const handle = document.createElement('div');
+        handle.className = `resize-handle resize-handle-${pos}`;
+        handle.style.position = 'fixed';
+        handle.style.width = '12px';
+        handle.style.height = '12px';
+        handle.style.background = '#667eea';
+        handle.style.border = '2px solid white';
+        handle.style.borderRadius = '50%';
+        handle.style.zIndex = '1001';
+        handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        handle.style.cursor = `${pos.includes('n') ? (pos.includes('w') ? 'nw' : 'ne') : (pos.includes('w') ? 'sw' : 'se')}-resize`;
+        handle.style.pointerEvents = 'auto';
         
-        const onMouseMove = (moveEvt) => {
-          const deltaX = moveEvt.clientX - startX;
-          let newWidth = startWidth;
-          if (pos.includes('e')) newWidth = startWidth + deltaX;
-          else if (pos.includes('w')) newWidth = startWidth - deltaX;
+        handle.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const startX = e.clientX;
+          const startWidth = img.offsetWidth;
           
-          if (newWidth > 100 && newWidth < 1200) {
-            img.style.width = `${newWidth}px`;
-            img.style.height = 'auto';
-            img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
-            img.setAttribute('data-size', 'custom');
-            updatePositions(toolbar, handles);
-          }
-        };
+          const onMouseMove = (moveEvt) => {
+            const deltaX = moveEvt.clientX - startX;
+            let newWidth = startWidth;
+            if (pos.includes('e')) newWidth = startWidth + deltaX;
+            else if (pos.includes('w')) newWidth = startWidth - deltaX;
+            
+            if (newWidth > 100 && newWidth < 1200) {
+              img.style.width = `${newWidth}px`;
+              img.style.height = 'auto';
+              img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
+              img.setAttribute('data-size', 'custom');
+              updatePositions(toolbar, handles);
+            }
+          };
+          
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            handleInput();
+          };
+          
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
         
-        const onMouseUp = () => {
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-          handleInput();
-        };
-        
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        document.body.appendChild(handle);
+        handles.push({ pos, el: handle });
       });
-      
-      document.body.appendChild(handle);
-      handles.push({ pos, el: handle });
-    });
+    }
     
     updatePositions(toolbar, handles);
     
@@ -528,6 +531,19 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     element.classList.remove('position-left', 'position-center', 'position-right', 'position-wrap-left', 'position-wrap-right');
     element.classList.add(`position-${position}`);
     element.setAttribute('data-position', position);
+    
+    if (position === 'wrap-left' || position === 'wrap-right') {
+      const nextSibling = element.nextElementSibling;
+      if (nextSibling) {
+        nextSibling.classList.remove('clear-both');
+      }
+    } else {
+      const nextSibling = element.nextElementSibling;
+      if (nextSibling) {
+        nextSibling.classList.add('clear-both');
+      }
+    }
+    
     handleInput();
   };
 
@@ -651,6 +667,11 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         .editor-content::after {
           content: "";
           display: table;
+          clear: both;
+        }
+        
+        /* Clear both class for blocks after wrapped media */
+        .clear-both {
           clear: both;
         }
       `}</style>
@@ -796,6 +817,40 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
+            
+            const selection = window.getSelection();
+            if (selection && selection.anchorNode) {
+              const selectedMedia = document.querySelector('.selected-image');
+              if (selectedMedia) {
+                // Insert a new paragraph after the selected media
+                const newParagraph = document.createElement('p');
+                newParagraph.innerHTML = '<br>';
+                
+                if (selectedMedia.classList.contains('position-wrap-left') || 
+                    selectedMedia.classList.contains('position-wrap-right')) {
+                  newParagraph.classList.add('clear-both');
+                }
+                
+                // Insert after the media element
+                if (selectedMedia.nextSibling) {
+                  selectedMedia.parentNode.insertBefore(newParagraph, selectedMedia.nextSibling);
+                } else {
+                  selectedMedia.parentNode.appendChild(newParagraph);
+                }
+                
+                const range = document.createRange();
+                range.setStart(newParagraph, 0);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                // Clear media selection
+                clearMediaSelectionInternal();
+                handleInput();
+                return;
+              }
+            }
+            
             document.execCommand(e.shiftKey ? 'insertLineBreak' : 'insertParagraph');
             handleInput();
           }

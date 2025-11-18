@@ -1,7 +1,7 @@
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
 import React, { useState, useEffect, useRef } from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizePostHtml } from '../../utils/sanitizePostHtml';
 import {
   MessageSquare,
   Heart,
@@ -26,6 +26,7 @@ import {
 import {
   getNewsfeedPosts,
   createNewsfeedPost,
+  updateNewsfeedPost,
   toggleNewsfeedLike,
   getNewsfeedReplies,
   getNewsfeedAnalytics,
@@ -62,6 +63,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeShareMenu, setActiveShareMenu] = useState(null);
   const [activePostMenu, setActivePostMenu] = useState(null);
+  const [editingPostId, setEditingPostId] = useState(null);
   const editorRef = useRef(null);
 
   // Load visitor session and posts on mount
@@ -178,6 +180,26 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
     setActivePostMenu((prev) => (prev === postId ? null : postId));
   };
 
+  const handleEditPost = (post) => {
+    setEditingPostId(post.id);
+    setNewPost(post.content);
+    setActivePostMenu(null);
+    
+    if (editorRef.current) {
+      editorRef.current.innerHTML = post.content;
+      editorRef.current.focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPostId(null);
+    setNewPost('');
+    if (editorRef.current) {
+      editorRef.current.innerHTML = '';
+    }
+  };
+
   const handleDeletePost = async (postId) => {
     console.log('handleDeletePost called with postId:', postId, 'type:', typeof postId);
     
@@ -279,34 +301,51 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
     }
     setIsSubmitting(true);
     try {
-      const postData = {
-        author_name: currentUser?.name || visitorSession.name,
-        author_email: currentUser?.email || visitorSession.email,
-        author_id: currentUser?.id || visitorSession.member_id || null,
-        content: newPost,
-        session_id: visitorSession?.session_id || generateSessionId(),
-        ip_address: null,
-        user_agent: navigator.userAgent,
-        parent_id: null,
-        post_type: 'post'
-      };
-      console.log('Submitting post data:', postData);
-      const result = await createNewsfeedPost(postData);
-      console.log('Post creation result:', result);
-      if (result.success) {
-        setNewPost('');
-        if (editorRef.current) {
-          editorRef.current.innerHTML = '';
+      if (editingPostId) {
+        const result = await updateNewsfeedPost(editingPostId, { content: newPost });
+        console.log('Post update result:', result);
+        if (result.success) {
+          setNewPost('');
+          setEditingPostId(null);
+          if (editorRef.current) {
+            editorRef.current.innerHTML = '';
+          }
+          loadPosts();
+        } else {
+          const errorMsg = result.error || result.message || JSON.stringify(result) || 'Unknown error';
+          console.error('Post update failed:', errorMsg);
+          alert('Failed to update post: ' + errorMsg);
         }
-        loadPosts();
       } else {
-        const errorMsg = result.error || result.message || JSON.stringify(result) || 'Unknown error';
-        console.error('Post creation failed:', errorMsg);
-        alert('Failed to create post: ' + errorMsg);
+        const postData = {
+          author_name: currentUser?.name || visitorSession.name,
+          author_email: currentUser?.email || visitorSession.email,
+          author_id: currentUser?.id || visitorSession.member_id || null,
+          content: newPost,
+          session_id: visitorSession?.session_id || generateSessionId(),
+          ip_address: null,
+          user_agent: navigator.userAgent,
+          parent_id: null,
+          post_type: 'post'
+        };
+        console.log('Submitting post data:', postData);
+        const result = await createNewsfeedPost(postData);
+        console.log('Post creation result:', result);
+        if (result.success) {
+          setNewPost('');
+          if (editorRef.current) {
+            editorRef.current.innerHTML = '';
+          }
+          loadPosts();
+        } else {
+          const errorMsg = result.error || result.message || JSON.stringify(result) || 'Unknown error';
+          console.error('Post creation failed:', errorMsg);
+          alert('Failed to create post: ' + errorMsg);
+        }
       }
     } catch (error) {
       console.error('Post submit error:', error);
-      alert('Failed to create post: ' + error.message);
+      alert(`Failed to ${editingPostId ? 'update' : 'create'} post: ` + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -448,6 +487,31 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
           display: table;
           clear: both;
         }
+        
+        /* Clear both class for blocks after wrapped media */
+        .post-content .clear-both {
+          clear: both;
+        }
+        
+        /* Video wrapper and iframe styles */
+        .post-content .media-wrapper[data-media-type="video"] {
+          position: relative;
+          padding-bottom: 56.25%; /* 16:9 aspect ratio */
+          height: 0;
+          overflow: hidden;
+        }
+        .post-content .media-wrapper[data-media-type="video"] iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: auto;
+        }
+        .post-content iframe {
+          pointer-events: auto !important;
+          display: block;
+        }
       `}</style>
       {/* Header with tab buttons */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
@@ -532,13 +596,23 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                 <Video size={18} className="text-red-600" /> <span className="text-sm font-medium">Video</span>
               </button>
             </div>
-            <button
-              onClick={handlePostSubmit}
-              disabled={!newPost.trim() || isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
-            >
-              {isSubmitting ? 'Posting...' : 'Post'}
-            </button>
+            <div className="flex gap-2">
+              {editingPostId && (
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handlePostSubmit}
+                disabled={!newPost.trim() || isSubmitting}
+                className="px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+              >
+                {isSubmitting ? (editingPostId ? 'Updating...' : 'Posting...') : (editingPostId ? 'Update' : 'Post')}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -677,6 +751,12 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                     {activePostMenu === post.id && (
                       <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <button
+                          onClick={() => handleEditPost(post)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                        >
+                          <MessageSquare size={16} /> Edit Post
+                        </button>
+                        <button
                           onClick={() => handleDeletePost(post.id)}
                           className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
@@ -689,7 +769,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                 <div className="mb-4">
                   <div 
                     className="text-gray-800 leading-relaxed text-lg post-content"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
+                    dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content || '') }}
                   />
                 </div>
                 {/* Post stats */}
@@ -798,7 +878,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                               <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
                               <div 
                                 className="text-gray-800 text-sm mt-1 post-content"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.content || '') }}
+                                dangerouslySetInnerHTML={{ __html: sanitizePostHtml(reply.content || '') }}
                               />
                               <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                                 <button className="hover:underline">Like</button>
