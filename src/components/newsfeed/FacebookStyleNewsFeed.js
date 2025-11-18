@@ -1,7 +1,7 @@
 // Enhanced newsfeed with Facebook-style UI + XANO backend integration
 
 import React, { useState, useEffect, useRef } from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizePostHtml } from '../../utils/sanitizePostHtml';
 import {
   MessageSquare,
   Heart,
@@ -453,6 +453,26 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         .post-content .clear-both {
           clear: both;
         }
+        
+        /* Video wrapper and iframe styles */
+        .post-content .media-wrapper[data-media-type="video"] {
+          position: relative;
+          padding-bottom: 56.25%; /* 16:9 aspect ratio */
+          height: 0;
+          overflow: hidden;
+        }
+        .post-content .media-wrapper[data-media-type="video"] iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: auto;
+        }
+        .post-content iframe {
+          pointer-events: auto !important;
+          display: block;
+        }
       `}</style>
       {/* Header with tab buttons */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
@@ -694,7 +714,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                 <div className="mb-4">
                   <div 
                     className="text-gray-800 leading-relaxed text-lg post-content"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
+                    dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.content || '') }}
                   />
                 </div>
                 {/* Post stats */}
@@ -803,7 +823,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                               <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
                               <div 
                                 className="text-gray-800 text-sm mt-1 post-content"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.content || '') }}
+                                dangerouslySetInnerHTML={{ __html: sanitizePostHtml(reply.content || '') }}
                               />
                               <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                                 <button className="hover:underline">Like</button>
