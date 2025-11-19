@@ -29,6 +29,46 @@ const EnhancedNewsfeedWidget = () => {
   const debug = urlParams.get('debug') === 'true';
   const theme = urlParams.get('theme') || 'light';
 
+  useEffect(() => {
+    const styleId = 'newsfeed-widget-media-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        /* Media wrapper base styles */
+        .media-wrapper {
+          display: block;
+          margin: 0 0 0.6em;
+          max-width: 100%;
+        }
+        
+        /* Media size classes */
+        .size-small { width: 25%; }
+        .size-medium { width: 50%; }
+        .size-large { width: 75%; }
+        .size-full { width: 100%; }
+        
+        /* Media position classes */
+        .position-left { margin-left: 0; margin-right: auto; }
+        .position-center { margin-left: auto; margin-right: auto; }
+        .position-right { margin-left: auto; margin-right: 0; }
+        
+        /* Media wrap classes for text wrapping */
+        .position-wrap-left {
+          float: left;
+          margin-right: 1em;
+          margin-bottom: 0.6em;
+        }
+        .position-wrap-right {
+          float: right;
+          margin-left: 1em;
+          margin-bottom: 0.6em;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
