@@ -299,10 +299,113 @@ const EmailMarketingSystem = () => {
     alert(`List updated with ${memberIds.length} contacts`);
   };
 
+  const sanitizeImageSrc = (src) => {
+    if (!src || typeof src !== 'string') return '';
+    
+    let url = src.trim();
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      console.warn('Image URL must be absolute (https):', url);
+      return url; // Return as-is, will fail validation
+    }
+    
+    try {
+      const urlObj = new URL(url);
+      
+      const pathSegments = urlObj.pathname.split('/');
+      const encodedPath = pathSegments.map(segment => {
+        if (segment === decodeURIComponent(segment)) {
+          return encodeURIComponent(segment);
+        }
+        return segment;
+      }).join('/');
+      
+      urlObj.pathname = encodedPath;
+      
+      if (urlObj.hostname.includes('cloudinary.com')) {
+        return urlObj.toString();
+      }
+      
+      return urlObj.toString();
+    } catch (error) {
+      console.error('Error sanitizing image URL:', error, url);
+      return url; // Return as-is, will fail validation
+    }
+  };
+
+  // Validate all image URLs in the email blocks
+  const validateImageUrls = async (blocks) => {
+    const imageBlocks = blocks.filter(block => block.type === 'image');
+    
+    if (imageBlocks.length === 0) {
+      return { valid: true, errors: [] };
+    }
+
+    const errors = [];
+    
+    for (const block of imageBlocks) {
+      const src = block.content?.src;
+      
+      if (!src || typeof src !== 'string' || !src.trim()) {
+        errors.push({
+          blockId: block.id,
+          url: src || '(empty)',
+          error: 'Image URL is empty or invalid'
+        });
+        continue;
+      }
+
+      const sanitizedUrl = sanitizeImageSrc(src);
+      
+      if (!sanitizedUrl.startsWith('http://') && !sanitizedUrl.startsWith('https://')) {
+        errors.push({
+          blockId: block.id,
+          url: src,
+          error: 'Image URL must be absolute (start with https://)'
+        });
+        continue;
+      }
+
+      try {
+        const response = await fetch(sanitizedUrl, { 
+          method: 'HEAD',
+          mode: 'no-cors' // Avoid CORS issues, we just want to know if it loads
+        });
+        
+        console.log('Image URL validated (no-cors):', sanitizedUrl);
+      } catch (error) {
+        errors.push({
+          blockId: block.id,
+          url: sanitizedUrl,
+          error: `Image may not be accessible: ${error.message}`
+        });
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  };
+
   const handleSendCampaign = async (sendData) => {
     try {
       // Save campaign first
       saveCampaign();
+      
+      console.log('Validating image URLs...');
+      const validation = await validateImageUrls(emailBlocks);
+      
+      if (!validation.valid) {
+        const errorMessage = 'Cannot send campaign - some images may not be accessible:\n\n' +
+          validation.errors.map((err, idx) => 
+            `${idx + 1}. ${err.url}\n   Error: ${err.error}`
+          ).join('\n\n') +
+          '\n\nPlease fix these images before sending.';
+        
+        alert(errorMessage);
+        return;
+      }
       
       // Get all contacts from selected lists
       const recipients = [];
@@ -322,7 +425,7 @@ const EmailMarketingSystem = () => {
         return;
       }
 
-      // Prepare email content
+      // Prepare email content with sanitized image URLs
       const emailHTML = generateEmailHTML(emailBlocks);
       
       // Call Netlify function to send emails
@@ -379,7 +482,8 @@ const EmailMarketingSystem = () => {
           return `<p style="margin: 12px 0; line-height: 1.6;">${block.content.text.replace(/\n/g, '<br>')}</p>`;
         case 'image':
           const imgAlign = block.content.align === 'center' ? 'margin: 0 auto;' : block.content.align === 'right' ? 'margin-left: auto;' : '';
-          return `<img src="${block.content.src}" alt="${block.content.alt || ''}" style="width: ${block.content.width || 100}%; max-width: 100%; display: block; ${imgAlign} border-radius: 8px;" />`;
+          const sanitizedSrc = sanitizeImageSrc(block.content.src);
+          return `<img src="${sanitizedSrc}" alt="${block.content.alt || ''}" style="width: ${block.content.width || 100}%; max-width: 100%; display: block; ${imgAlign} border-radius: 8px;" />`;
         case 'button':
           return `<div style="text-align: center; margin: 20px 0;"><a href="${block.content.url}" style="background-color: ${block.content.color || '#3B82F6'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">${block.content.text}</a></div>`;
         case 'divider':
