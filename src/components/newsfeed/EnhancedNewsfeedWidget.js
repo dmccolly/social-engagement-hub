@@ -91,7 +91,7 @@ const EnhancedNewsfeedWidget = () => {
     
     const config = {
       ADD_TAGS: ['iframe', 'audio'],
-      ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'controls', 'class', 'style', 'id', 'data-size', 'data-position']
+      ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'controls', 'class', 'style', 'id', 'data-size', 'data-position', 'referrerpolicy']
     };
     
     let sanitized = DOMPurify.sanitize(html, config);
@@ -107,6 +107,30 @@ const EnhancedNewsfeedWidget = () => {
         const isAllowed = allowedIframeDomains.some(domain => src.includes(domain));
         if (!isAllowed) {
           iframe.remove();
+        } else {
+          let normalizedSrc = src;
+          
+          if (src.includes('youtube.com/watch')) {
+            const url = new URL(src);
+            const videoId = url.searchParams.get('v');
+            if (videoId) {
+              normalizedSrc = `https://www.youtube.com/embed/${videoId}?controls=1&modestbranding=1&rel=0`;
+            }
+          } else if (src.includes('youtu.be/')) {
+            const videoId = src.split('youtu.be/')[1]?.split('?')[0];
+            if (videoId) {
+              normalizedSrc = `https://www.youtube.com/embed/${videoId}?controls=1&modestbranding=1&rel=0`;
+            }
+          }
+          
+          iframe.setAttribute('src', normalizedSrc);
+          
+          iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen');
+          iframe.setAttribute('allowfullscreen', '');
+          iframe.setAttribute('frameborder', '0');
+          iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+          
+          iframe.style.pointerEvents = 'auto';
         }
       }
     });
@@ -495,6 +519,11 @@ const EnhancedNewsfeedWidget = () => {
       className="bg-white rounded-lg shadow overflow-hidden"
       style={{ borderRadius: `${borderRadius}px` }}
     >
+      <style>{`
+        .prose iframe {
+          pointer-events: auto !important;
+        }
+      `}</style>
       {/* Authentication Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

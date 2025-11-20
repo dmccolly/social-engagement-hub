@@ -70,7 +70,7 @@ const SettingsSection = () => {
     const basePath = `/widget/${selectedWidget}`;
     const queryString = params.toString();
     const src = `${CANONICAL_BASE}${basePath}?${queryString}`;
-    return `<iframe src="${src}" style="width:100%;height:600px;border:none;" loading="lazy"></iframe>`;
+    return `<iframe src="${src}" style="width:100%;height:600px;border:none;" loading="lazy" allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; web-share" allowfullscreen></iframe>`;
   };
 
   // Render the form fields for the selected widget. Each widget type has
