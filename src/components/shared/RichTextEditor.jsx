@@ -27,6 +27,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const [selectedImageId, setSelectedImageId] = useState(null);
   const [imageUploadMode, setImageUploadMode] = useState('url');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [videoUploadMode, setVideoUploadMode] = useState('youtube');
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const throttleFrameRef = useRef(null);
@@ -324,38 +325,58 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
   const insertVideo = () => {
     if (!videoUrl) return;
     
-    const videoInfo = extractVideoId(videoUrl);
-    if (!videoInfo) {
-      alert('Please enter a valid YouTube or Vimeo URL');
-      return;
-    }
-    
     const mediaId = Date.now();
     let embedHtml = '';
-    if (videoInfo.type === 'youtube') {
+    
+    if (videoUploadMode === 'youtube') {
+      // YouTube/Vimeo mode
+      const videoInfo = extractVideoId(videoUrl);
+      if (!videoInfo) {
+        alert('Please enter a valid YouTube or Vimeo URL');
+        return;
+      }
+      
+      if (videoInfo.type === 'youtube') {
+        embedHtml = `
+          <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
+            <iframe 
+              src="https://www.youtube.com/embed/${videoInfo.id}" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen
+              class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
+              style="pointer-events: none;"
+            ></iframe>
+          </div><p><br></p>
+        `;
+      } else if (videoInfo.type === 'vimeo') {
+        embedHtml = `
+          <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
+            <iframe 
+              src="https://player.vimeo.com/video/${videoInfo.id}" 
+              frameborder="0" 
+              allow="autoplay; fullscreen; picture-in-picture" 
+              allowfullscreen
+              class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
+              style="pointer-events: none;"
+            ></iframe>
+          </div><p><br></p>
+        `;
+      }
+    } else {
+      const url = videoUrl.startsWith('http') ? videoUrl : `https://${videoUrl}`;
       embedHtml = `
-        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
-          <iframe 
-            src="https://www.youtube.com/embed/${videoInfo.id}" 
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen
-            class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
-            style="pointer-events: none;"
-          ></iframe>
-        </div><p><br></p>
-      `;
-    } else if (videoInfo.type === 'vimeo') {
-      embedHtml = `
-        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
-          <iframe 
-            src="https://player.vimeo.com/video/${videoInfo.id}" 
-            frameborder="0" 
-            allow="autoplay; fullscreen; picture-in-picture" 
-            allowfullscreen
-            class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
-            style="pointer-events: none;"
-          ></iframe>
+        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative;" onclick="window.selectMedia('${mediaId}')">
+          <video 
+            controls
+            class="w-full rounded-lg shadow-md"
+            style="max-width: 100%; height: auto;"
+          >
+            <source src="${url}" type="video/mp4">
+            <source src="${url}" type="video/webm">
+            <source src="${url}" type="video/ogg">
+            Your browser does not support the video tag.
+          </video>
         </div><p><br></p>
       `;
     }
@@ -368,6 +389,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     
     setShowVideoModal(false);
     setVideoUrl('');
+    setVideoUploadMode('youtube');
     handleInput();
   };
 
@@ -1027,51 +1049,127 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Youtube size={20} className="text-red-600" />
+                <Video size={20} className="text-blue-600" />
                 Insert Video
               </h3>
-              <button onClick={() => setShowVideoModal(false)} className="text-gray-500 hover:text-gray-700">
+              <button onClick={() => { setShowVideoModal(false); setVideoUploadMode('youtube'); setVideoUrl(''); }} className="text-gray-500 hover:text-gray-700">
                 <X size={20} />
               </button>
             </div>
+            
+            {/* Tab Switcher */}
+            <div className="flex gap-2 mb-4 border-b border-gray-200">
+              <button
+                onClick={() => setVideoUploadMode('youtube')}
+                className={`px-4 py-2 font-medium transition ${
+                  videoUploadMode === 'youtube'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Youtube size={16} />
+                  YouTube/Vimeo
+                </div>
+              </button>
+              <button
+                onClick={() => setVideoUploadMode('custom')}
+                className={`px-4 py-2 font-medium transition ${
+                  videoUploadMode === 'custom'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Film size={16} />
+                  Custom URL
+                </div>
+              </button>
+            </div>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">YouTube or Vimeo URL</label>
-                <input
-                  type="text"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Supports YouTube and Vimeo links
-                </p>
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Examples:</strong><br />
-                  • https://www.youtube.com/watch?v=dQw4w9WgXcQ<br />
-                  • https://youtu.be/dQw4w9WgXcQ<br />
-                  • https://vimeo.com/123456789
-                </p>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setShowVideoModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={insertVideo}
-                  disabled={!videoUrl}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Insert Video
-                </button>
-              </div>
+              {videoUploadMode === 'youtube' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">YouTube or Vimeo URL</label>
+                    <input
+                      type="text"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Supports YouTube and Vimeo links
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                      <strong>Examples:</strong><br />
+                      • https://www.youtube.com/watch?v=dQw4w9WgXcQ<br />
+                      • https://youtu.be/dQw4w9WgXcQ<br />
+                      • https://vimeo.com/123456789
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => { setShowVideoModal(false); setVideoUploadMode('youtube'); setVideoUrl(''); }}
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={insertVideo}
+                      disabled={!videoUrl}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Insert Video
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+                    <input
+                      type="text"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="https://example.com/video.mp4"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter the URL of a video file from your server
+                    </p>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-800">
+                      <strong>Supported formats:</strong><br />
+                      • MP4 (.mp4)<br />
+                      • WebM (.webm)<br />
+                      • OGG (.ogg)<br />
+                      Perfect for videos hosted on your own server!
+                    </p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => { setShowVideoModal(false); setVideoUploadMode('youtube'); setVideoUrl(''); }}
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={insertVideo}
+                      disabled={!videoUrl}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Insert Video
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
