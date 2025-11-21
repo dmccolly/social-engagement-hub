@@ -20,6 +20,8 @@ import { createVisitorSession } from '../services/newsfeedService';
  */
 const BlogSection = () => {
   const [posts, setPosts] = useState([]);
+  const [drafts, setDrafts] = useState([]);
+  const [showDrafts, setShowDrafts] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
@@ -63,6 +65,54 @@ const BlogSection = () => {
     };
     loadPosts();
   }, []);
+
+  useEffect(() => {
+    const loadDrafts = async () => {
+      if (!showDrafts || !visitorSession) return;
+      
+      try {
+        const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
+        if (!response.ok) {
+          console.error('Failed to fetch drafts');
+          return;
+        }
+        
+        const assets = await response.json();
+        const draftPosts = assets
+          .filter(asset => {
+            const catId = asset.category_id ?? asset.category?.id ?? asset.category;
+            if (Number(catId) !== 11) return false;
+            
+            const tags = asset.tags || '';
+            if (!tags.includes('status:draft')) return false;
+            
+            const submittedBy = asset.submitted_by || '';
+            if (submittedBy !== visitorSession.name) return false;
+            
+            return true;
+          })
+          .map(asset => ({
+            id: asset.id,
+            title: asset.title || 'Untitled',
+            content: asset.description || '',
+            author: asset.submitted_by || 'Unknown',
+            created_at: asset.created_at,
+            featured: asset.is_featured || false,
+            pinned: asset.pinned || false,
+            sort_order: asset.sort_order || 0,
+            tags: asset.tags || '',
+            status: 'draft'
+          }))
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        setDrafts(draftPosts);
+      } catch (error) {
+        console.error('Load drafts error:', error);
+      }
+    };
+    
+    loadDrafts();
+  }, [showDrafts, visitorSession]);
 
   // Generate a unique session ID
   const generateSessionId = () => {
@@ -401,9 +451,21 @@ const BlogSection = () => {
         <h1 className="text-3xl font-bold">Blog Posts</h1>
         <div className="flex items-center gap-4">
           {visitorSession && (
-            <span className="text-sm text-gray-600">
-              Signed in as: <strong>{visitorSession.name}</strong>
-            </span>
+            <>
+              <span className="text-sm text-gray-600">
+                Signed in as: <strong>{visitorSession.name}</strong>
+              </span>
+              <button
+                onClick={() => setShowDrafts(!showDrafts)}
+                className={`px-4 py-2 rounded transition ${
+                  showDrafts
+                    ? 'bg-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {showDrafts ? 'Show Published' : 'Show My Drafts'}
+              </button>
+            </>
           )}
           <button
             onClick={handleCreateNew}
@@ -414,7 +476,53 @@ const BlogSection = () => {
         </div>
       </div>
       
-      {loadError ? (
+      {showDrafts && visitorSession ? (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 font-semibold">My Drafts</p>
+            <p className="text-blue-600 text-sm mt-1">
+              Showing draft posts saved by {visitorSession.name}
+            </p>
+          </div>
+          {drafts.length === 0 ? (
+            <p className="text-gray-600">No drafts found. Save a post as draft to see it here.</p>
+          ) : (
+            <ul className="space-y-4">
+              {drafts.map((post) => (
+                <li key={post.id} className="bg-white shadow p-4 rounded-lg border-l-4 border-yellow-400">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold mb-1">
+                        {post.title}
+                        <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                          DRAFT
+                        </span>
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(post)}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(post)}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : loadError ? (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800 font-semibold">Failed to load blog posts</p>
           <p className="text-red-600 text-sm mt-1">{loadError}</p>

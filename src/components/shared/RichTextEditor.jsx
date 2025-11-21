@@ -50,6 +50,88 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     window.deleteMedia = (mediaId) => deleteMediaInternal(mediaId);
     window.clearMediaSelection = () => clearMediaSelectionInternal();
 
+    const handleEditorClick = (e) => {
+      const target = e.target;
+      
+      if (target.tagName === 'IMG' && target.id && target.id.startsWith('img-')) {
+        const imageId = target.id.replace('img-', '');
+        selectImageInternal(imageId);
+        e.stopPropagation();
+        return;
+      }
+      
+      let mediaWrapper = target;
+      while (mediaWrapper && mediaWrapper !== editorRef.current) {
+        if (mediaWrapper.id && mediaWrapper.id.startsWith('media-')) {
+          const mediaId = mediaWrapper.id.replace('media-', '');
+          selectMediaInternal(mediaId);
+          e.stopPropagation();
+          return;
+        }
+        mediaWrapper = mediaWrapper.parentElement;
+      }
+    };
+
+    let draggedElement = null;
+
+    const handleDragStart = (e) => {
+      const target = e.target;
+      if (target.tagName === 'IMG' && target.id && target.id.startsWith('img-')) {
+        draggedElement = target;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', target.outerHTML);
+        target.style.opacity = '0.5';
+      }
+    };
+
+    const handleDragEnd = (e) => {
+      if (draggedElement) {
+        draggedElement.style.opacity = '';
+        draggedElement = null;
+      }
+    };
+
+    const handleDragOver = (e) => {
+      if (draggedElement) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }
+    };
+
+    const handleDrop = (e) => {
+      if (!draggedElement) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+
+      const range = document.caretRangeFromPoint?.(e.clientX, e.clientY) || 
+                    document.caretPositionFromPoint?.(e.clientX, e.clientY);
+      
+      if (range) {
+        const parent = draggedElement.parentNode;
+        draggedElement.remove();
+        
+        try {
+          range.insertNode(draggedElement);
+          handleInput();
+        } catch (error) {
+          console.error('Drop error:', error);
+          if (parent) parent.appendChild(draggedElement);
+        }
+      }
+      
+      draggedElement.style.opacity = '';
+      draggedElement = null;
+    };
+
+    if (editorRef.current) {
+      editorRef.current.addEventListener('click', handleEditorClick);
+      editorRef.current.addEventListener('dragstart', handleDragStart);
+      editorRef.current.addEventListener('dragend', handleDragEnd);
+      editorRef.current.addEventListener('dragover', handleDragOver);
+      editorRef.current.addEventListener('drop', handleDrop);
+    }
+
     return () => {
       delete window.selectImage;
       delete window.resizeImage;
@@ -61,6 +143,14 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       delete window.positionMedia;
       delete window.deleteMedia;
       delete window.clearMediaSelection;
+      
+      if (editorRef.current) {
+        editorRef.current.removeEventListener('click', handleEditorClick);
+        editorRef.current.removeEventListener('dragstart', handleDragStart);
+        editorRef.current.removeEventListener('dragend', handleDragEnd);
+        editorRef.current.removeEventListener('dragover', handleDragOver);
+        editorRef.current.removeEventListener('drop', handleDrop);
+      }
     };
   }, []);
 
@@ -257,7 +347,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
       
       // Insert the uploaded image
       const imageId = Date.now();
-      const imageHtml = `<img id="img-${imageId}" src="${data.secure_url}" alt="${file.name}" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" /><p><br></p>`;
+      const imageHtml = `<img id="img-${imageId}" src="${data.secure_url}" alt="${file.name}" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" draggable="true" /><p><br></p>`;
       
       // Ensure focus and selection before insert
       if (ensureFocusAndSelection()) {
@@ -286,7 +376,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     
     const url = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
     const imageId = Date.now();
-    const imageHtml = `<img id="img-${imageId}" src="${url}" alt="Uploaded image" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" /><p><br></p>`;
+    const imageHtml = `<img id="img-${imageId}" src="${url}" alt="Uploaded image" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" draggable="true" /><p><br></p>`;
     
     // Ensure focus and selection before insert
     if (ensureFocusAndSelection()) {
@@ -436,8 +526,10 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     const updatePositions = (toolbar, handles) => {
       const rect = element.getBoundingClientRect();
       if (toolbar) {
-        toolbar.style.top = `${rect.top - 50}px`;
-        toolbar.style.left = `${rect.left}px`;
+        const toolbarTop = Math.max(10, rect.top - 50);
+        const toolbarLeft = Math.max(10, rect.left);
+        toolbar.style.top = `${toolbarTop}px`;
+        toolbar.style.left = `${toolbarLeft}px`;
       }
       if (handles) {
         handles.forEach(({ pos, el }) => {
@@ -451,6 +543,8 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     
     const toolbar = document.createElement('div');
     toolbar.className = 'floating-toolbar';
+    toolbar.style.position = 'fixed';
+    toolbar.style.zIndex = '1002';
     toolbar.innerHTML = `
       <button onclick="window.resizeMedia('${mediaId}', 'small')" class="toolbar-btn">Small</button>
       <button onclick="window.resizeMedia('${mediaId}', 'medium')" class="toolbar-btn">Medium</button>
@@ -655,7 +749,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         .editor-content img,
         .editor-content .media-wrapper {
           display: block;
-          margin: 0 0 0.6em;
+          margin-block: 0.6em;
           max-width: 100%;
         }
         .editor-content img {
