@@ -26,22 +26,16 @@ exports.handler = async (event) => {
   }
 
   try {
-    const apiKey = process.env.XANO_API_KEY;
-    const xanoBaseUrl = (process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV').replace(/\/+$/, '');
+    const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://gleaming-cendol-417bf3.netlify.app';
+    const proxyUrl = `${siteUrl}/xano/asset`;
+    
+    console.log('Fetching blog posts from internal proxy:', proxyUrl);
 
-    console.log('Fetching blog posts from Xano:', xanoBaseUrl);
-
-    const headers = {
-      'Content-Type': 'application/json'
-    };
-
-    if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
-
-    const response = await fetch(`${xanoBaseUrl}/asset`, {
+    const response = await fetch(proxyUrl, {
       method: 'GET',
-      headers: headers
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (!response.ok) {
