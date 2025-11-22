@@ -247,20 +247,55 @@ const BlogPostView = ({ posts }) => {
         .prose img.size-full {
           width: 100%;
         }
-        .prose img.position-left {
+        .prose img.position-left,
+        .prose video.position-left,
+        .prose iframe.position-left,
+        .prose .position-left {
           float: left;
           margin: 0 15px 15px 0;
           clear: left;
+          max-width: 40%;
         }
-        .prose img.position-right {
+        .prose img.position-right,
+        .prose video.position-right,
+        .prose iframe.position-right,
+        .prose .position-right {
           float: right;
           margin: 0 0 15px 15px;
           clear: right;
+          max-width: 40%;
         }
-        .prose img.position-center {
+        .prose img.position-center,
+        .prose video.position-center,
+        .prose iframe.position-center {
           display: block;
           margin: 15px auto;
           float: none;
+        }
+        .prose::after {
+          content: "";
+          display: block;
+          clear: both;
+        }
+        .prose video,
+        .prose iframe {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+          .prose .position-left,
+          .prose .position-right,
+          .prose img.position-left,
+          .prose img.position-right,
+          .prose video.position-left,
+          .prose video.position-right,
+          .prose iframe.position-left,
+          .prose iframe.position-right {
+            float: none;
+            max-width: 100%;
+            margin: 12px 0;
+          }
         }
         .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
           margin-top: 2rem;

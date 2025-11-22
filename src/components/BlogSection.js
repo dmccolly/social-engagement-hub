@@ -247,11 +247,21 @@ const BlogSection = () => {
       }
       
       if (response.success) {
+        console.log('Post saved successfully:', response.post);
+        console.log('Post tags after save:', tags);
+        console.log('Post status:', status);
+        console.log('Is scheduled:', isScheduled);
+        console.log('Scheduled datetime:', scheduled_datetime);
+        
         // Reload posts to include the new/updated entry (increased limit to 1000)
         const postsResult = await getPublishedPosts(1000, 0);
         if (postsResult.success) {
           console.log('Loaded posts after save:', postsResult.posts.length);
+          console.log('Post IDs in list:', postsResult.posts.map(p => p.id));
+          console.log('Looking for post ID:', editingPost?.id || response.post?.id);
           setPosts(postsResult.posts);
+        } else {
+          console.error('Failed to reload posts after save:', postsResult.error);
         }
         setShowEditor(false);
         setEditingPost(null);
