@@ -147,11 +147,17 @@ const BlogSection = () => {
       
       const result = await createVisitorSession(sessionData);
       
+      console.log('createVisitorSession result:', result);
+      
       if (result.success) {
-        localStorage.setItem('visitor_session', JSON.stringify(result.session));
-        setVisitorSession(result.session);
+        // Handle both response formats: {success, session} or direct session object
+        const session = result.session || result;
+        console.log('Storing visitor session:', session);
+        localStorage.setItem('visitor_session', JSON.stringify(session));
+        setVisitorSession(session);
         setShowVisitorForm(false);
         setVisitorData({ name: '', email: '' });
+        setShowEditor(true);
         alert('Welcome! You can now create blog posts with your name.');
       } else {
         alert('Failed to create visitor session: ' + result.error);
@@ -204,10 +210,12 @@ const BlogSection = () => {
       
       const isScheduled = status === 'scheduled' && scheduled_datetime;
       
-      // Determine author name from visitor session or use existing author for edits
+      // Determine author name from visitor session with email fallback
       const authorName = editingPost 
         ? editingPost.author 
-        : (visitorSession?.name || 'Anonymous');
+        : (visitorSession?.name?.trim() || visitorSession?.email?.trim() || 'Anonymous');
+      
+      console.log('Saving post with author:', authorName, 'visitorSession:', visitorSession);
       
       let response;
       if (editingPost) {
@@ -239,9 +247,10 @@ const BlogSection = () => {
       }
       
       if (response.success) {
-        // Reload posts to include the new/updated entry
-        const postsResult = await getPublishedPosts(100, 0);
+        // Reload posts to include the new/updated entry (increased limit to 1000)
+        const postsResult = await getPublishedPosts(1000, 0);
         if (postsResult.success) {
+          console.log('Loaded posts after save:', postsResult.posts.length);
           setPosts(postsResult.posts);
         }
         setShowEditor(false);
