@@ -200,6 +200,12 @@ const BlogSection = () => {
    */
   const handleSavePost = async ({ title, content, status, scheduled_datetime, featured, pinned, sort_order }) => {
     try {
+      if (status === 'draft' && !visitorSession) {
+        alert('Please sign in to save drafts. Your drafts are associated with your account.');
+        setShowVisitorForm(true);
+        return;
+      }
+      
       let tags = editingPost?.tags || '';
       
       tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
@@ -263,11 +269,44 @@ const BlogSection = () => {
         } else {
           console.error('Failed to reload posts after save:', postsResult.error);
         }
+        
+        if (status === 'draft' && visitorSession) {
+          setShowDrafts(true);
+          // Reload drafts to show the newly saved draft
+          const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
+          if (response.ok) {
+            const assets = await response.json();
+            const draftPosts = assets
+              .filter(asset => {
+                const catId = asset.category_id ?? asset.category?.id ?? asset.category;
+                if (Number(catId) !== 11) return false;
+                
+                const tags = asset.tags || '';
+                if (!tags.includes('status:draft')) return false;
+                
+                const submittedBy = asset.submitted_by || '';
+                if (submittedBy !== visitorSession.name) return false;
+                
+                return true;
+              })
+              .map(asset => ({
+                id: asset.id,
+                title: asset.title || 'Untitled',
+                content: asset.description || '',
+                author: asset.submitted_by || 'Unknown',
+                created_at: asset.created_at,
+                featured: asset.is_featured || false,
+                tags: asset.tags || '',
+              }));
+            setDrafts(draftPosts);
+          }
+        }
+        
         setShowEditor(false);
         setEditingPost(null);
         
         if (status === 'draft') {
-          alert('Post saved as draft successfully!');
+          alert('Post saved as draft successfully! Showing your drafts.');
         } else if (status === 'scheduled') {
           alert('Post scheduled successfully!');
         } else {
