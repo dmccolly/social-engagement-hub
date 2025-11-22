@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { User, X, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
 import PatchedRichBlogEditor from '../PatchedRichBlogEditor';
 import {
   getPublishedPosts,
@@ -348,6 +348,12 @@ const BlogSection = () => {
     }
   };
 
+  const handleShareToFacebook = (post) => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+    window.open(shareUrl, 'facebook-share-dialog', 'width=626,height=436');
+  };
+
   // Render loading state
   if (isLoading) {
     return (
@@ -600,6 +606,14 @@ const BlogSection = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => handleShareToFacebook(post)}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                    title="Share to Facebook"
+                  >
+                    <Share2 size={14} />
+                    Share
+                  </button>
                   <button
                     onClick={() => handleEdit(post)}
                     className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
