@@ -167,6 +167,46 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     }
   };
 
+  // Handle Enter key to preserve formatting
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (e.shiftKey) {
+        document.execCommand('insertLineBreak');
+      } else {
+        document.execCommand('insertParagraph');
+        
+        // Ensure new block is a paragraph
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          let node = range.startContainer;
+          
+          while (node && node !== editorRef.current && node.nodeType !== 1) {
+            node = node.parentNode;
+          }
+          
+          if (node && node.tagName === 'DIV') {
+            const p = document.createElement('p');
+            while (node.firstChild) {
+              p.appendChild(node.firstChild);
+            }
+            node.parentNode.replaceChild(p, node);
+            
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          }
+        }
+      }
+      
+      handleInput();
+    }
+  };
+
   // Execute formatting command
   const execCommand = (command, value = null) => {
     if (editorRef.current) {
@@ -790,6 +830,22 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         .clear-both {
           clear: both;
         }
+        
+        /* Draggable images - show grab cursor */
+        .editor-content img[draggable="true"] {
+          cursor: grab;
+          outline: 2px dashed transparent;
+          transition: outline 0.2s;
+        }
+        
+        .editor-content img[draggable="true"]:hover {
+          outline: 2px dashed #3b82f6;
+        }
+        
+        .editor-content img[draggable="true"]:active {
+          cursor: grabbing;
+          opacity: 0.5;
+        }
       `}</style>
       {/* Toolbar */}
       <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-2">
@@ -930,47 +986,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
         contentEditable
         onInput={handleInput}
         onClick={() => editorRef.current?.focus()}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            
-            const selection = window.getSelection();
-            if (selection && selection.anchorNode) {
-              const selectedMedia = document.querySelector('.selected-image');
-              if (selectedMedia) {
-                // Insert a new paragraph after the selected media
-                const newParagraph = document.createElement('p');
-                newParagraph.innerHTML = '<br>';
-                
-                if (selectedMedia.classList.contains('position-wrap-left') || 
-                    selectedMedia.classList.contains('position-wrap-right')) {
-                  newParagraph.classList.add('clear-both');
-                }
-                
-                // Insert after the media element
-                if (selectedMedia.nextSibling) {
-                  selectedMedia.parentNode.insertBefore(newParagraph, selectedMedia.nextSibling);
-                } else {
-                  selectedMedia.parentNode.appendChild(newParagraph);
-                }
-                
-                const range = document.createRange();
-                range.setStart(newParagraph, 0);
-                range.collapse(true);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                
-                // Clear media selection
-                clearMediaSelectionInternal();
-                handleInput();
-                return;
-              }
-            }
-            
-            document.execCommand(e.shiftKey ? 'insertLineBreak' : 'insertParagraph');
-            handleInput();
-          }
-        }}
+        onKeyDown={handleKeyDown}
         className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none editor-content cursor-text"
         style={{ wordWrap: 'break-word' }}
         suppressContentEditableWarning

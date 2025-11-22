@@ -168,7 +168,7 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
 
     const assets = await response.json();
     
-    console.log('Raw assets from Xano:', assets);
+    console.log('Raw assets from Xano:', assets.length, 'total assets');
     
     // Helper function to create excerpt - keep images but limit text
     const createExcerpt = (html, maxLength = 400) => {
@@ -192,20 +192,33 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     };
     
        // Filter to only blog posts (category_id = 11) and convert to blog post format
+    let filteredByCategory = 0;
+    let filteredByDraft = 0;
+    let filteredByScheduled = 0;
+    
     const posts = assets
          .filter(asset => {
            const catId = asset.category_id ?? asset.category?.id ?? asset.category;
-           if (Number(catId) !== 11) return false; // Only Blog Posts category
+           if (Number(catId) !== 11) {
+             filteredByCategory++;
+             return false;
+           }
            
            // Filter out drafts (check tags for status:draft)
            const tags = asset.tags || '';
-           if (tags.includes('status:draft')) return false;
+           if (tags.includes('status:draft')) {
+             filteredByDraft++;
+             return false;
+           }
            
            // Filter out scheduled posts that haven't reached their publish time
            if (asset.is_scheduled && asset.scheduled_datetime) {
              const scheduledTime = new Date(asset.scheduled_datetime);
              const now = new Date();
-             if (scheduledTime > now) return false; // Not yet time to publish
+             if (scheduledTime > now) {
+               filteredByScheduled++;
+               return false;
+             }
            }
            
            return true;
@@ -241,6 +254,15 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
            return new Date(b.created_at) - new Date(a.created_at);
          })
       .slice(offset, offset + limit);
+
+    console.log('Filter results:', {
+      totalAssets: assets.length,
+      filteredByCategory,
+      filteredByDraft,
+      filteredByScheduled,
+      afterFiltering: posts.length + (offset > 0 ? offset : 0),
+      afterSlice: posts.length
+    });
 
     return {
       success: true,
