@@ -262,6 +262,11 @@ const BlogPostView = ({ posts }) => {
           margin: 15px auto;
           float: none;
         }
+        .prose::after {
+          content: "";
+          display: block;
+          clear: both;
+        }
         .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
           margin-top: 2rem;
           margin-bottom: 1rem;
