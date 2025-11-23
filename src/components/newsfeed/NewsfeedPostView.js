@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, User, Clock, Heart, MessageSquare, Share2 } from 'lucide-react';
 import { getNewsfeedPosts, toggleNewsfeedLike, getNewsfeedReplies } from '../../services/newsfeedService';
 import { sanitizePostHtml } from '../../utils/sanitizePostHtml';
@@ -91,6 +92,23 @@ const NewsfeedPostView = () => {
     }
   };
 
+  // Extract plain text from HTML content for meta description
+  const getPlainText = (html) => {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText || '';
+  };
+
+  // Extract first image from post content for og:image
+  const getFirstImage = (html) => {
+    if (!html) return null;
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const img = div.querySelector('img');
+    return img ? img.src : null;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -117,8 +135,34 @@ const NewsfeedPostView = () => {
     );
   }
 
+  // Prepare meta tag content
+  const postUrl = window.location.href;
+  const postTitle = post ? `${post.author_name}'s Post` : 'Post Not Found';
+  const postDescription = post ? getPlainText(post.content).substring(0, 200) : 'This post is not available';
+  const postImage = post ? getFirstImage(post.content) : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Open Graph Meta Tags for Facebook Sharing */}
+      <Helmet>
+        <title>{postTitle}</title>
+        <meta name="description" content={postDescription} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={postUrl} />
+        <meta property="og:title" content={postTitle} />
+        <meta property="og:description" content={postDescription} />
+        {postImage && <meta property="og:image" content={postImage} />}
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={postUrl} />
+        <meta property="twitter:title" content={postTitle} />
+        <meta property="twitter:description" content={postDescription} />
+        {postImage && <meta property="twitter:image" content={postImage} />}
+      </Helmet>
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
