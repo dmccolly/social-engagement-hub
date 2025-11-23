@@ -21,7 +21,8 @@ import {
   Facebook as FacebookIcon,
   Twitter,
   Linkedin,
-  Trash2
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import {
   getNewsfeedPosts,
@@ -754,7 +755,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                           onClick={() => handleEditPost(post)}
                           className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
                         >
-                          <MessageSquare size={16} /> Edit Post
+                          <Edit2 size={16} /> Edit Post
                         </button>
                         <button
                           onClick={() => handleDeletePost(post.id)}
