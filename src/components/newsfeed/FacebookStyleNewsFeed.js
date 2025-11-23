@@ -355,6 +355,21 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
             editorRef.current.innerHTML = '';
           }
           loadPosts();
+          
+          // Trigger rebuild to generate static HTML for Facebook sharing
+          if (result.post && result.post.id) {
+            try {
+              await fetch('/.netlify/functions/trigger-rebuild', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: result.post.id, postType: 'newsfeed' })
+              });
+              console.log('✅ Rebuild triggered for post', result.post.id);
+            } catch (rebuildError) {
+              console.error('⚠️ Failed to trigger rebuild:', rebuildError);
+              // Don't show error to user - post was created successfully
+            }
+          }
         } else {
           const errorMsg = result.error || result.message || JSON.stringify(result) || 'Unknown error';
           console.error('Post creation failed:', errorMsg);
