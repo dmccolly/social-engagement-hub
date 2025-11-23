@@ -20,3 +20,8 @@
   to = "/.netlify/functions/xano-proxy/:splat"
   status = 200
   force = true
+
+# Edge function for social media crawler detection
+[[edge_functions]]
+  function = "social-meta"
+  path = "/newsfeed/post/*"
