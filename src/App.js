@@ -16,6 +16,7 @@ import GroupManagement from './components/email/GroupManagement';
 
 // Newsfeed components
 import FacebookStyleNewsFeed from './components/newsfeed/FacebookStyleNewsFeed';
+import NewsfeedPostView from './components/newsfeed/NewsfeedPostView';
 
 // Admin components
 import AdminDashboard from './components/admin/AdminDashboardIntegration';
@@ -165,6 +166,7 @@ const AppContent = () => {
               <Routes>
             <Route path="/" element={renderContent()} />
             <Route path="/blog/:id" element={<BlogPostView />} />
+            <Route path="/newsfeed/post/:id" element={<NewsfeedPostView />} />
             <Route path="/events/:id" element={<EventDetails />} />
               <Route path="/email/groups" element={<GroupManagement />} />
             <Route path="/widget/newsfeed" element={<EnhancedNewsfeedWidget />} />

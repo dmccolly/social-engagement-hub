@@ -242,7 +242,8 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   };
 
   const shareToNetwork = (post, network) => {
-    const url = `${window.location.origin}${window.location.pathname}#post-${post.id}`;
+    // Use the dedicated post page URL for sharing
+    const url = `${window.location.origin}/newsfeed/post/${post.id}`;
     const snippet =
       post.content && post.content.length > 120
         ? `${post.content.slice(0, 117)}...`
