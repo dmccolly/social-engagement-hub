@@ -1,5 +1,20 @@
 # XANO API proxy
 /xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
 
+# Redirect social media crawlers to meta-tags function
+/newsfeed/post/*  /.netlify/functions/meta-tags  200  User-Agent=facebookexternalhit*
+/newsfeed/post/*  /.netlify/functions/meta-tags  200  User-Agent=Facebookbot*
+/newsfeed/post/*  /.netlify/functions/meta-tags  200  User-Agent=Twitterbot*
+/newsfeed/post/*  /.netlify/functions/meta-tags  200  User-Agent=LinkedInBot*
+/newsfeed/post/*  /.netlify/functions/meta-tags  200  User-Agent=WhatsApp*
+/newsfeed/post/*  /.netlify/functions/meta-tags  200  User-Agent=TelegramBot*
+
+/blog/*  /.netlify/functions/meta-tags  200  User-Agent=facebookexternalhit*
+/blog/*  /.netlify/functions/meta-tags  200  User-Agent=Facebookbot*
+/blog/*  /.netlify/functions/meta-tags  200  User-Agent=Twitterbot*
+/blog/*  /.netlify/functions/meta-tags  200  User-Agent=LinkedInBot*
+/blog/*  /.netlify/functions/meta-tags  200  User-Agent=WhatsApp*
+/blog/*  /.netlify/functions/meta-tags  200  User-Agent=TelegramBot*
+
 # SPA fallback for React app - must be last
 /* /index.html 200

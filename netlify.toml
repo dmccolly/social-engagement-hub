@@ -13,24 +13,3 @@
   for = "/*"
   [headers.values]
     X-Frame-Options = "ALLOWALL"
-
-# Redirect social media crawlers to OG tag generator function
-[[redirects]]
-  from = "/newsfeed/post/*"
-  to = "/.netlify/functions/og-tags"
-  status = 200
-  force = false
-  conditions = {User-Agent = ["facebookexternalhit", "Twitterbot", "LinkedInBot", "WhatsApp", "TelegramBot"]}
-
-[[redirects]]
-  from = "/blog/*"
-  to = "/.netlify/functions/og-tags"
-  status = 200
-  force = false
-  conditions = {User-Agent = ["facebookexternalhit", "Twitterbot", "LinkedInBot", "WhatsApp", "TelegramBot"]}
-
-[[redirects]]
-  from = "/xano/*"
-  to = "/.netlify/functions/xano-proxy/:splat"
-  status = 200
-  force = true
