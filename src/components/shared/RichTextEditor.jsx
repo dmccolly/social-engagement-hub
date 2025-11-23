@@ -528,15 +528,16 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     if (!audioUrl) return;
     
     const url = audioUrl.startsWith('http') ? audioUrl : `https://${audioUrl}`;
+    const mediaId = Date.now().toString(36) + Math.random().toString(36).substring(2);
     const audioHtml = `
-      <div class="my-4">
-        <audio controls class="w-full rounded-lg shadow-md" style="max-width: 100%;">
+      <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="audio" contenteditable="false" style="cursor: pointer; position: relative;" onclick="window.selectMedia('${mediaId}')">
+        <audio controls class="w-full rounded-lg shadow-md" style="max-width: 100%; height: auto;">
           <source src="${url}" type="audio/mpeg">
           <source src="${url}" type="audio/ogg">
           <source src="${url}" type="audio/wav">
           Your browser does not support the audio element.
         </audio>
-      </div>
+      </div><p><br></p>
     `;
     
     // Ensure focus and selection before insert

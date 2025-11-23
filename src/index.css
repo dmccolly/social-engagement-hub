@@ -114,3 +114,60 @@ img.selected-image {
 .resize-handle-se {
   cursor: se-resize;
 }
+
+/* Media wrapper (video/audio) size classes */
+.media-wrapper.size-small {
+  width: 300px;
+  max-width: 100%;
+  margin: 15px 0;
+}
+
+.media-wrapper.size-medium {
+  width: 500px;
+  max-width: 100%;
+  margin: 15px 0;
+}
+
+.media-wrapper.size-large {
+  width: 700px;
+  max-width: 100%;
+  margin: 15px 0;
+}
+
+.media-wrapper.size-full {
+  width: 100%;
+  margin: 15px 0;
+}
+
+/* Media wrapper position classes */
+.media-wrapper.position-left {
+  float: left;
+  margin: 0 15px 15px 0;
+}
+
+.media-wrapper.position-right {
+  float: right;
+  margin: 0 0 15px 15px;
+}
+
+.media-wrapper.position-center {
+  display: block;
+  margin: 15px auto;
+  float: none;
+}
+
+.media-wrapper.position-wrap-left {
+  float: left;
+  margin: 0 15px 15px 0;
+}
+
+.media-wrapper.position-wrap-right {
+  float: right;
+  margin: 0 0 15px 15px;
+}
+
+/* Selected media highlight */
+.media-wrapper.selected-image {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}

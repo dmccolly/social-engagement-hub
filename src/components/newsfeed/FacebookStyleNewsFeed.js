@@ -804,12 +804,19 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                   >
                     <MessageSquare size={20} /> <span>Comment</span>
                   </button>
+                  <button
+                    onClick={() => shareToNetwork(post, 'facebook')}
+                    className="flex items-center gap-2 px-4 py-2 text-blue-600 rounded-lg hover:bg-blue-50 transition-all"
+                    title="Share to Facebook"
+                  >
+                    <FacebookIcon size={20} /> <span>Facebook</span>
+                  </button>
                   <div className="relative">
                     <button
                       onClick={() => toggleShareMenu(post.id)}
                       className="flex items-center gap-2 px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
                     >
-                      <Share2 size={20} /> <span>Share</span>
+                      <Share2 size={20} /> <span>More</span>
                     </button>
                     {activeShareMenu === post.id && (
                       <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
