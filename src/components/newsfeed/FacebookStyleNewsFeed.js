@@ -77,6 +77,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   const loadVisitorSession = async () => {
     try {
       if (currentUser) {
+        console.log('✅ Loading visitor session from currentUser:', currentUser);
         setVisitorSession({
           name: currentUser.name,
           email: currentUser.email,
@@ -86,11 +87,15 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       } else {
         const savedSession = localStorage.getItem('visitor_session');
         if (savedSession) {
-          setVisitorSession(JSON.parse(savedSession));
+          const session = JSON.parse(savedSession);
+          console.log('✅ Loaded visitor session from localStorage:', session);
+          setVisitorSession(session);
+        } else {
+          console.log('⚠️ No visitor session found in localStorage');
         }
       }
     } catch (error) {
-      console.error('Load visitor session error:', error);
+      console.error('❌ Load visitor session error:', error);
     }
   };
 
@@ -99,12 +104,21 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
     try {
       const result = await createVisitorSession(sessionData);
       if (result.success) {
-        localStorage.setItem('visitor_session', JSON.stringify(result.session));
-        setVisitorSession(result.session);
+        const sessionToSave = {
+          ...result.session,
+          created_at: new Date().toISOString(),
+          last_active: new Date().toISOString()
+        };
+        localStorage.setItem('visitor_session', JSON.stringify(sessionToSave));
+        setVisitorSession(sessionToSave);
+        console.log('✅ Visitor session saved to localStorage:', sessionToSave);
+        
+        // Trigger storage event for App.js to pick up the change
+        window.dispatchEvent(new Event('storage'));
       }
       return result;
     } catch (error) {
-      console.error('Save visitor session error:', error);
+      console.error('❌ Save visitor session error:', error);
       return { success: false, error: error.message };
     }
   };
@@ -282,8 +296,10 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       if (result.success) {
         setShowVisitorForm(false);
         setVisitorData({ name: '', email: '' });
-        alert('Welcome! You can now post and interact with the community.');
+        console.log('✅ Visitor registration successful! Session will persist across browser restarts.');
+        alert('Welcome! You can now post and interact with the community. You won\'t need to register again on this device.');
       } else {
+        console.error('❌ Failed to create visitor session:', result.error);
         alert('Failed to create visitor session: ' + result.error);
       }
     } catch (error) {
