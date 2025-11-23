@@ -1,5 +1,5 @@
 [build]
-  command = "rm -rf build && npm run build"
+  command = "npm run build"
   publish = "build"
 
 [functions]
@@ -13,3 +13,14 @@
   for = "/*"
   [headers.values]
     X-Frame-Options = "ALLOWALL"
+
+[[redirects]]
+  from = "/xano/*"
+  to = "https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

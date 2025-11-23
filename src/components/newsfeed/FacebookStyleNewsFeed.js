@@ -18,7 +18,6 @@ import {
   Smile,
   MapPin,
   X,
-  Facebook as FacebookIcon,
   Twitter,
   Linkedin,
   Trash2,
@@ -355,21 +354,6 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
             editorRef.current.innerHTML = '';
           }
           loadPosts();
-          
-          // Trigger rebuild to generate static HTML for Facebook sharing
-          if (result.post && result.post.id) {
-            try {
-              await fetch('/.netlify/functions/trigger-rebuild', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId: result.post.id, postType: 'newsfeed' })
-              });
-              console.log('✅ Rebuild triggered for post', result.post.id);
-            } catch (rebuildError) {
-              console.error('⚠️ Failed to trigger rebuild:', rebuildError);
-              // Don't show error to user - post was created successfully
-            }
-          }
         } else {
           const errorMsg = result.error || result.message || JSON.stringify(result) || 'Unknown error';
           console.error('Post creation failed:', errorMsg);
@@ -837,13 +821,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                   >
                     <MessageSquare size={20} /> <span>Comment</span>
                   </button>
-                  <button
-                    onClick={() => shareToNetwork(post, 'facebook')}
-                    className="flex items-center gap-2 px-4 py-2 text-blue-600 rounded-lg hover:bg-blue-50 transition-all"
-                    title="Share to Facebook"
-                  >
-                    <FacebookIcon size={20} /> <span>Facebook</span>
-                  </button>
+
                   <div className="relative">
                     <button
                       onClick={() => toggleShareMenu(post.id)}
@@ -853,12 +831,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                     </button>
                     {activeShareMenu === post.id && (
                       <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button
-                          onClick={() => shareToNetwork(post, 'facebook')}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                          <FacebookIcon size={16} className="text-blue-600" /> Facebook
-                        </button>
+
                         <button
                           onClick={() => shareToNetwork(post, 'twitter')}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"

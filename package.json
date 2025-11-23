@@ -28,10 +28,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "node scripts/generate-post-pages.js && react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "generate-posts": "node scripts/generate-post-pages.js"
+    "eject": "react-scripts eject"
   },
   "browserslist": {
     "production": [

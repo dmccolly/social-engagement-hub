@@ -1,20 +1,5 @@
 # XANO API proxy
 /xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
 
-# Serve static HTML for social media crawlers
-/newsfeed/post/:id  /posts/newsfeed-:id.html  200  User-Agent=facebookexternalhit*
-/newsfeed/post/:id  /posts/newsfeed-:id.html  200  User-Agent=Facebookbot*
-/newsfeed/post/:id  /posts/newsfeed-:id.html  200  User-Agent=Twitterbot*
-/newsfeed/post/:id  /posts/newsfeed-:id.html  200  User-Agent=LinkedInBot*
-/newsfeed/post/:id  /posts/newsfeed-:id.html  200  User-Agent=WhatsApp*
-/newsfeed/post/:id  /posts/newsfeed-:id.html  200  User-Agent=TelegramBot*
-
-/blog/:id  /posts/blog-:id.html  200  User-Agent=facebookexternalhit*
-/blog/:id  /posts/blog-:id.html  200  User-Agent=Facebookbot*
-/blog/:id  /posts/blog-:id.html  200  User-Agent=Twitterbot*
-/blog/:id  /posts/blog-:id.html  200  User-Agent=LinkedInBot*
-/blog/:id  /posts/blog-:id.html  200  User-Agent=WhatsApp*
-/blog/:id  /posts/blog-:id.html  200  User-Agent=TelegramBot*
-
-# SPA fallback for React app - must be last
+# SPA fallback for React app
 /* /index.html 200
