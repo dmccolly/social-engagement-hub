@@ -3,9 +3,8 @@
   publish = "build"
 
 [functions]
-  # Increase timeout for large file uploads (max 26 seconds on free tier, 60 seconds on pro)
-  # This applies to all Netlify functions
   node_bundler = "esbuild"
+  external_node_modules = ["node-fetch"]
 
 [build.environment]
   NODE_VERSION = "18"
@@ -15,13 +14,23 @@
   [headers.values]
     X-Frame-Options = "ALLOWALL"
 
+# Redirect social media crawlers to OG tag generator function
+[[redirects]]
+  from = "/newsfeed/post/*"
+  to = "/.netlify/functions/og-tags"
+  status = 200
+  force = false
+  conditions = {User-Agent = ["facebookexternalhit", "Twitterbot", "LinkedInBot", "WhatsApp", "TelegramBot"]}
+
+[[redirects]]
+  from = "/blog/*"
+  to = "/.netlify/functions/og-tags"
+  status = 200
+  force = false
+  conditions = {User-Agent = ["facebookexternalhit", "Twitterbot", "LinkedInBot", "WhatsApp", "TelegramBot"]}
+
 [[redirects]]
   from = "/xano/*"
   to = "/.netlify/functions/xano-proxy/:splat"
   status = 200
   force = true
-
-# Edge function for social media crawler detection
-[[edge_functions]]
-  function = "social-meta"
-  path = "/newsfeed/post/*"
