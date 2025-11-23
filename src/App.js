@@ -38,10 +38,35 @@ import BlogSection from './components/BlogSection';
 // Navigation wrapper component that conditionally shows navigation
 const AppContent = () => {
   const location = useLocation();
-  const [currentUser] = useState({ name: 'Admin User', email: 'admin@example.com', role: 'admin' });
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeSection, setActiveSection] = useState('home');
   const [posts, setPosts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  
+  // Load visitor session as current user
+  useEffect(() => {
+    const loadUserFromSession = () => {
+      try {
+        const savedSession = localStorage.getItem('visitor_session');
+        if (savedSession) {
+          const session = JSON.parse(savedSession);
+          setCurrentUser({
+            name: session.name || session.email,
+            email: session.email,
+            role: 'visitor',
+            id: session.member_id || session.visitor_id
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user session:', error);
+      }
+    };
+    loadUserFromSession();
+    
+    // Listen for session changes
+    window.addEventListener('storage', loadUserFromSession);
+    return () => window.removeEventListener('storage', loadUserFromSession);
+  }, []);
   
   // Check if we're on a blog post page, event detail page, or widget page
   const isBlogPostPage = location.pathname.startsWith('/blog/');
