@@ -154,7 +154,7 @@ export async function updateEvent(eventId, eventData) {
     };
 
     const response = await fetch(`${XANO_BASE_URL}/events/${eventId}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },

@@ -67,6 +67,29 @@ exports.handler = async (event) => {
       xanoUrl
     });
 
+    if (path === '_ping' || path === '_debug') {
+      return {
+        statusCode: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'X-Proxy-Path': path,
+          'X-Proxy-Base': base === eventsBase ? 'events' : 'assets',
+          'X-Proxy-URL': xanoUrl
+        },
+        body: JSON.stringify({
+          debug: true,
+          computedPath: path,
+          selectedBase: base === eventsBase ? 'events (PpStJiYV)' : 'assets (iZd1_fI5)',
+          xanoUrl: xanoUrl,
+          method: event.httpMethod,
+          eventPath: event.path,
+          rawUrl: event.rawUrl,
+          queryStringParams: event.queryStringParameters
+        })
+      };
+    }
+
     const headers = {
       'Content-Type': 'application/json'
     };
