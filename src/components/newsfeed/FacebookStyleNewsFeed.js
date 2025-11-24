@@ -21,7 +21,8 @@ import {
   Twitter,
   Linkedin,
   Trash2,
-  Edit2
+  Edit2,
+  Facebook
 } from 'lucide-react';
 import {
   getNewsfeedPosts,
@@ -831,7 +832,12 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                     </button>
                     {activeShareMenu === post.id && (
                       <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-
+                        <button
+                          onClick={() => shareToNetwork(post, 'facebook')}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
+                        >
+                          <Facebook size={16} className="text-blue-600" /> Facebook
+                        </button>
                         <button
                           onClick={() => shareToNetwork(post, 'twitter')}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"

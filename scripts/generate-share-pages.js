@@ -222,7 +222,40 @@ async function main() {
       }
     }
     
-    console.log(`\n🎉 Successfully generated ${generated} static share pages!`);
+    console.log(`\n🎉 Successfully generated ${generated} newsfeed share pages!`);
+    
+    // Now generate blog post share pages
+    console.log('\n🚀 Generating static share pages for blog posts...\n');
+    
+    const blogResponse = await fetchFromXano('/asset?category_id=11');
+    const blogPosts = Array.isArray(blogResponse) ? blogResponse : (blogResponse.posts || []);
+    console.log(`✅ Fetched ${blogPosts.length} blog posts\n`);
+    
+    let blogGenerated = 0;
+    for (const asset of blogPosts) {
+      try {
+        // Convert asset to post format
+        const blogPost = {
+          id: asset.id,
+          content: asset.description || '',
+          author: { name: asset.submitted_by || 'Anonymous' },
+          created_at: asset.created_at
+        };
+        
+        const html = generatePostHtml(blogPost, siteUrl);
+        const fileName = `blog-${asset.id}.html`;
+        const filePath = path.join(outputDir, fileName);
+        
+        fs.writeFileSync(filePath, html, 'utf8');
+        console.log(`✅ Generated: /share/${fileName}`);
+        blogGenerated++;
+      } catch (error) {
+        console.error(`❌ Failed to generate HTML for blog post ${asset.id}:`, error.message);
+      }
+    }
+    
+    console.log(`\n🎉 Successfully generated ${blogGenerated} blog share pages!`);
+    console.log(`📍 Total: ${generated + blogGenerated} share pages`);
     console.log(`📍 Location: ${outputDir}`);
     
   } catch (error) {
