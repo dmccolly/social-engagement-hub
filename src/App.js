@@ -36,6 +36,9 @@ import StandaloneNewsfeedWidget from './components/newsfeed/StandaloneNewsfeedWi
 import BlogPostView from './components/BlogPostView';
 import BlogSection from './components/BlogSection';
 
+// Visitor profile
+import VisitorProfileSettings from './components/VisitorProfileSettings';
+
 // Navigation wrapper component that conditionally shows navigation
 const AppContent = () => {
   const location = useLocation();
@@ -43,6 +46,7 @@ const AppContent = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [posts, setPosts] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
   
   // Load visitor session as current user
   useEffect(() => {
@@ -157,6 +161,16 @@ const AppContent = () => {
                     })}
                   </div>
                 </div>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={() => setShowProfileSettings(true)}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                    title="Update your profile"
+                  >
+                    <Settings size={18} />
+                    <span className="hidden md:inline">{currentUser?.name || 'Set Profile'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </nav>
@@ -174,6 +188,11 @@ const AppContent = () => {
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />
           </Routes>
       </main>
+      
+      {/* Visitor Profile Settings Modal */}
+      {showProfileSettings && (
+        <VisitorProfileSettings onClose={() => setShowProfileSettings(false)} />
+      )}
     </div>
   );
 };

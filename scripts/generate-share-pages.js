@@ -77,7 +77,8 @@ function generatePostHtml(post, siteUrl) {
   const postUrl = `${siteUrl}/newsfeed/post/${post.id}`;
   const plainText = stripHtml(post.content).substring(0, 200);
   const image = extractFirstImage(post.content);
-  const author = post.author?.name || post.author || 'Anonymous';
+  // Extract author name from various possible fields
+  const author = post.author_name || post.author?.name || post.author || 'Anonymous';
   
   return `<!DOCTYPE html>
 <html lang="en">
