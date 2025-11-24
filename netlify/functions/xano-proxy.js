@@ -20,10 +20,25 @@ exports.handler = async (event) => {
   try {
     const apiKey = process.env.XANO_API_KEY;
     
-    let path = (event.path || '')
-      .replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '')
-      .replace(/^\/xano\/?/, '')
-      .replace(/^\/+/, ''); // remove any remaining leading slash
+    let path = '';
+    
+    if (event.path) {
+      path = event.path
+        .replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '')
+        .replace(/^\/xano\/?/, '')
+        .replace(/^\/+/, '');
+    }
+    
+    if (!path && event.rawUrl) {
+      const match = event.rawUrl.match(/\.netlify\/functions\/xano-proxy\/(.*?)(\?|#|$)/);
+      if (match) {
+        path = match[1];
+      }
+    }
+    
+    if (!path && event.queryStringParameters?.splat) {
+      path = event.queryStringParameters.splat;
+    }
 
     let base;
     const eventsBase = process.env.XANO_EVENTS_BASE || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
@@ -46,6 +61,7 @@ exports.handler = async (event) => {
       method: event.httpMethod,
       eventPath: event.path,
       rawUrl: event.rawUrl,
+      queryStringParams: event.queryStringParameters,
       computedPath: path,
       selectedBase: base,
       xanoUrl
