@@ -157,7 +157,10 @@ const EventListManager = ({ currentUser }) => {
 
   // Determine user permissions
   const userRole = currentUser?.role || 'member';
-  const canManageEvents = userRole === 'admin' || userRole === 'editor';
+  const isMainApp = !window.location.pathname.startsWith('/widget/');
+  const canManageEvents = isMainApp || userRole === 'admin' || userRole === 'editor';
+  
+  console.log('[EventListManager] User role:', userRole, '| Can manage:', canManageEvents, '| Is main app:', isMainApp);
 
   /**
    * Create a draft email campaign from the given event.  Prompts the user
