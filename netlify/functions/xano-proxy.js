@@ -19,12 +19,40 @@ exports.handler = async (event) => {
 
   try {
     const apiKey = process.env.XANO_API_KEY;
-    const base = (process.env.REACT_APP_XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV').replace(/\/+$/, '');
+    
+    let path = '';
+    
+    if (event.path) {
+      path = event.path
+        .replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '')
+        .replace(/^\/xano\/?/, '')
+        .replace(/^\/+/, '');
+    }
+    
+    if (!path && event.rawUrl) {
+      const match = event.rawUrl.match(/\.netlify\/functions\/xano-proxy\/(.*?)(\?|#|$)/);
+      if (match) {
+        path = match[1];
+      }
+    }
+    
+    if (!path && event.queryStringParameters?.splat) {
+      path = event.queryStringParameters.splat;
+    }
 
-    let path = (event.path || '')
-      .replace(/^\/\.netlify\/functions\/xano-proxy\/?/, '')
-      .replace(/^\/xano\/?/, '')
-      .replace(/^\/+/, ''); // remove any remaining leading slash
+    let base;
+    const eventsBase = process.env.XANO_EVENTS_BASE || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
+    const assetsBase = process.env.XANO_ASSETS_BASE || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+    
+    if (/^events(\/|$)/.test(path)) {
+      base = eventsBase;
+    } else if (/^(asset(_create)?|asset\/|visitor\/|admin\/|blog\/)/.test(path)) {
+      base = assetsBase;
+    } else {
+      base = assetsBase;
+    }
+    
+    base = base.replace(/\/+$/, '');
 
     const qs = event.rawQuery ? `?${event.rawQuery}` : '';
     const xanoUrl = path ? `${base}/${path}${qs}` : `${base}${qs}`;
@@ -33,7 +61,9 @@ exports.handler = async (event) => {
       method: event.httpMethod,
       eventPath: event.path,
       rawUrl: event.rawUrl,
+      queryStringParams: event.queryStringParameters,
       computedPath: path,
+      selectedBase: base,
       xanoUrl
     });
 
