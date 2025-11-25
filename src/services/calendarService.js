@@ -71,7 +71,7 @@ export async function getEvents(options = {}) {
  */
 export async function getEventById(eventId) {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/events/${eventId}`);
+    const response = await fetch(`${XANO_BASE_URL}/get_event_by_id?events_id=${eventId}`);
     if (!response.ok) {
       return null;
     }
