@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Calendar, User, Clock } from 'lucide-react';
 import { getBlogPost } from '../services/xanoService';
 
@@ -124,8 +125,42 @@ const BlogPostView = ({ posts }) => {
     );
   }
 
+  // Extract first image from content for Open Graph if no featured image
+  const getFirstImageFromContent = (content) => {
+    if (!content) return null;
+    const imgMatch = content.match(/<img[^>]+src="([^"]+)"/i);
+    return imgMatch ? imgMatch[1] : null;
+  };
+
+  const ogImage = post.featured_image || getFirstImageFromContent(post.content) || `${window.location.origin}/default-og-image.png`;
+  const ogDescription = post.excerpt || post.title;
+  const ogUrl = window.location.href;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <Helmet>
+        <title>{post.title} - Social Engagement Hub</title>
+        <meta name="description" content={ogDescription} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={ogUrl} />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={ogDescription} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:site_name" content="Social Engagement Hub" />
+        <meta property="article:published_time" content={post.created_at} />
+        {post.author && <meta property="article:author" content={post.author} />}
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={ogUrl} />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={ogDescription} />
+        <meta name="twitter:image" content={ogImage} />
+      </Helmet>
+      
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -356,6 +391,7 @@ const BlogPostView = ({ posts }) => {
         }
       `}</style>
     </div>
+    </>
   );
 };
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 
 // Icons and services
 import { Home as HomeIcon, FileText, MessageSquare, Mail, Shield, BarChart3, Settings, Calendar } from 'lucide-react';
@@ -200,9 +201,11 @@ const AppContent = () => {
 // Main App component wraps Router
 const App = () => {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </HelmetProvider>
   );
 };
 
