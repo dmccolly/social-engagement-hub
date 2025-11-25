@@ -195,7 +195,8 @@ export async function getNewsfeedPosts(filters = {}) {
 }
 
 /**
- * Fetch replies for a given post ID. Returns an array of reply objects.
+ * Fetch replies for a given post ID. Returns an object with `success`, `replies`,
+ * and `total` keys.
  *
  * @param {number|string} postId The ID of the post
  */
@@ -206,7 +207,26 @@ export async function getNewsfeedReplies(postId) {
     if (!response.ok) {
       throw new Error(`Failed to fetch replies: ${response.statusText}`);
     }
-    return await response.json();
+    const data = await response.json();
+    
+    // Handle both array response and object response formats
+    if (Array.isArray(data)) {
+      // Xano returns a plain array, normalize it to expected format
+      return {
+        success: true,
+        replies: data,
+        total: data.length
+      };
+    } else if (data.replies) {
+      // Already in expected format with replies array
+      return { success: true, ...data };
+    } else if (data.success !== undefined) {
+      // Has success flag, return as-is
+      return data;
+    } else {
+      // Unknown format, return as-is with success flag
+      return { success: true, replies: [], ...data };
+    }
   } catch (error) {
     console.error('Get newsfeed replies error:', error);
     return { success: false, error: error.message, replies: [], total: 0 };
