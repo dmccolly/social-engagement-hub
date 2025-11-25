@@ -398,7 +398,7 @@ const BlogSection = () => {
   };
 
   const handleShareToFacebook = (post) => {
-    const postUrl = `${window.location.origin}/post/${post.id}`;
+    const postUrl = `${window.location.origin}/blog/${post.id}`;
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
     window.open(shareUrl, 'facebook-share-dialog', 'width=626,height=436');
   };
