@@ -5,6 +5,7 @@ import { getStatusColor, getCategoryColor, formatShortDate } from '../../utils/e
 import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../../services/eventShareService';
 import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
+import EventPreview from './EventPreview';
 
 const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
@@ -14,6 +15,7 @@ const EventListManager = ({ currentUser }) => {
   const [showCreator, setShowCreator] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingRSVPs, setViewingRSVPs] = useState(null);
+  const [previewingEvent, setPreviewingEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -413,6 +415,14 @@ const EventListManager = ({ currentUser }) => {
                           <Edit2 size={14} />
                           Edit
                         </button>
+                        {/* Preview */}
+                        <button
+                          onClick={() => setPreviewingEvent(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                        >
+                          <Eye size={14} />
+                          Preview
+                        </button>
                         {/* Duplicate */}
                         <button
                           onClick={() => handleDuplicate(event)}
@@ -521,6 +531,13 @@ const EventListManager = ({ currentUser }) => {
             setShowCreator(false);
             setEditingEvent(null);
           }}
+        />
+      )}
+
+      {previewingEvent && (
+        <EventPreview
+          event={previewingEvent}
+          onClose={() => setPreviewingEvent(null)}
         />
       )}
     </div>
