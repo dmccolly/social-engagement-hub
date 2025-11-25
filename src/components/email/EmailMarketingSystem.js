@@ -734,12 +734,10 @@ const EmailMarketingSystem = () => {
       <div className="mb-6 flex gap-4 border-b">
         <button onClick={() => setActiveView('campaigns')} className={`px-4 py-2 font-semibold ${activeView === 'campaigns' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Campaigns</button>
         <button onClick={() => setActiveView('lists')} className={`px-4 py-2 font-semibold ${activeView === 'lists' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Subscriber Lists</button>
-          <button onClick={() => setActiveView('groups')} className={`px-4 py-2 font-semibold ${activeView === 'groups' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Mailing Lists</button>
       </div>
          {activeView === 'campaigns' && <CampaignListView />}
          {activeView === 'builder' && emailBuilderViewJSX}
          {activeView === 'lists' && <SubscriberListsView />}
-         {activeView === 'groups' && <GroupManagement />}
        </div>
      );
   };
