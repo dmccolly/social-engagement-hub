@@ -1,5 +1,8 @@
 # XANO API proxy
-/xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/:splat 200
+/xano/events/* https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/events/:splat 200
+/xano/get_event_by_id https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/get_event_by_id 200
+/xano/update_event https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/update_event 200
+/xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
 
 # Serve static share pages for newsfeed posts (for social media crawlers)
 /newsfeed/post/:id  /share/newsfeed-:id.html  200
