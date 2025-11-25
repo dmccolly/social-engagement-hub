@@ -35,6 +35,7 @@ import {
 } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
 import RichTextEditor from '../shared/RichTextEditor';
+import SocialShareButtons from '../SocialShareButtons';
 
 /**
  * FacebookStyleNewsFeed is a fully featured community feed component that includes:
@@ -823,36 +824,13 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                     <MessageSquare size={20} /> <span>Comment</span>
                   </button>
 
-                  <div className="relative">
-                    <button
-                      onClick={() => toggleShareMenu(post.id)}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
-                    >
-                      <Share2 size={20} /> <span>More</span>
-                    </button>
-                    {activeShareMenu === post.id && (
-                      <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button
-                          onClick={() => shareToNetwork(post, 'facebook')}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                          <Facebook size={16} className="text-blue-600" /> Facebook
-                        </button>
-                        <button
-                          onClick={() => shareToNetwork(post, 'twitter')}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                          <Twitter size={16} className="text-blue-400" /> Twitter
-                        </button>
-                        <button
-                          onClick={() => shareToNetwork(post, 'linkedin')}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50"
-                        >
-                          <Linkedin size={16} className="text-blue-700" /> LinkedIn
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <SocialShareButtons
+                    url={`${window.location.origin}/newsfeed/post/${post.id}`}
+                    title={post.content ? post.content.slice(0, 100) : ''}
+                    description={post.content || ''}
+                    size="md"
+                    showLabels={false}
+                  />
                 </div>
               </div>
               {/* Reply section */}

@@ -1,6 +1,7 @@
 // Event List Manager - Manage all events in one place
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin, MessageSquare } from 'lucide-react';
+import SocialShareButtons from '../SocialShareButtons';
 import { getStatusColor, getCategoryColor, formatShortDate } from '../../utils/eventUtils';
 import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../../services/eventShareService';
 import EventCreator from './EventCreator';
@@ -456,39 +457,14 @@ const EventListManager = ({ currentUser }) => {
                           Newsfeed
                         </button>
                         {/* Share to Social Networks */}
-                        <div className="relative">
-                          <button
-                            onClick={() => toggleShareMenuEvent(event.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
-                          >
-                            <Share2 size={14} />
-                            Share
-                          </button>
-                          {shareMenuEvent === event.id && (
-                            <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                              <button
-                                onClick={() => shareEventToNetwork(event, 'facebook')}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-gray-50"
-                              >
-                                <FacebookIcon size={14} className="text-blue-600" />
-                                Facebook
-                              </button>
-                              <button
-                                onClick={() => shareEventToNetwork(event, 'twitter')}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-gray-50"
-                              >
-                                <Twitter size={14} className="text-blue-400" />
-                                Twitter
-                              </button>
-                              <button
-                                onClick={() => shareEventToNetwork(event, 'linkedin')}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-gray-50"
-                              >
-                                <Linkedin size={14} className="text-blue-700" />
-                                LinkedIn
-                              </button>
-                            </div>
-                          )}
+                        <div className="flex items-center">
+                          <SocialShareButtons
+                            url={`${window.location.origin}/events/${event.id}`}
+                            title={event.title}
+                            description={event.description || ''}
+                            size="sm"
+                            showLabels={false}
+                          />
                         </div>
                         {/* View RSVPs */}
                         {event.rsvp_enabled && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { User, X, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
 import PatchedRichBlogEditor from '../PatchedRichBlogEditor';
+import SocialShareButtons from './SocialShareButtons';
 import {
   getPublishedPosts,
   createBlogPost,
@@ -655,14 +656,13 @@ const BlogSection = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleShareToFacebook(post)}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
-                    title="Share to Facebook"
-                  >
-                    <Share2 size={14} />
-                    Share
-                  </button>
+                  <SocialShareButtons
+                    url={`${window.location.origin}/blog/${post.id}`}
+                    title={post.title}
+                    description={post.excerpt || ''}
+                    size="sm"
+                    showLabels={false}
+                  />
                   <button
                     onClick={() => handleEdit(post)}
                     className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
