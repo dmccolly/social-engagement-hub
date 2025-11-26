@@ -1,4 +1,6 @@
 # XANO API proxy
+/xano/authorized_visitors/* https://xajo-bs7d-cagt.n7e.xano.io/api:nCvOpcqo/authorized_visitors/:splat 200
+/xano/authorized_visitors https://xajo-bs7d-cagt.n7e.xano.io/api:nCvOpcqo/authorized_visitors 200
 /xano/events/* https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/events/:splat 200
 /xano/get_event_by_id https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/get_event_by_id 200
 /xano/update_event https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/update_event 200
