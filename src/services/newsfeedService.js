@@ -254,7 +254,7 @@ export async function createNewsfeedPost(postData) {
       author_name: authorName,
       author_email: postData.author_email || null,
       content: content,
-      parent_id: postData.parent_id || null,
+      parent: postData.parent_id || null,  // Xano field is 'parent' not 'parent_id'
       post_type: postData.post_type || 'post',
       session_id: postData.session_id || null,
       author_id: postData.author_id || null
