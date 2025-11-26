@@ -14,15 +14,16 @@
   [headers.values]
     X-Frame-Options = "ALLOWALL"
 
-[[edge_functions]]
-  function = "og-tags"
-  path = "/blog/*"
-
 [[redirects]]
   from = "/xano/*"
   to = "/.netlify/functions/xano-proxy/:splat"
   status = 200
   force = true
+
+[[redirects]]
+  from = "/blog/:id"
+  to = "/.netlify/functions/blog-og"
+  status = 200
 
 [[redirects]]
   from = "/*"
