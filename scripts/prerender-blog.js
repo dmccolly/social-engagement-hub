@@ -6,26 +6,18 @@
 
 const fs = require('fs');
 const path = require('path');
-const https = require('https');
+const fetch = require('node-fetch');
 
 const XANO_BASE_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 const BUILD_DIR = path.join(__dirname, '../build');
 
 // Fetch data from URL
-function fetchData(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', reject);
-  });
+async function fetchData(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
 }
 
 // Extract first image from HTML content
