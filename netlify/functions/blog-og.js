@@ -13,17 +13,31 @@ exports.handler = async (event, context) => {
   // Detect social media crawlers
   const isCrawler = /facebookexternalhit|twitterbot|linkedinbot|whatsapp|slackbot|pinterest|telegrambot/i.test(userAgent);
   
-  // Extract blog ID from path
-  const blogIdMatch = event.path.match(/\/blog\/(\d+)/);
+  // Extract blog ID from path or query parameters
+  let blogId = null;
   
-  if (!blogIdMatch) {
-    return {
-      statusCode: 404,
-      body: 'Blog post not found'
-    };
+  // Try to get from path
+  const blogIdMatch = event.path.match(/\/blog\/(\d+)/);
+  if (blogIdMatch) {
+    blogId = blogIdMatch[1];
   }
   
-  const blogId = blogIdMatch[1];
+  // Try to get from query parameters (Netlify redirect passes :id as query param)
+  if (!blogId && event.queryStringParameters && event.queryStringParameters.id) {
+    blogId = event.queryStringParameters.id;
+  }
+  
+  // Debug log
+  console.log('Event path:', event.path);
+  console.log('Query params:', event.queryStringParameters);
+  console.log('Blog ID:', blogId);
+  
+  if (!blogId) {
+    return {
+      statusCode: 404,
+      body: 'Blog post not found - no ID'
+    };
+  }
   
   // For regular users (not crawlers), return a minimal HTML that will load the React app
   if (!isCrawler) {
