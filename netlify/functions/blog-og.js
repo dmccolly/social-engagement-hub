@@ -51,11 +51,11 @@ exports.handler = async (event, context) => {
   }
   
   // For crawlers, fetch blog data and serve meta tags
-  const xanoBaseUrl = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
+  const baseUrl = 'https://gleaming-cendol-417bf3.netlify.app';
   
   try {
-    // Fetch blog post data from Xano (using asset endpoint)
-    const response = await fetch(`${xanoBaseUrl}/asset/${blogId}`);
+    // Fetch blog post data from Xano via proxy (using asset endpoint)
+    const response = await fetch(`${baseUrl}/xano/asset/${blogId}`);
     
     if (!response.ok) {
       return {
