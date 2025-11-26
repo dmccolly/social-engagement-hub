@@ -8,17 +8,40 @@
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
-  const path = event.path;
-  const blogIdMatch = path.match(/\/blog\/(\d+)/);
+  // Get blog ID from path parameter or query string
+  let blogId = null;
   
-  if (!blogIdMatch) {
-    return {
-      statusCode: 404,
-      body: 'Blog post not found'
-    };
+  // Try to get from path
+  if (event.path) {
+    const pathMatch = event.path.match(/\/blog\/(\d+)/);
+    if (pathMatch) {
+      blogId = pathMatch[1];
+    }
   }
   
-  const blogId = blogIdMatch[1];
+  // Try to get from query string
+  if (!blogId && event.queryStringParameters && event.queryStringParameters.id) {
+    blogId = event.queryStringParameters.id;
+  }
+  
+  // Try to get from Netlify redirect params
+  if (!blogId && event.queryStringParameters) {
+    // Netlify passes :id as a query parameter
+    for (const key in event.queryStringParameters) {
+      if (key === 'id' || /^\d+$/.test(event.queryStringParameters[key])) {
+        blogId = event.queryStringParameters[key];
+        break;
+      }
+    }
+  }
+  
+  if (!blogId) {
+    console.log('Debug - event:', JSON.stringify(event));
+    return {
+      statusCode: 404,
+      body: 'Blog post not found - no ID provided'
+    };
+  }
   const xanoBaseUrl = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
   
   try {
