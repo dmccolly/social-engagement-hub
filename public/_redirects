@@ -1,9 +1,14 @@
-# XANO API proxy
-/xano/authorized_visitors/* https://xajo-bs7d-cagt.n7e.xano.io/api:nCvOpcqo/authorized_visitors/:splat 200!
-/xano/authorized_visitors https://xajo-bs7d-cagt.n7e.xano.io/api:nCvOpcqo/authorized_visitors 200!
+# XANO API proxy - specific rules MUST come before catch-all
+# Visitor Management API (separate group)
+/xano/authorized_visitors/:id  https://xajo-bs7d-cagt.n7e.xano.io/api:nCvOpcqo/authorized_visitors/:id  200!
+/xano/authorized_visitors  https://xajo-bs7d-cagt.n7e.xano.io/api:nCvOpcqo/authorized_visitors  200!
+
+# Events API
 /xano/events/* https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/events/:splat 200
 /xano/get_event_by_id https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/get_event_by_id 200
 /xano/update_event https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV/update_event 200
+
+# Main API catch-all (MUST be last)
 /xano/* https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5/:splat 200
 
 # Serve static share pages for newsfeed posts (for social media crawlers)
