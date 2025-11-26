@@ -21,12 +21,6 @@
   force = true
 
 [[redirects]]
-  from = "/blog/:id"
-  to = "/.netlify/functions/blog-meta"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
