@@ -2,6 +2,11 @@
   command = "npm run build"
   publish = "build"
 
+[[plugins]]
+  package = "@netlify/plugin-prerender"
+  [plugins.inputs]
+    crawl = true
+
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["node-fetch"]
