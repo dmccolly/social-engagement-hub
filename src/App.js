@@ -21,6 +21,7 @@ import NewsfeedPostView from './components/newsfeed/NewsfeedPostView';
 
 // Admin components
 import AdminDashboard from './components/admin/AdminDashboardIntegration';
+import VisitorAuthManager from './components/admin/VisitorAuthManager';
 
 // Calendar components
 import EventListManager from './components/events/EventListManager';
@@ -184,6 +185,7 @@ const AppContent = () => {
             <Route path="/newsfeed/post/:id" element={<NewsfeedPostView />} />
             <Route path="/events/:id" element={<EventDetails />} />
               <Route path="/email/groups" element={<GroupManagement />} />
+            <Route path="/admin/visitors" element={<VisitorAuthManager />} />
             <Route path="/widget/newsfeed" element={<EnhancedNewsfeedWidget />} />
             <Route path="/widget/newsfeed-simple" element={<StandaloneNewsfeedWidget />} />
             <Route path="/widget/:widgetType" element={<WidgetPreview />} />

@@ -5,11 +5,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Shield, Users, MessageSquare, Mail, BarChart3, Settings,
   TrendingUp, AlertCircle, CheckCircle, XCircle, Clock,
-  Eye, Edit, Trash2, Send, UserPlus, Award, Target
+  Eye, Edit, Trash2, Send, UserPlus, Award, Target, UserCheck
 } from 'lucide-react';
 import AdminModerationService from '../../services/admin/AdminModerationService';
 import VisitorSecurityService from '../../services/security/visitorSecurityService';
 import AdminNewsfeedList from '../newsfeed/AdminNewsfeedList';
+import VisitorAuthManager from './VisitorAuthManager';
 
 const AdminDashboardIntegration = () => {
   const [currentView, setCurrentView] = useState('overview');
@@ -284,6 +285,8 @@ const AdminDashboardIntegration = () => {
         return renderAnalytics();
       case 'settings':
         return renderSettings();
+      case 'visitors':
+        return <VisitorAuthManager />;
       case 'newsfeed':
         return (
           <div className="space-y-6">
@@ -765,6 +768,7 @@ const AdminDashboardIntegration = () => {
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'moderation', label: 'Moderation', icon: Shield },
+              { id: 'visitors', label: 'Visitors', icon: UserCheck },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
               { id: 'settings', label: 'Settings', icon: Settings },
               { id: 'newsfeed', label: 'Newsfeed', icon: MessageSquare }
