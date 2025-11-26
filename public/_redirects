@@ -10,5 +10,8 @@
 # Serve static share pages for blog posts (for social media crawlers)
 /post/:id  /share/blog-:id.html  200
 
+# Blog posts - serve Open Graph meta tags via function
+/blog/:id  /.netlify/functions/blog-og  200
+
 # SPA fallback for React app
 /* /index.html 200
