@@ -2,12 +2,10 @@
  * Netlify Serverless Function: blog-og
  * 
  * Serves blog post HTML with Open Graph meta tags for social media crawlers
- * Regular users get redirected to the React app
+ * For regular users, returns 301 redirect to let React handle routing
  */
 
 const fetch = require('node-fetch');
-const fs = require('fs');
-const path = require('path');
 
 exports.handler = async (event, context) => {
   const userAgent = event.headers['user-agent'] || '';
@@ -18,27 +16,27 @@ exports.handler = async (event, context) => {
   // Extract blog ID from path
   const blogIdMatch = event.path.match(/\/blog\/(\d+)/);
   
-  if (!isCrawler || !blogIdMatch) {
-    // Not a crawler or invalid path - serve the React app index.html
-    try {
-      const indexPath = path.join(__dirname, '../../build/index.html');
-      const html = fs.readFileSync(indexPath, 'utf8');
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'text/html'
-        },
-        body: html
-      };
-    } catch (error) {
-      return {
-        statusCode: 404,
-        body: 'Not found'
-      };
-    }
+  if (!blogIdMatch) {
+    return {
+      statusCode: 404,
+      body: 'Blog post not found'
+    };
   }
   
   const blogId = blogIdMatch[1];
+  
+  // For regular users (not crawlers), return a minimal HTML that will load the React app
+  if (!isCrawler) {
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/html'
+      },
+      body: `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta http-equiv="refresh" content="0;url=/blog/${blogId}"/><script>window.location.href="/blog/${blogId}";</script></head><body>Loading...</body></html>`
+    };
+  }
+  
+  // For crawlers, fetch blog data and serve meta tags
   const xanoBaseUrl = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
   
   try {
@@ -46,15 +44,9 @@ exports.handler = async (event, context) => {
     const response = await fetch(`${xanoBaseUrl}/blog_posts/${blogId}`);
     
     if (!response.ok) {
-      // Blog post not found - serve React app
-      const indexPath = path.join(__dirname, '../../build/index.html');
-      const html = fs.readFileSync(indexPath, 'utf8');
       return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'text/html'
-        },
-        body: html
+        statusCode: 404,
+        body: 'Blog post not found'
       };
     }
     
@@ -100,13 +92,11 @@ exports.handler = async (event, context) => {
     <meta name="twitter:title" content="${ogTitle}" />
     <meta name="twitter:description" content="${ogDescription}" />
     <meta name="twitter:image" content="${ogImage}" />
-    
-    <script defer="defer" src="/static/js/main.9701141e.js"></script>
-    <link href="/static/css/main.f67e30b6.css" rel="stylesheet">
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <h1>${ogTitle}</h1>
+    <p>${ogDescription}</p>
+    <p><a href="${ogUrl}">Read full post</a></p>
   </body>
 </html>`;
     
@@ -121,22 +111,9 @@ exports.handler = async (event, context) => {
     
   } catch (error) {
     console.error('Error fetching blog post:', error);
-    // On error, serve React app
-    try {
-      const indexPath = path.join(__dirname, '../../build/index.html');
-      const html = fs.readFileSync(indexPath, 'utf8');
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'text/html'
-        },
-        body: html
-      };
-    } catch (err) {
-      return {
-        statusCode: 500,
-        body: 'Internal server error'
-      };
-    }
+    return {
+      statusCode: 500,
+      body: 'Internal server error'
+    };
   }
 };
