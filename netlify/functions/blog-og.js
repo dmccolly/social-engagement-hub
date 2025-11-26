@@ -51,11 +51,11 @@ exports.handler = async (event, context) => {
   }
   
   // For crawlers, fetch blog data and serve meta tags
-  const xanoBaseUrl = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
+  const xanoBaseUrl = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
   
   try {
-    // Fetch blog post data from Xano
-    const response = await fetch(`${xanoBaseUrl}/blog_posts/${blogId}`);
+    // Fetch blog post data from Xano (using asset endpoint)
+    const response = await fetch(`${xanoBaseUrl}/asset/${blogId}`);
     
     if (!response.ok) {
       return {
@@ -64,7 +64,7 @@ exports.handler = async (event, context) => {
       };
     }
     
-    const post = await response.json();
+    const asset = await response.json();
     
     // Extract first image from content if no featured image
     const getFirstImageFromContent = (content) => {
@@ -73,10 +73,10 @@ exports.handler = async (event, context) => {
       return imgMatch ? imgMatch[1] : null;
     };
     
-    const ogImage = post.featured_image || getFirstImageFromContent(post.content) || 'https://gleaming-cendol-417bf3.netlify.app/default-og-image.png';
-    const ogDescription = (post.excerpt || post.title || 'Read this blog post on Social Engagement Hub').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const ogImage = asset.featured_image || getFirstImageFromContent(asset.content) || 'https://gleaming-cendol-417bf3.netlify.app/default-og-image.png';
+    const ogDescription = (asset.excerpt || asset.title || 'Read this blog post on Social Engagement Hub').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const ogUrl = `https://gleaming-cendol-417bf3.netlify.app/blog/${blogId}`;
-    const ogTitle = (post.title || 'Blog Post').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const ogTitle = (asset.title || 'Blog Post').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
     // Generate HTML with meta tags for crawlers
     const html = `<!DOCTYPE html>
@@ -97,8 +97,8 @@ exports.handler = async (event, context) => {
     <meta property="og:description" content="${ogDescription}" />
     <meta property="og:image" content="${ogImage}" />
     <meta property="og:site_name" content="Social Engagement Hub" />
-    ${post.created_at ? `<meta property="article:published_time" content="${post.created_at}" />` : ''}
-    ${post.author ? `<meta property="article:author" content="${post.author}" />` : ''}
+    ${asset.created_at ? `<meta property="article:published_time" content="${asset.created_at}" />` : ''}
+    ${asset.author ? `<meta property="article:author" content="${asset.author}" />` : ''}
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
