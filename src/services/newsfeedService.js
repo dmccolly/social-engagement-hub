@@ -592,3 +592,31 @@ export async function deleteNewsfeedPost(postId) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Delete a newsfeed reply
+ * @param {number} replyId - Reply ID to delete
+ * @returns {Promise<Object>} Success status and message
+ */
+export async function deleteNewsfeedReply(replyId) {
+  try {
+    const url = `/xano/newsfeed_replies/${replyId}`;
+    console.log('DELETE reply request URL:', url, 'for replyId:', replyId);
+    const response = await fetch(url, {
+      method: 'DELETE'
+    });
+    
+    console.log('DELETE reply response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('DELETE reply failed:', response.status, errorText);
+      throw new Error(`Failed to delete reply: ${response.statusText} - ${errorText}`);
+    }
+    
+    return { success: true, message: 'Reply deleted successfully' };
+  } catch (error) {
+    console.error('Delete newsfeed reply error:', error);
+    return { success: false, error: error.message };
+  }
+}

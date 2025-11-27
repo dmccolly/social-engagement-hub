@@ -30,7 +30,8 @@ import {
   toggleNewsfeedLike,
   getNewsfeedReplies,
   getNewsfeedAnalytics,
-  deleteNewsfeedPost
+  deleteNewsfeedPost,
+  deleteNewsfeedReply
 } from '../../services/newsfeedService';
 import { createVisitorSession } from '../../services/newsfeedService';
 import RichTextEditor from '../shared/RichTextEditor';
@@ -257,6 +258,35 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
       console.error('Delete post error:', error);
       const errorMsg = error.message || String(error) || 'An error occurred';
       alert(`An error occurred while deleting the post: ${errorMsg}`);
+    }
+  };
+
+  const handleDeleteReply = async (postId, replyId) => {
+    console.log('handleDeleteReply called with replyId:', replyId);
+    
+    if (!window.confirm('Are you sure you want to delete this reply? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const result = await deleteNewsfeedReply(replyId);
+      console.log('Delete reply result:', result);
+      
+      if (result.success) {
+        // Remove reply from state
+        setReplies(prevReplies => ({
+          ...prevReplies,
+          [postId]: prevReplies[postId]?.filter(r => r.id !== replyId) || []
+        }));
+        alert('Reply deleted successfully');
+      } else {
+        const errorMsg = result.error ? String(result.error) : 'Unknown error';
+        alert(`Failed to delete reply: ${errorMsg}`);
+      }
+    } catch (error) {
+      console.error('Delete reply error:', error);
+      const errorMsg = error.message || String(error) || 'An error occurred';
+      alert(`An error occurred while deleting the reply: ${errorMsg}`);
     }
   };
 
@@ -891,7 +921,18 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                               <User className="text-gray-600" size={16} />
                             </div>
                             <div className="flex-1 bg-white rounded-2xl p-3">
-                              <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
+                              <div className="flex items-start justify-between">
+                                <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
+                                {isAdmin && (
+                                  <button
+                                    onClick={() => handleDeleteReply(post.id, reply.id)}
+                                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                    title="Delete reply"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                              </div>
                               <div 
                                 className="text-gray-800 text-sm mt-1 post-content"
                                 dangerouslySetInnerHTML={{ __html: sanitizePostHtml(reply.content || '') }}

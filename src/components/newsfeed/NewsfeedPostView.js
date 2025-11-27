@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, User, Clock, Heart, MessageSquare, Share2 } from 'lucide-react';
-import { getNewsfeedPosts, toggleNewsfeedLike, getNewsfeedReplies } from '../../services/newsfeedService';
+import { ArrowLeft, User, Clock, Heart, MessageSquare, Share2, Trash2 } from 'lucide-react';
+import { getNewsfeedPosts, toggleNewsfeedLike, getNewsfeedReplies, deleteNewsfeedReply } from '../../services/newsfeedService';
 import { sanitizePostHtml } from '../../utils/sanitizePostHtml';
 
 /**
@@ -23,6 +23,16 @@ const NewsfeedPostView = () => {
     loadPost();
     loadVisitorSession();
   }, [id]);
+
+  // Admin emails list
+  const ADMIN_EMAILS = [
+    'danmccolly@gmail.com',
+    'dmccolly@gmail.com',
+    'admin@historyofidahobroadcasting.org'
+  ];
+
+  // Check if current user is admin
+  const isAdmin = visitorSession && ADMIN_EMAILS.includes(visitorSession.email?.toLowerCase());
 
   const loadVisitorSession = () => {
     try {
@@ -89,6 +99,26 @@ const NewsfeedPostView = () => {
     } else {
       navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
+    }
+  };
+
+  const handleDeleteReply = async (replyId) => {
+    if (!window.confirm('Are you sure you want to delete this reply?')) {
+      return;
+    }
+    
+    try {
+      const result = await deleteNewsfeedReply(replyId);
+      if (result.success) {
+        // Remove reply from state
+        setReplies(prev => prev.filter(r => r.id !== replyId));
+        alert('Reply deleted successfully');
+      } else {
+        alert('Failed to delete reply: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Delete reply error:', error);
+      alert('Error deleting reply');
     }
   };
 
@@ -246,7 +276,18 @@ const NewsfeedPostView = () => {
                       <User className="text-gray-600" size={16} />
                     </div>
                     <div className="flex-1 bg-white rounded-2xl p-3">
-                      <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
+                      <div className="flex items-start justify-between">
+                        <h6 className="font-semibold text-sm text-gray-900">{reply.author_name}</h6>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteReply(reply.id)}
+                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Delete reply"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
                       <div 
                         className="text-gray-800 text-sm mt-1 post-content"
                         dangerouslySetInnerHTML={{ __html: sanitizePostHtml(reply.content || '') }}
