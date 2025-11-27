@@ -745,13 +745,15 @@ const EnhancedNewsfeedWidget = () => {
                       )}
                     </div>
                     
-                    <button
-                      onClick={handleViewFullFeed}
+                    <a
+                      href={`https://www.historyofidahobroadcasting.org/tools-hoibf/social-admin?newsfeed_post=${post.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
                     >
                       View Full Discussion
                       <ExternalLink size={12} />
-                    </button>
+                    </a>
                   </div>
                   
                   {/* Reply Form */}
@@ -797,6 +799,13 @@ const EnhancedNewsfeedWidget = () => {
                             className="text-xs text-gray-700 leading-relaxed prose prose-sm max-w-none"
                             dangerouslySetInnerHTML={{ __html: sanitizeHTML(reply.content) }}
                           />
+                          <button
+                            onClick={() => setReplyingTo(post.id)}
+                            className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          >
+                            <MessageCircle size={12} />
+                            Reply
+                          </button>
                         </div>
                       ))}
                       
