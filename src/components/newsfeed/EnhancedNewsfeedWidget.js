@@ -746,7 +746,7 @@ const EnhancedNewsfeedWidget = () => {
                     </div>
                     
                     <a
-                      href={`https://www.historyofidahobroadcasting.org/tools-hoibf/social-admin?newsfeed_post=${post.id}`}
+                      href={`https://gleaming-cendol-417bf3.netlify.app/newsfeed/post/${post.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
