@@ -6,7 +6,7 @@ import DOMPurify from 'dompurify';
 import { 
   MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X, 
   Bold, Italic, Link as LinkIcon, Image as ImageIcon, Paperclip,
-  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile
+  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle
 } from 'lucide-react';
 import { 
   getNewsfeedPosts, 
