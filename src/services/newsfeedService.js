@@ -533,6 +533,38 @@ export async function updateNewsfeedPost(postId, postData) {
 }
 
 /**
+ * Archive a newsfeed post by ID (sets status to 'archived').
+ *
+ * @param {number|string} postId The ID of the post to archive
+ * @returns {Promise<object>} Response object with success status
+ */
+export async function archiveNewsfeedPost(postId) {
+  try {
+    const url = buildUrl(postId);
+    console.log('PATCH request URL (archive):', url, 'for postId:', postId);
+    
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'archived' })
+    });
+    
+    console.log('PATCH response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PATCH (archive) failed:', response.status, errorText);
+      throw new Error(`Failed to archive post: ${response.statusText} - ${errorText}`);
+    }
+    
+    return { success: true, message: 'Post archived successfully' };
+  } catch (error) {
+    console.error('Archive newsfeed post error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Delete a newsfeed post by ID.
  *
  * @param {number|string} postId The ID of the post to delete

@@ -6,7 +6,7 @@ import DOMPurify from 'dompurify';
 import { 
   MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X, 
   Bold, Italic, Link as LinkIcon, Image as ImageIcon, Paperclip,
-  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle, Trash2
+  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle, Trash2, Archive
 } from 'lucide-react';
 import { 
   getNewsfeedPosts, 
@@ -14,7 +14,8 @@ import {
   toggleNewsfeedLike, 
   getNewsfeedAnalytics,
   getNewsfeedReplies,
-  deleteNewsfeedPost 
+  deleteNewsfeedPost,
+  archiveNewsfeedPost 
 } from '../../services/newsfeedService';
 import RichTextEditor from '../shared/RichTextEditor';
 
@@ -493,6 +494,64 @@ const EnhancedNewsfeedWidget = () => {
     }
   };
 
+  const handleArchive = async (postId, isReply = false) => {
+    if (!isAdmin) {
+      alert('Only administrators can archive posts and replies.');
+      return;
+    }
+    
+    // Show confirmation dialog
+    const itemType = isReply ? 'reply' : 'post';
+    const confirmed = window.confirm(`Are you sure you want to archive this ${itemType}? It will be hidden from the feed but can be restored later.`);
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    try {
+      const result = await archiveNewsfeedPost(postId);
+      
+      if (result.success) {
+        if (isReply) {
+          // Remove reply from postReplies state
+          setPostReplies(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(parentId => {
+              updated[parentId] = updated[parentId].filter(reply => reply.id !== postId);
+            });
+            return updated;
+          });
+          
+          // Update comments count for parent post
+          setPosts(prev => prev.map(post => {
+            const replies = postReplies[post.id] || [];
+            const wasReplyOfThisPost = replies.some(r => r.id === postId);
+            return wasReplyOfThisPost
+              ? { ...post, comments_count: Math.max(0, post.comments_count - 1) }
+              : post;
+          }));
+        } else {
+          // Remove post from posts state
+          setPosts(prev => prev.filter(post => post.id !== postId));
+          
+          // Remove associated replies
+          setPostReplies(prev => {
+            const updated = { ...prev };
+            delete updated[postId];
+            return updated;
+          });
+        }
+        
+        alert(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} archived successfully.`);
+      } else {
+        alert(`Failed to archive ${itemType}: ` + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Archive error:', error);
+      alert(`Failed to archive ${itemType}: ` + error.message);
+    }
+  };
+
   const toggleReplies = (postId) => {
     setExpandedPosts(prev => {
       const isExpanded = !prev[postId];
@@ -774,13 +833,22 @@ const EnhancedNewsfeedWidget = () => {
                         {formatDate(post.created_at)}
                       </span>
                       {isAdmin && (
-                        <button
-                          onClick={() => handleDelete(post.id, false)}
-                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                          title="Delete post"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleArchive(post.id, false)}
+                            className="text-yellow-600 hover:text-yellow-800 p-1 rounded hover:bg-yellow-50 transition-colors"
+                            title="Archive post"
+                          >
+                            <Archive size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(post.id, false)}
+                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Delete post"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -878,13 +946,22 @@ const EnhancedNewsfeedWidget = () => {
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-gray-500">{formatDate(reply.created_at)}</span>
                               {isAdmin && (
-                                <button
-                                  onClick={() => handleDelete(reply.id, true)}
-                                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                                  title="Delete reply"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleArchive(reply.id, true)}
+                                    className="text-yellow-600 hover:text-yellow-800 p-1 rounded hover:bg-yellow-50 transition-colors"
+                                    title="Archive reply"
+                                  >
+                                    <Archive size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(reply.id, true)}
+                                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                    title="Delete reply"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
