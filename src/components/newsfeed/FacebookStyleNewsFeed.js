@@ -75,6 +75,15 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   
   // Check if current user is an admin
   const isAdmin = visitorSession && ADMIN_EMAILS.includes(visitorSession.email?.toLowerCase());
+  
+  // Debug logging for admin check
+  useEffect(() => {
+    console.log('🔍 Admin Check Debug:');
+    console.log('  visitorSession:', visitorSession);
+    console.log('  email:', visitorSession?.email);
+    console.log('  isAdmin:', isAdmin);
+    console.log('  ADMIN_EMAILS:', ADMIN_EMAILS);
+  }, [visitorSession, isAdmin]);
 
   // Load visitor session and posts on mount
   useEffect(() => {
