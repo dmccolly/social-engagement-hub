@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, Heart, Share2, Send, User, Mail, Clock, 
-  MoreVertical, TrendingUp, Search, Shield, AlertCircle 
+  MoreVertical, TrendingUp, Search, Shield, AlertCircle, Trash2, Archive 
 } from 'lucide-react';
 import { 
   getNewsfeedPosts, 
@@ -12,7 +12,9 @@ import {
   toggleVisitorLike, 
   getNewsfeedReplies,
   createVisitorSession,
-  getVisitorPosts 
+  getVisitorPosts,
+  deleteNewsfeedPost,
+  archiveNewsfeedPost 
 } from '../../services/newsfeedService';
 import { getEnhancedVisitorData } from '../../services/newsfeed/visitorRetentionService';
 import EnhancedVisitorRegistrationForm from './EnhancedVisitorRegistrationForm';
@@ -29,6 +31,15 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired, visito
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [visitorActivity, setVisitorActivity] = useState(null);
   const [draftPost, setDraftPost] = useState('');
+  
+  // Admin email list - users with these emails have admin privileges
+  const ADMIN_EMAILS = [
+    'dmccolly@gmail.com',
+    'admin@historyofidahobroadcasting.org'
+  ];
+  
+  // Check if current visitor is an admin
+  const isAdmin = visitorSession && ADMIN_EMAILS.includes(visitorSession.email?.toLowerCase());
 
   // Auto-save draft functionality
   useEffect(() => {
@@ -323,6 +334,98 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired, visito
     }
   };
 
+  const handleDelete = async (postId, isReply = false) => {
+    if (!isAdmin) {
+      alert('Only administrators can delete posts and replies.');
+      return;
+    }
+    
+    const itemType = isReply ? 'reply' : 'post';
+    const confirmed = window.confirm(`Are you sure you want to delete this ${itemType}? This action cannot be undone.`);
+    
+    if (!confirmed) return;
+    
+    try {
+      const result = await deleteNewsfeedPost(postId);
+      
+      if (result.success) {
+        if (isReply) {
+          // Remove reply from replies state
+          setReplies(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(parentId => {
+              updated[parentId] = updated[parentId].filter(reply => reply.id !== postId);
+            });
+            return updated;
+          });
+        } else {
+          // Remove post from posts state
+          setPosts(prev => prev.filter(post => post.id !== postId));
+          
+          // Remove associated replies
+          setReplies(prev => {
+            const updated = { ...prev };
+            delete updated[postId];
+            return updated;
+          });
+        }
+        
+        showNotification(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} deleted successfully.`, 'success');
+      } else {
+        showNotification(`Failed to delete ${itemType}: ` + (result.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      showNotification(`Failed to delete ${itemType}: ` + error.message, 'error');
+    }
+  };
+
+  const handleArchive = async (postId, isReply = false) => {
+    if (!isAdmin) {
+      alert('Only administrators can archive posts and replies.');
+      return;
+    }
+    
+    const itemType = isReply ? 'reply' : 'post';
+    const confirmed = window.confirm(`Are you sure you want to archive this ${itemType}? It will be hidden from the feed but can be restored later.`);
+    
+    if (!confirmed) return;
+    
+    try {
+      const result = await archiveNewsfeedPost(postId);
+      
+      if (result.success) {
+        if (isReply) {
+          // Remove reply from replies state
+          setReplies(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(parentId => {
+              updated[parentId] = updated[parentId].filter(reply => reply.id !== postId);
+            });
+            return updated;
+          });
+        } else {
+          // Remove post from posts state
+          setPosts(prev => prev.filter(post => post.id !== postId));
+          
+          // Remove associated replies
+          setReplies(prev => {
+            const updated = { ...prev };
+            delete updated[postId];
+            return updated;
+          });
+        }
+        
+        showNotification(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} archived successfully.`, 'success');
+      } else {
+        showNotification(`Failed to archive ${itemType}: ` + (result.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      console.error('Archive error:', error);
+      showNotification(`Failed to archive ${itemType}: ` + error.message, 'error');
+    }
+  };
+
   const trackVisitorEvent = (sessionId, event, metadata = {}) => {
     // Track visitor events for analytics
     if (window.gtag) {
@@ -524,9 +627,29 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired, visito
                     </p>
                   </div>
                 </div>
-                <button className="text-gray-400 hover:text-gray-600">
-                  <MoreVertical size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => handleArchive(post.id, false)}
+                        className="text-yellow-600 hover:text-yellow-800 p-1.5 rounded hover:bg-yellow-50 transition-colors"
+                        title="Archive post"
+                      >
+                        <Archive size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(post.id, false)}
+                        className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors"
+                        title="Delete post"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <MoreVertical size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* Post Content */}
@@ -595,13 +718,33 @@ const EnhancedNewsFeedIntegration = ({ currentUser, onMembershipRequired, visito
                           </span>
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm text-gray-900">
-                              {reply.author_name || 'Visitor'}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(reply.created_at || reply.timestamp).toLocaleString()}
-                            </span>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm text-gray-900">
+                                {reply.author_name || 'Visitor'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(reply.created_at || reply.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                            {isAdmin && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleArchive(reply.id, true)}
+                                  className="text-yellow-600 hover:text-yellow-800 p-1 rounded hover:bg-yellow-50 transition-colors"
+                                  title="Archive reply"
+                                >
+                                  <Archive size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(reply.id, true)}
+                                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                  title="Delete reply"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <p className="text-sm text-gray-700">
                             {reply.content}
