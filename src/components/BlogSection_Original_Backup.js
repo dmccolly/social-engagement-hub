@@ -198,7 +198,7 @@ const BlogSection = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold mb-1">
-                    <Link to={`/post/${post.id}`} className="text-blue-600 hover:underline">
+                    <Link to={`/blog/${post.id}`} className="text-blue-600 hover:underline">
                       {post.title}
                     </Link>
                   </h2>
