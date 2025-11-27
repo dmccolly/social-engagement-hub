@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Share2, Copy, Check, Facebook, Twitter, Linkedin, Mail } from 'lucide-react';
+import { Share2, Copy, Check, Twitter, Linkedin, Mail } from 'lucide-react';
 
 /**
  * SocialShareButtons Component
  * 
  * A reusable component for sharing content across multiple social platforms
- * Supports: Copy Link, Facebook, Twitter/X, LinkedIn, Email
+ * Supports: Copy Link, Twitter/X, LinkedIn, Email
  * 
  * @param {string} url - The URL to share
  * @param {string} title - The title/text to share
@@ -62,10 +62,7 @@ const SocialShareButtons = ({
     }
   };
 
-  const handleFacebookShare = () => {
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(shareUrl, 'facebook-share-dialog', 'width=626,height=436');
-  };
+
 
   const handleTwitterShare = () => {
     const text = title ? `${title}\n\n` : '';
@@ -103,15 +100,7 @@ const SocialShareButtons = ({
         {showLabels && <span className="text-sm font-medium">{copied ? 'Copied!' : 'Copy Link'}</span>}
       </button>
 
-      {/* Facebook Button */}
-      <button
-        onClick={handleFacebookShare}
-        className={`${buttonBaseClass} bg-blue-600 text-white hover:bg-blue-700`}
-        title="Share on Facebook"
-      >
-        <Facebook size={iconSizes[size]} fill="currentColor" />
-        {showLabels && <span className="text-sm font-medium">Facebook</span>}
-      </button>
+
 
       {/* Twitter/X Button */}
       <button

@@ -6,7 +6,8 @@ import DOMPurify from 'dompurify';
 import { 
   MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X, 
   Bold, Italic, Link as LinkIcon, Image as ImageIcon, Paperclip,
-  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle, Trash2, Archive
+  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle, Trash2, Archive,
+  Share2, Copy, Check
 } from 'lucide-react';
 import { 
   getNewsfeedPosts, 
@@ -90,6 +91,9 @@ const EnhancedNewsfeedWidget = () => {
   
   // Admin moderation
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
+  // Share functionality
+  const [copiedPostId, setCopiedPostId] = useState(null);
   
   // Admin email list - users with these emails have admin privileges
   const ADMIN_EMAILS = [
@@ -565,6 +569,32 @@ const EnhancedNewsfeedWidget = () => {
     });
   };
 
+  const handleCopyLink = async (postId) => {
+    const postUrl = `https://gleaming-cendol-417bf3.netlify.app/newsfeed/post/${postId}`;
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      setCopiedPostId(postId);
+      setTimeout(() => setCopiedPostId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = postUrl;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopiedPostId(postId);
+        setTimeout(() => setCopiedPostId(null), 2000);
+      } catch (err2) {
+        alert('Failed to copy link');
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   const handleViewFullFeed = () => {
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'navigate_to_feed' }, '*');
@@ -882,6 +912,19 @@ const EnhancedNewsfeedWidget = () => {
                       >
                         <MessageSquare size={14} />
                         <span>Reply</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleCopyLink(post.id)}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                          copiedPostId === post.id
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        title="Copy link to share"
+                      >
+                        {copiedPostId === post.id ? <Check size={14} /> : <Share2 size={14} />}
+                        <span>{copiedPostId === post.id ? 'Copied!' : 'Share'}</span>
                       </button>
                       
                       {post.comments_count > 0 && (

@@ -1,6 +1,6 @@
 // Event List Manager - Manage all events in one place
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Facebook as FacebookIcon, Twitter, Linkedin, MessageSquare } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, Copy, Eye, Users, Search, Filter, Mail, FileText, Share2, Twitter, Linkedin, MessageSquare } from 'lucide-react';
 import SocialShareButtons from '../SocialShareButtons';
 import { getStatusColor, getCategoryColor, formatShortDate } from '../../utils/eventUtils';
 import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../../services/eventShareService';
@@ -147,9 +147,7 @@ const EventListManager = ({ currentUser }) => {
     const url = `${window.location.origin}/events/${eventItem.id}`;
     const title = eventItem.title || '';
     let shareUrl = '';
-    if (network === 'facebook') {
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    } else if (network === 'twitter') {
+    if (network === 'twitter') {
       shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`;
     } else if (network === 'linkedin') {
       shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;

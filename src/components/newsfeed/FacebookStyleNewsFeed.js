@@ -21,8 +21,7 @@ import {
   Twitter,
   Linkedin,
   Trash2,
-  Edit2,
-  Facebook
+  Edit2
 } from 'lucide-react';
 import {
   getNewsfeedPosts,
@@ -41,7 +40,7 @@ import SocialShareButtons from '../SocialShareButtons';
  * FacebookStyleNewsFeed is a fully featured community feed component that includes:
  *  - Rich post composer with images, videos, feelings, and location attachments
  *  - Search bar to filter posts via backend search
- *  - Social share menu on each post (Facebook, Twitter, LinkedIn)
+ *  - Social share menu on each post (Twitter, LinkedIn)
  *  - Replies and nested comments
  *  - Visitor registration with session support
  *  - Likes and analytics counts
@@ -250,9 +249,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
         ? `${post.content.slice(0, 117)}...`
         : post.content;
     let shareUrl = '';
-    if (network === 'facebook') {
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    } else if (network === 'twitter') {
+    if (network === 'twitter') {
       shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(
         snippet || ''
       )}`;
