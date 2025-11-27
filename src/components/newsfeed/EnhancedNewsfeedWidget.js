@@ -433,7 +433,8 @@ const EnhancedNewsfeedWidget = () => {
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'navigate_to_feed' }, '*');
     } else {
-      window.location.href = '/newsfeed';
+      // Navigate to the main site's News Feed section
+      window.location.href = '/?section=newsfeed';
     }
   };
 
