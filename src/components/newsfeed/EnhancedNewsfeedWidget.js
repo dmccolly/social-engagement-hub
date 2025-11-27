@@ -6,14 +6,15 @@ import DOMPurify from 'dompurify';
 import { 
   MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X, 
   Bold, Italic, Link as LinkIcon, Image as ImageIcon, Paperclip,
-  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle
+  Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle, Trash2
 } from 'lucide-react';
 import { 
   getNewsfeedPosts, 
   createNewsfeedPost, 
   toggleNewsfeedLike, 
   getNewsfeedAnalytics,
-  getNewsfeedReplies 
+  getNewsfeedReplies,
+  deleteNewsfeedPost 
 } from '../../services/newsfeedService';
 import RichTextEditor from '../shared/RichTextEditor';
 
@@ -85,6 +86,18 @@ const EnhancedNewsfeedWidget = () => {
   const [expandedPosts, setExpandedPosts] = useState({});
   const [postReplies, setPostReplies] = useState({});
   const [loadingReplies, setLoadingReplies] = useState({});
+  
+  // Admin moderation
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
+  // Admin email list - users with these emails have admin privileges
+  const ADMIN_EMAILS = [
+    'dmccolly@gmail.com',
+    'admin@historyofidahobroadcasting.org'
+  ];
+  
+  // Check if current visitor is an admin
+  const isAdmin = visitorSession && ADMIN_EMAILS.includes(visitorSession.email.toLowerCase());
 
   const sanitizeHTML = (html) => {
     if (!html) return '';
@@ -422,6 +435,64 @@ const EnhancedNewsfeedWidget = () => {
     }
   };
 
+  const handleDelete = async (postId, isReply = false) => {
+    if (!isAdmin) {
+      alert('Only administrators can delete posts and replies.');
+      return;
+    }
+    
+    // Show confirmation dialog
+    const itemType = isReply ? 'reply' : 'post';
+    const confirmed = window.confirm(`Are you sure you want to delete this ${itemType}? This action cannot be undone.`);
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    try {
+      const result = await deleteNewsfeedPost(postId);
+      
+      if (result.success) {
+        if (isReply) {
+          // Remove reply from postReplies state
+          setPostReplies(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(parentId => {
+              updated[parentId] = updated[parentId].filter(reply => reply.id !== postId);
+            });
+            return updated;
+          });
+          
+          // Update comments count for parent post
+          setPosts(prev => prev.map(post => {
+            const replies = postReplies[post.id] || [];
+            const wasReplyOfThisPost = replies.some(r => r.id === postId);
+            return wasReplyOfThisPost
+              ? { ...post, comments_count: Math.max(0, post.comments_count - 1) }
+              : post;
+          }));
+        } else {
+          // Remove post from posts state
+          setPosts(prev => prev.filter(post => post.id !== postId));
+          
+          // Remove associated replies
+          setPostReplies(prev => {
+            const updated = { ...prev };
+            delete updated[postId];
+            return updated;
+          });
+        }
+        
+        alert(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} deleted successfully.`);
+      } else {
+        alert(`Failed to delete ${itemType}: ` + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(`Failed to delete ${itemType}: ` + error.message);
+    }
+  };
+
   const toggleReplies = (postId) => {
     setExpandedPosts(prev => {
       const isExpanded = !prev[postId];
@@ -697,10 +768,21 @@ const EnhancedNewsfeedWidget = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="font-semibold text-gray-900 text-sm">{post.author_name}</h4>
-                    <span className="text-xs text-gray-500">
-                      <Clock size={12} className="inline mr-1" />
-                      {formatDate(post.created_at)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        <Clock size={12} className="inline mr-1" />
+                        {formatDate(post.created_at)}
+                      </span>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(post.id, false)}
+                          className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Delete post"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div 
                     className="text-gray-800 text-sm leading-relaxed prose prose-sm max-w-none"
@@ -793,7 +875,18 @@ const EnhancedNewsfeedWidget = () => {
                         <div key={reply.id} className="bg-gray-50 p-3 rounded-lg">
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-semibold text-xs text-gray-900">{reply.author_name}</span>
-                            <span className="text-xs text-gray-500">{formatDate(reply.created_at)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">{formatDate(reply.created_at)}</span>
+                              {isAdmin && (
+                                <button
+                                  onClick={() => handleDelete(reply.id, true)}
+                                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                  title="Delete reply"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div 
                             className="text-xs text-gray-700 leading-relaxed prose prose-sm max-w-none"
