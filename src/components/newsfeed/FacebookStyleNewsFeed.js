@@ -70,6 +70,7 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   // Admin email list - users with these emails have admin privileges
   const ADMIN_EMAILS = [
     'dmccolly@gmail.com',
+    'danmccolly@gmail.com',
     'admin@historyofidahobroadcasting.org'
   ];
   
