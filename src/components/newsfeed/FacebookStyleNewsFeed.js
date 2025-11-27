@@ -67,6 +67,15 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
   const [editingPostId, setEditingPostId] = useState(null);
   const editorRef = useRef(null);
 
+  // Admin email list - users with these emails have admin privileges
+  const ADMIN_EMAILS = [
+    'dmccolly@gmail.com',
+    'admin@historyofidahobroadcasting.org'
+  ];
+  
+  // Check if current user is an admin
+  const isAdmin = visitorSession && ADMIN_EMAILS.includes(visitorSession.email?.toLowerCase());
+
   // Load visitor session and posts on mount
   useEffect(() => {
     loadVisitorSession();
@@ -757,30 +766,33 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                       </p>
                     </div>
                   </div>
-                  <div className="relative">
-                    <button 
-                      onClick={() => togglePostMenu(post.id)}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <MoreVertical size={20} className="text-gray-400" />
-                    </button>
-                    {activePostMenu === post.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button
-                          onClick={() => handleEditPost(post)}
-                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
-                        >
-                          <Edit2 size={16} /> Edit Post
-                        </button>
-                        <button
-                          onClick={() => handleDeletePost(post.id)}
-                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} /> Delete Post
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {isAdmin && (
+                    <div className="relative">
+                      <button 
+                        onClick={() => togglePostMenu(post.id)}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        title="Admin actions"
+                      >
+                        <MoreVertical size={20} className="text-gray-400" />
+                      </button>
+                      {activePostMenu === post.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                          <button
+                            onClick={() => handleEditPost(post)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            <Edit2 size={16} /> Edit Post
+                          </button>
+                          <button
+                            onClick={() => handleDeletePost(post.id)}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} /> Delete Post
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="mb-4">
                   <div 
