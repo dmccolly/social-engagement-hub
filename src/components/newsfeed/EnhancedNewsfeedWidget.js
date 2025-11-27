@@ -198,10 +198,9 @@ const EnhancedNewsfeedWidget = () => {
         setPosts(filteredPosts);
         
         // Load preview replies for each post (first 2 replies)
+        // Load for all posts to get accurate count even if comments_count is 0
         filteredPosts.forEach(post => {
-          if (post.comments_count > 0) {
-            loadRepliesPreview(post.id);
-          }
+          loadRepliesPreview(post.id);
         });
       } else {
         const samplePosts = getSamplePosts();
@@ -232,6 +231,13 @@ const EnhancedNewsfeedWidget = () => {
           ...prev,
           [postId]: sortedReplies.slice(0, limit)
         }));
+        
+        // Update the post's comments_count to reflect actual reply count
+        setPosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { ...post, comments_count: sortedReplies.length }
+            : post
+        ));
       }
     } catch (error) {
       console.error('Failed to load replies preview', error);
