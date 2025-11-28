@@ -171,7 +171,7 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     console.log('Raw assets from Xano:', assets.length, 'total assets');
     
     // Helper function to create excerpt - keep images but limit text
-    const createExcerpt = (html, maxLength = 400) => {
+    const createExcerpt = (html, maxLength = 2000) => {
       if (!html) return '';
       
       // Keep images and text, just limit the length
