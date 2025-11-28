@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sanitizeBeforeSave } from '../utils/htmlSanitizer';
 import { Link } from 'react-router-dom';
 import { User, X, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
 import PatchedRichBlogEditor from '../PatchedRichBlogEditor';
@@ -237,7 +238,7 @@ const BlogSection = () => {
         // Updating an existing post - use values from editor
         response = await updateBlogPost(editingPost.id, {
           title,
-          content,
+          content: sanitizeBeforeSave(content),
           author: editingPost.author,
           tags: tags.trim(),
           featured: featured !== undefined ? featured : editingPost.featured,
@@ -250,7 +251,7 @@ const BlogSection = () => {
         // Creating a new post - use values from editor
         response = await createBlogPost({
           title,
-          content,
+          content: sanitizeBeforeSave(content),
           author: authorName,  // Use visitor's actual name
           tags: tags.trim(),
           featured: featured !== undefined ? featured : false,
