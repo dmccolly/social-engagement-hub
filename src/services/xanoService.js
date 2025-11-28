@@ -121,6 +121,9 @@ export const updateBlogPost = async (postId, postData) => {
       scheduled_datetime: postData.scheduled_datetime || null,
         category_id: 11 // Blog Posts category
     };
+    
+    console.log('[UPDATE DEBUG] Sending to Xano PATCH /asset/' + postId + ':', JSON.stringify(assetData, null, 2));
+    console.log('[UPDATE DEBUG] Tags being sent:', assetData.tags);
 
     const response = await fetch(`${XANO_BASE_URL}/asset/${postId}`, {
       method: 'PATCH',
@@ -135,6 +138,9 @@ export const updateBlogPost = async (postId, postData) => {
     }
 
     const result = await response.json();
+    
+    console.log('[UPDATE DEBUG] Xano response:', JSON.stringify(result, null, 2));
+    console.log('[UPDATE DEBUG] Tags in response:', result.tags);
     
     // Return in expected format
     return {
