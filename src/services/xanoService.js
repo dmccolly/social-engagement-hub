@@ -34,7 +34,7 @@ export const uploadImageViaXano = async (file) => {
 };
 
 /**
- * Create a new blog post (using asset_create endpoint)
+ * Create a new blog post (using asset endpoint)
  */
 export const createBlogPost = async (postData) => {
   try {
@@ -62,9 +62,9 @@ export const createBlogPost = async (postData) => {
     };
 
     console.log('Sending to XANO:', assetData);
-    console.log('URL:', `${XANO_BASE_URL}/asset_create`);
+    console.log('URL:', `${XANO_BASE_URL}/asset`);
 
-    const response = await fetch(`${XANO_BASE_URL}/asset_create`, {
+    const response = await fetch(`${XANO_BASE_URL}/asset`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
