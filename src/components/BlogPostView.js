@@ -231,13 +231,6 @@ const BlogPostView = ({ posts }) => {
               )}
             </div>
 
-            {/* Post Excerpt */}
-            {post.excerpt && (
-              <div className="mb-6 p-4 bg-gray-50 border-l-4 border-blue-600 rounded">
-                <p className="text-lg text-gray-700 italic">{post.excerpt}</p>
-              </div>
-            )}
-
             {/* Post Content */}
             <div
               className="prose prose-lg max-w-none"
