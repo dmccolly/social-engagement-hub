@@ -216,6 +216,7 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
              filteredByDraft++;
              return false;
            }
+           // status:published is OK - it means explicitly published
            
            // Filter out scheduled posts that haven't reached their publish time
            if (asset.is_scheduled && asset.scheduled_datetime) {

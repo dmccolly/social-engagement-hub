@@ -218,11 +218,9 @@ const BlogSection = () => {
         tags = tags ? `${tags},status:draft` : 'status:draft';
         console.log('[PUBLISH DEBUG] Added status:draft, final tags:', tags);
       } else {
-        // Xano ignores empty strings, so we need to send a space to clear the field
-        if (!tags || tags.trim() === '') {
-          tags = ' '; // Single space to force Xano to update the field
-        }
-        console.log('[PUBLISH DEBUG] NOT adding status:draft (status is:', status, '), final tags:', tags);
+        // Xano ignores empty strings and spaces, so use status:published instead
+        tags = tags ? `${tags},status:published` : 'status:published';
+        console.log('[PUBLISH DEBUG] Added status:published, final tags:', tags);
       }
       
       const isScheduled = status === 'scheduled' && scheduled_datetime;
