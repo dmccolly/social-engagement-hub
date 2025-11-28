@@ -208,11 +208,17 @@ const BlogSection = () => {
       }
       
       let tags = editingPost?.tags || '';
+      console.log('[PUBLISH DEBUG] Original tags:', tags);
+      console.log('[PUBLISH DEBUG] Status parameter:', status);
       
       tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
+      console.log('[PUBLISH DEBUG] Tags after removing status:', tags);
       
       if (status === 'draft') {
         tags = tags ? `${tags},status:draft` : 'status:draft';
+        console.log('[PUBLISH DEBUG] Added status:draft, final tags:', tags);
+      } else {
+        console.log('[PUBLISH DEBUG] NOT adding status:draft (status is:', status, '), final tags:', tags);
       }
       
       const isScheduled = status === 'scheduled' && scheduled_datetime;
