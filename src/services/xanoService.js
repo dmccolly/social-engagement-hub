@@ -171,21 +171,28 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     console.log('Raw assets from Xano:', assets.length, 'total assets');
     
     // Helper function to create excerpt - keep images but limit text
-    const createExcerpt = (html, maxLength = 400) => {
+    const createExcerpt = (html, maxLength = 300) => {
       if (!html) return '';
       
-      // For excerpt, keep the HTML (including images) but limit length
-      if (html.length <= maxLength) {
-        return html;
+      // Remove images, videos, and other media elements for excerpt
+      let textOnly = html
+        .replace(/<img[^>]*>/gi, '') // Remove images
+        .replace(/<video[^>]*>.*?<\/video>/gi, '') // Remove videos
+        .replace(/<div[^>]*class="[^"]*media-wrapper[^"]*"[^>]*>.*?<\/div>/gi, '') // Remove media wrappers
+        .replace(/<[^>]+>/g, ' ') // Remove all HTML tags
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      
+      // Limit to maxLength characters
+      if (textOnly.length <= maxLength) {
+        return textOnly;
       }
       
-      // Cut at a reasonable point
-      let excerpt = html.substring(0, maxLength);
-      
-      // Find the last complete tag
-      const lastTagEnd = excerpt.lastIndexOf('>');
-      if (lastTagEnd > 0) {
-        excerpt = excerpt.substring(0, lastTagEnd + 1);
+      // Cut at last complete word
+      let excerpt = textOnly.substring(0, maxLength);
+      const lastSpace = excerpt.lastIndexOf(' ');
+      if (lastSpace > maxLength * 0.8) { // Only cut at word if we're not losing too much
+        excerpt = excerpt.substring(0, lastSpace);
       }
       
       return excerpt + '...';
