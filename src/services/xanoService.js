@@ -174,13 +174,19 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
     const createExcerpt = (html, maxLength = 2000) => {
       if (!html) return '';
       
-      // Keep images and text, just limit the length
-      if (html.length <= maxLength) {
-        return html;
+      // Remove all images from excerpt to avoid duplication
+      let textOnly = html.replace(/<img[^>]*>/gi, '');
+      
+      // Remove empty paragraphs and divs
+      textOnly = textOnly.replace(/<(p|div)[^>]*>\s*<\/(p|div)>/gi, '');
+      
+      // If the text-only version is short enough, return it
+      if (textOnly.length <= maxLength) {
+        return textOnly;
       }
       
       // Cut at a reasonable point
-      let excerpt = html.substring(0, maxLength);
+      let excerpt = textOnly.substring(0, maxLength);
       
       // Find the last complete tag
       const lastTagEnd = excerpt.lastIndexOf('>');
