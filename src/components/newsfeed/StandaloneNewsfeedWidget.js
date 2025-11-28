@@ -261,6 +261,35 @@ const StandaloneNewsfeedWidget = () => {
     ];
   };
 
+  // Process video content to add poster thumbnails
+  const processVideoContent = (content) => {
+    if (!content) return '';
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = DOMPurify.sanitize(content);
+    
+    // Find all video elements
+    const videos = tempDiv.querySelectorAll('video');
+    videos.forEach(video => {
+      const source = video.querySelector('source');
+      if (source) {
+        const videoUrl = source.getAttribute('src');
+        
+        // Check if it's a Cloudinary video
+        if (videoUrl && videoUrl.includes('cloudinary.com') && videoUrl.includes('/video/upload/')) {
+          // Generate poster URL from video URL - extract frame at 3 seconds
+          const posterUrl = videoUrl
+            .replace('/video/upload/', '/video/upload/so_3.0,f_jpg/')
+            .replace(/\.(mov|mp4|webm)$/i, '.jpg');
+          
+          video.setAttribute('poster', posterUrl);
+        }
+      }
+    });
+    
+    return tempDiv.innerHTML;
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -455,7 +484,7 @@ const StandaloneNewsfeedWidget = () => {
                   </div>
                   <div 
                     className="text-gray-800 text-sm leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
+                    dangerouslySetInnerHTML={{ __html: processVideoContent(post.content) }}
                   />
                 </div>
               </div>
