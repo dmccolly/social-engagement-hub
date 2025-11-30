@@ -2,6 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Mail, ArrowRight, Check } from 'lucide-react';
 import { getPublishedPosts } from '../../services/xanoService';
 
+// Sanitize blog HTML to remove float styles and normalize images for email
+const sanitizeBlogHtml = (html) => {
+  if (!html) return '';
+  
+  // Parse the HTML using DOMParser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  // Normalize all images - remove floats and set to full width
+  doc.querySelectorAll('img').forEach(img => {
+    // Remove float and problematic positioning styles
+    img.style.float = '';
+    img.style.cssFloat = '';
+    img.style.clear = 'both';
+    img.style.width = '100%';
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.display = 'block';
+    img.style.margin = '16px 0';
+    
+    // Remove any class that might have float styles
+    img.removeAttribute('class');
+  });
+  
+  // Remove float from any other elements that might have it
+  doc.querySelectorAll('[style]').forEach(el => {
+    if (el.style.float) {
+      el.style.float = '';
+      el.style.cssFloat = '';
+    }
+  });
+  
+  // Clear any floats by adding clear:both to paragraphs after images
+  doc.querySelectorAll('p').forEach(p => {
+    const prevSibling = p.previousElementSibling;
+    if (prevSibling && prevSibling.tagName === 'IMG') {
+      p.style.clear = 'both';
+    }
+  });
+  
+  return doc.body.innerHTML;
+};
+
 const BlogToEmailConverter = ({ onConvert, onCancel }) => {
   const [blogPosts, setBlogPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
@@ -35,8 +78,10 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
     const emailBlocks = [];
     emailBlocks.push({ id: Date.now(), type: 'heading', content: { text: selectedPost.title, level: 1 } });
     if (emailSettings.includeExcerpt && selectedPost.excerpt) emailBlocks.push({ id: Date.now() + 1, type: 'text', content: { text: selectedPost.excerpt } });
-    if (emailSettings.includeImages && selectedPost.featured_image) emailBlocks.push({ id: Date.now() + 2, type: 'image', content: { src: selectedPost.featured_image, alt: selectedPost.title } });
-    if (selectedPost.content) emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: selectedPost.content } });
+    // Set image to full width and centered to match blog layout
+    if (emailSettings.includeImages && selectedPost.featured_image) emailBlocks.push({ id: Date.now() + 2, type: 'image', content: { src: selectedPost.featured_image, alt: selectedPost.title, width: 100, align: 'center' } });
+    // Sanitize blog HTML to remove float styles and normalize images
+    if (selectedPost.content) emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: sanitizeBlogHtml(selectedPost.content) } });
     if (emailSettings.addCallToAction) emailBlocks.push({ id: Date.now() + 4, type: 'button', content: { text: emailSettings.ctaText, url: emailSettings.ctaUrl || `https://yourblog.com/posts/${selectedPost.id}`, color: '#2563eb' } });
     const campaignData = { name: `Newsletter: ${selectedPost.title}`, subject: selectedPost.title, fromName: 'Your Blog', fromEmail: 'blog@yourcompany.com', blocks: emailBlocks };
     onConvert(campaignData);
