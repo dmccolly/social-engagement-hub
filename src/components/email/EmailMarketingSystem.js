@@ -673,7 +673,12 @@ const EmailMarketingSystem = () => {
               <div className="bg-green-50 p-3 rounded"><div className="text-sm text-gray-600">Click Rate</div><div className="text-2xl font-bold text-green-600">{list.engagement.clickRate}%</div></div>
             </div>
             <div className="mt-4 pt-4 border-t">
-              <button onClick={() => { setCurrentList(list); setShowContactManager(true); }} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              <button onClick={() => { 
+                console.log('[EmailMarketingSystem] Manage Contacts clicked for list:', list);
+                console.log('[EmailMarketingSystem] Setting showContactManager to true');
+                setCurrentList(list); 
+                setShowContactManager(true); 
+              }} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 <Users size={18} />
                 Manage Contacts
               </button>
@@ -724,12 +729,19 @@ const EmailMarketingSystem = () => {
         />
       )}
       {showContactManager && currentList && (
-        <ContactManager
-          list={currentList}
-          allContacts={allContacts}
-          onSave={handleSaveContacts}
-          onClose={() => { setShowContactManager(false); setCurrentList(null); }}
-        />
+        <>
+          {console.log('[EmailMarketingSystem] Rendering ContactManager modal', { showContactManager, currentList, contactsCount: allContacts.length })}
+          <ContactManager
+            list={currentList}
+            allContacts={allContacts}
+            onSave={handleSaveContacts}
+            onClose={() => { 
+              console.log('[EmailMarketingSystem] Closing ContactManager');
+              setShowContactManager(false); 
+              setCurrentList(null); 
+            }}
+          />
+        </>
       )}
       <div className="mb-6 flex gap-4 border-b">
         <button onClick={() => setActiveView('campaigns')} className={`px-4 py-2 font-semibold ${activeView === 'campaigns' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}>Campaigns</button>
