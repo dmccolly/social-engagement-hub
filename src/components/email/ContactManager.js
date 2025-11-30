@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Plus, Trash2, Edit, Users, Download, UserPlus } from 'lucide-react';
+import { X, Upload, Plus, Trash2, Edit, Users, Download, UserPlus, ArrowRight } from 'lucide-react';
 import { 
   createContact, 
-  getContacts 
+  getContacts,
+  deleteContact,
+  bulkDeleteContacts
 } from '../../services/email/emailContactService';
 import { 
   addContactsToGroup, 
@@ -68,7 +70,7 @@ const splitFullName = (fullName) => {
   };
 };
 
-const ContactManager = ({ list, allContacts, onSave, onClose }) => {
+const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) => {
   const [contacts, setContacts] = useState(allContacts);
   const [listMembers, setListMembers] = useState([]);
   const [originalMembers, setOriginalMembers] = useState([]);
@@ -82,6 +84,9 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedContacts, setSelectedContacts] = useState([]);
+  const [showMoveToList, setShowMoveToList] = useState(false);
+  const [targetListId, setTargetListId] = useState('');
 
   // Load group contacts on mount
   useEffect(() => {
@@ -404,6 +409,128 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
     }
   };
 
+  const handleDeleteContact = async (contactId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this contact? This cannot be undone.')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('[ContactManager] Deleting contact:', contactId);
+      const result = await deleteContact(contactId);
+      
+      if (result.success) {
+        // Remove from contacts list
+        setContacts(prev => prev.filter(c => normalizeId(c.id) !== normalizeId(contactId)));
+        
+        // Remove from list members if present
+        setListMembers(prev => prev.filter(id => normalizeId(id) !== normalizeId(contactId)));
+        setOriginalMembers(prev => prev.filter(id => normalizeId(id) !== normalizeId(contactId)));
+        
+        alert('✅ Contact deleted successfully!');
+      } else {
+        alert(`❌ Failed to delete contact:\n\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      alert(`❌ Error deleting contact:\n\n${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedContacts.length === 0) {
+      alert('Please select contacts to delete');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to permanently delete ${selectedContacts.length} contact(s)? This cannot be undone.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('[ContactManager] Bulk deleting contacts:', selectedContacts);
+      const result = await bulkDeleteContacts(selectedContacts);
+      
+      if (result.success) {
+        // Remove from contacts list
+        setContacts(prev => prev.filter(c => !selectedContacts.includes(normalizeId(c.id))));
+        
+        // Remove from list members
+        setListMembers(prev => prev.filter(id => !selectedContacts.includes(normalizeId(id))));
+        setOriginalMembers(prev => prev.filter(id => !selectedContacts.includes(normalizeId(id))));
+        
+        // Clear selection
+        setSelectedContacts([]);
+        
+        alert(`✅ Successfully deleted ${result.results.success} contact(s)!`);
+      } else {
+        alert(`❌ Failed to delete contacts:\n\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error bulk deleting contacts:', error);
+      alert(`❌ Error deleting contacts:\n\n${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleContactSelection = (contactId) => {
+    const normalizedId = normalizeId(contactId);
+    setSelectedContacts(prev => {
+      const normalizedPrev = prev.map(id => normalizeId(id));
+      return normalizedPrev.includes(normalizedId)
+        ? prev.filter(id => normalizeId(id) !== normalizedId)
+        : [...prev, normalizedId];
+    });
+  };
+
+  const handleMoveToList = async () => {
+    if (selectedContacts.length === 0) {
+      alert('Please select contacts to move');
+      return;
+    }
+
+    if (!targetListId) {
+      alert('Please select a target list');
+      return;
+    }
+
+    if (parseInt(targetListId) === list.id) {
+      alert('Cannot move contacts to the same list');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log(`[ContactManager] Moving ${selectedContacts.length} contacts to list ${targetListId}`);
+      
+      // Add contacts to target list
+      const addResult = await addContactsToGroup(parseInt(targetListId), selectedContacts);
+      
+      if (addResult.success) {
+        // Remove from current list
+        setListMembers(prev => prev.filter(id => !selectedContacts.includes(normalizeId(id))));
+        
+        // Clear selection
+        setSelectedContacts([]);
+        setShowMoveToList(false);
+        setTargetListId('');
+        
+        alert(`✅ Successfully moved ${selectedContacts.length} contact(s) to the selected list!`);
+      } else {
+        alert(`❌ Failed to move contacts:\n\n${addResult.error}`);
+      }
+    } catch (error) {
+      console.error('Error moving contacts:', error);
+      alert(`❌ Error moving contacts:\n\n${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const exportCSV = () => {
     const members = contacts.filter(c => listMembers.includes(c.id));
     const csv = [
@@ -499,6 +626,78 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
             </div>
           </div>
 
+          {/* Bulk Actions */}
+          {selectedContacts.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Users size={20} className="text-blue-600" />
+                  <span className="font-semibold text-blue-900">
+                    {selectedContacts.length} contact(s) selected
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  {allLists.length > 0 && (
+                    <button
+                      onClick={() => setShowMoveToList(!showMoveToList)}
+                      disabled={loading}
+                      className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      <ArrowRight size={18} />
+                      Move to List
+                    </button>
+                  )}
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={loading}
+                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+                  >
+                    <Trash2 size={18} />
+                    Delete Selected
+                  </button>
+                </div>
+              </div>
+
+              {/* Move to List Dropdown */}
+              {showMoveToList && (
+                <div className="mt-3 flex items-center gap-2">
+                  <select
+                    value={targetListId}
+                    onChange={(e) => setTargetListId(e.target.value)}
+                    className="flex-1 p-2 border rounded"
+                    disabled={loading}
+                  >
+                    <option value="">Select target list...</option>
+                    {allLists
+                      .filter(l => l.id !== list.id)
+                      .map(l => (
+                        <option key={l.id} value={l.id}>
+                          {l.name} ({l.count || 0} contacts)
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={handleMoveToList}
+                    disabled={loading || !targetListId}
+                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    Move
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoveToList(false);
+                      setTargetListId('');
+                    }}
+                    disabled={loading}
+                    className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Add Contact Form */}
           {showAddContact && (
             <div className="bg-blue-50 p-4 rounded-lg space-y-3">
@@ -578,6 +777,21 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                   <th className="text-left p-3 w-12">
                     <input
                       type="checkbox"
+                      checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedContacts(filteredContacts.map(c => normalizeId(c.id)));
+                        } else {
+                          setSelectedContacts([]);
+                        }
+                      }}
+                      disabled={loading}
+                      title="Select all for bulk actions"
+                    />
+                  </th>
+                  <th className="text-left p-3 w-12">
+                    <input
+                      type="checkbox"
                       checked={listMembers.length === filteredContacts.length && filteredContacts.length > 0}
                       onChange={(e) => {
                         if (e.target.checked) {
@@ -587,12 +801,14 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                         }
                       }}
                       disabled={loading}
+                      title="Add/remove all from this list"
                     />
                   </th>
                   <th className="text-left p-3">Email</th>
                   <th className="text-left p-3">Name</th>
                   <th className="text-left p-3">Type</th>
                   <th className="text-left p-3">Status</th>
+                  <th className="text-left p-3 w-20">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -601,9 +817,19 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                     <td className="p-3">
                       <input
                         type="checkbox"
+                        checked={selectedContacts.map(id => normalizeId(id)).includes(normalizeId(contact.id))}
+                        onChange={() => toggleContactSelection(contact.id)}
+                        disabled={loading}
+                        title="Select for bulk actions"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="checkbox"
                         checked={listMembers.map(id => normalizeId(id)).includes(normalizeId(contact.id))}
                         onChange={() => toggleMember(contact.id)}
                         disabled={loading}
+                        title="Add/remove from this list"
                       />
                     </td>
                     <td className="p-3">{contact.email}</td>
@@ -621,6 +847,16 @@ const ContactManager = ({ list, allContacts, onSave, onClose }) => {
                       }`}>
                         {listMembers.map(id => normalizeId(id)).includes(normalizeId(contact.id)) ? 'In List' : 'Not in List'}
                       </span>
+                    </td>
+                    <td className="p-3">
+                      <button
+                        onClick={() => handleDeleteContact(contact.id)}
+                        disabled={loading}
+                        className="p-1 hover:bg-red-100 rounded text-red-600 disabled:opacity-50"
+                        title="Delete contact permanently"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </td>
                   </tr>
                 ))}

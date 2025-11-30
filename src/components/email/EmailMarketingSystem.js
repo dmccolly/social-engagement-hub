@@ -734,6 +734,7 @@ const EmailMarketingSystem = () => {
           <ContactManager
             list={currentList}
             allContacts={allContacts}
+            allLists={subscriberLists}
             onSave={handleSaveContacts}
             onClose={() => { 
               console.log('[EmailMarketingSystem] Closing ContactManager');
