@@ -99,7 +99,11 @@ const EnhancedNewsfeedWidget = () => {
   const ADMIN_EMAILS = [
     'dmccolly@gmail.com',
     'danmccolly@gmail.com',
-    'admin@historyofidahobroadcasting.org'
+    'admin@historyofidahobroadcasting.org',
+    'dan@historyofidahobroadcasting.org',
+    'contact@historyofidahobroadcasting.org', // Dan's alias
+    'art@historyofidahobroadcasting.org',
+    'info@historyofidahobroadcasting.org' // Art's alias
   ];
   
   // Check if current visitor is an admin
