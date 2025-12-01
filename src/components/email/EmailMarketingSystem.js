@@ -730,7 +730,7 @@ const EmailMarketingSystem = () => {
       )}
       {showSendPanel && currentCampaign && (
         <SendCampaignPanel
-          campaign={currentCampaign}
+          campaign={{ ...currentCampaign, htmlContent: generateEmailHTML(emailBlocks) }}
           subscriberLists={subscriberLists}
           onSend={handleSendCampaign}
           onClose={() => setShowSendPanel(false)}
