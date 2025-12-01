@@ -676,6 +676,7 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
           {/* Bulk Actions */}
           {selectedContacts.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              {console.log('[ContactManager] Rendering bulk actions, loading:', loading, 'selectedContacts:', selectedContacts.length)}
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <Users size={20} className="text-blue-600" />
