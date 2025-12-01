@@ -48,22 +48,34 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
       );
     
     case 'image':
+      const imgFloat = block.content.float;
+      const imgStyle = imgFloat === 'left' || imgFloat === 'right' 
+        ? { 
+            width: `${block.content.width || 40}%`,
+            maxWidth: '100%',
+            float: imgFloat,
+            margin: imgFloat === 'left' ? '0 16px 16px 0' : '0 0 16px 16px'
+          }
+        : { 
+            width: `${block.content.width || 100}%`,
+            maxWidth: '100%',
+            display: 'block',
+            margin: block.content.align === 'center' ? '0 auto' : block.content.align === 'right' ? '0 0 0 auto' : '0'
+          };
       return (
         <div className="email-block">
-          <div className="flex justify-center">
+          <div style={{ overflow: 'hidden' }}>
             <img 
               src={block.content.src} 
               alt={block.content.alt || 'Email image'} 
               className="rounded" 
-              style={{ 
-                width: `${block.content.width || 100}%`,
-                maxWidth: '100%',
-                display: 'block',
-                margin: block.content.align === 'center' ? '0 auto' : block.content.align === 'right' ? '0 0 0 auto' : '0'
-              }} 
+              style={imgStyle} 
             />
+            {imgFloat && (
+              <p className="text-gray-400 text-sm">Text will wrap around this image in the email.</p>
+            )}
           </div>
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2" style={{ clear: 'both' }}>
             <input 
               type="text" 
               value={block.content.src || ''} 
@@ -71,18 +83,30 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
               className="w-full p-2 border rounded" 
               placeholder="Image URL..." 
             />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-xs text-gray-600">Width (%)</label>
                 <input 
                   type="range" 
                   min="20" 
                   max="100" 
-                  value={block.content.width || 100} 
+                  value={block.content.width || (imgFloat ? 40 : 100)} 
                   onChange={(e) => handleChange('width', parseInt(e.target.value))}
                   className="w-full" 
                 />
-                <div className="text-xs text-center text-gray-600">{block.content.width || 100}%</div>
+                <div className="text-xs text-center text-gray-600">{block.content.width || (imgFloat ? 40 : 100)}%</div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">Text Wrap</label>
+                <select 
+                  value={block.content.float || 'none'} 
+                  onChange={(e) => handleChange('float', e.target.value === 'none' ? undefined : e.target.value)}
+                  className="w-full p-2 border rounded text-sm"
+                >
+                  <option value="none">No wrap</option>
+                  <option value="left">Wrap right</option>
+                  <option value="right">Wrap left</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs text-gray-600">Alignment</label>
@@ -90,6 +114,7 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
                   value={block.content.align || 'left'} 
                   onChange={(e) => handleChange('align', e.target.value)}
                   className="w-full p-2 border rounded text-sm"
+                  disabled={!!imgFloat}
                 >
                   <option value="left">Left</option>
                   <option value="center">Center</option>
