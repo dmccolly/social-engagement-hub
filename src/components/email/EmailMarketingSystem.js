@@ -481,9 +481,17 @@ const EmailMarketingSystem = () => {
         case 'text':
           return `<p style="margin: 12px 0; line-height: 1.6;">${block.content.text.replace(/\n/g, '<br>')}</p>`;
         case 'image':
-          const imgAlign = block.content.align === 'center' ? 'margin: 0 auto;' : block.content.align === 'right' ? 'margin-left: auto;' : '';
           const sanitizedSrc = sanitizeImageSrc(block.content.src);
-          return `<img src="${sanitizedSrc}" alt="${block.content.alt || ''}" style="width: ${block.content.width || 100}%; max-width: 100%; display: block; ${imgAlign} border-radius: 8px;" />`;
+          const imgWidth = block.content.width || 100;
+          const imgFloat = block.content.float;
+          // Support floating images for text wrap layout
+          if (imgFloat === 'left' || imgFloat === 'right') {
+            const floatMargin = imgFloat === 'left' ? 'margin: 0 16px 16px 0;' : 'margin: 0 0 16px 16px;';
+            return `<img src="${sanitizedSrc}" alt="${block.content.alt || ''}" style="width: ${imgWidth}%; max-width: ${imgWidth}%; float: ${imgFloat}; ${floatMargin} border-radius: 8px;" />`;
+          }
+          // Non-floating (block) images
+          const imgAlign = block.content.align === 'center' ? 'margin: 0 auto;' : block.content.align === 'right' ? 'margin-left: auto;' : '';
+          return `<img src="${sanitizedSrc}" alt="${block.content.alt || ''}" style="width: ${imgWidth}%; max-width: 100%; display: block; ${imgAlign} border-radius: 8px;" />`;
         case 'button':
           return `<div style="text-align: center; margin: 20px 0;"><a href="${block.content.url}" style="background-color: ${block.content.color || '#3B82F6'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">${block.content.text}</a></div>`;
         case 'divider':
