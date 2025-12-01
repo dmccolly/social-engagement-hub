@@ -185,6 +185,9 @@ export const getGroupContacts = async (groupId) => {
 export const addContactsToGroup = async (groupId, contactIds) => {
   try {
     console.log(`[emailGroupService] Adding contacts to group ${groupId}:`, contactIds);
+    console.log('[emailGroupService] XANO_BASE_URL:', XANO_BASE_URL);
+    console.log('[emailGroupService] Full URL:', `${XANO_BASE_URL}/email_groups/${groupId}/contacts`);
+    console.log('[emailGroupService] Request body:', JSON.stringify({ contact_ids: contactIds }));
     
     const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}/contacts`, {
       method: 'POST',
@@ -197,10 +200,13 @@ export const addContactsToGroup = async (groupId, contactIds) => {
     });
     
     console.log(`[emailGroupService] Response status: ${response.status}`);
+    console.log('[emailGroupService] Response headers:', Object.fromEntries(response.headers.entries()));
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[emailGroupService] Error response:', errorText);
+      console.error('[emailGroupService] Error response status:', response.status);
+      console.error('[emailGroupService] Error response text:', errorText);
+      console.error('[emailGroupService] Error response URL:', response.url);
       let errorMessage = `Failed to add contacts to group (${response.status})`;
       try {
         const errorJson = JSON.parse(errorText);
