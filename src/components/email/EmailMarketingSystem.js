@@ -472,6 +472,67 @@ const EmailMarketingSystem = () => {
     }
   };
 
+  // Transform HTML content to ensure images have email-friendly inline styles
+  // This preserves existing width/float styles while adding constraints to prevent images from blowing up
+  const transformHtmlForEmail = (html) => {
+    if (!html || typeof html !== 'string') return html;
+    
+    // Process all img tags to ensure they have proper email-friendly inline styles
+    return html.replace(/<img([^>]*?)(\s*\/?)>/gi, (match, attributes, selfClose) => {
+      // Extract existing style attribute if present
+      const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
+      const existingStyle = styleMatch ? styleMatch[1] : '';
+      
+      // Extract width from style or width attribute
+      const styleWidthMatch = existingStyle.match(/width\s*:\s*([^;]+)/i);
+      const attrWidthMatch = attributes.match(/width\s*=\s*["']?(\d+)["']?/i);
+      
+      // Extract float from style
+      const floatMatch = existingStyle.match(/float\s*:\s*([^;]+)/i);
+      
+      // Build new style
+      let newStyles = [];
+      
+      // Handle width - preserve existing or set reasonable default
+      if (styleWidthMatch) {
+        const widthValue = styleWidthMatch[1].trim();
+        newStyles.push(`width: ${widthValue}`);
+        newStyles.push(`max-width: ${widthValue}`);
+      } else if (attrWidthMatch) {
+        // Convert pixel width to percentage of 600px email container
+        const pixelWidth = parseInt(attrWidthMatch[1], 10);
+        const percentWidth = Math.min(100, Math.round((pixelWidth / 600) * 100));
+        newStyles.push(`width: ${percentWidth}%`);
+        newStyles.push(`max-width: ${percentWidth}%`);
+      } else {
+        // No width specified - default to max-width: 100% to prevent blowup
+        newStyles.push('max-width: 100%');
+      }
+      
+      // Always add height: auto to maintain aspect ratio
+      newStyles.push('height: auto');
+      
+      // Preserve float if present
+      if (floatMatch) {
+        const floatValue = floatMatch[1].trim();
+        newStyles.push(`float: ${floatValue}`);
+        // Add appropriate margin for floated images
+        if (floatValue === 'left') {
+          newStyles.push('margin: 0 16px 16px 0');
+        } else if (floatValue === 'right') {
+          newStyles.push('margin: 0 0 16px 16px');
+        }
+      }
+      
+      // Remove old style attribute from attributes string
+      let cleanAttributes = attributes.replace(/style\s*=\s*["'][^"']*["']/gi, '').trim();
+      
+      // Build the new img tag with inline styles
+      const newStyle = newStyles.join('; ');
+      return `<img${cleanAttributes ? ' ' + cleanAttributes : ''} style="${newStyle}"${selfClose}>`;
+    });
+  };
+
   // Generate HTML from email blocks
   const generateEmailHTML = (blocks) => {
     const blockHTML = blocks.map(block => {
@@ -499,7 +560,8 @@ const EmailMarketingSystem = () => {
         case 'spacer':
           return `<div style="height: ${block.content.height || 20}px;"></div>`;
         case 'html':
-          return block.content.html;
+          // Transform HTML to ensure images have email-friendly inline styles
+          return transformHtmlForEmail(block.content.html);
         default:
           return '';
       }
