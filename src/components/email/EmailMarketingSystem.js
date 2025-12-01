@@ -472,6 +472,57 @@ const EmailMarketingSystem = () => {
     }
   };
 
+  // Transform blog HTML content to ensure images have email-friendly styles
+  // This preserves existing width/float styles while adding max-width and height:auto
+  const transformBlogHtmlForEmail = (html) => {
+    if (!html || typeof html !== 'string') return html;
+    
+    // Use a regex-based approach since DOMParser isn't available in all contexts
+    // Find all img tags and ensure they have proper email-friendly styles
+    return html.replace(/<img([^>]*)>/gi, (match, attributes) => {
+      // Check if the img already has a style attribute
+      const hasStyle = /style\s*=\s*["'][^"']*["']/i.test(attributes);
+      const hasWidth = /width\s*[:=]/i.test(attributes);
+      
+      if (hasStyle) {
+        // Modify existing style to add max-width and height:auto if not present
+        return match.replace(/style\s*=\s*["']([^"']*)["']/i, (styleMatch, styleContent) => {
+          let newStyle = styleContent;
+          // Add height: auto if not present
+          if (!/height\s*:/i.test(styleContent)) {
+            newStyle += '; height: auto';
+          }
+          // Add max-width if not present (but don't override existing width)
+          if (!/max-width\s*:/i.test(styleContent)) {
+            // If there's a width, use that as max-width too
+            const widthMatch = styleContent.match(/width\s*:\s*([^;]+)/i);
+            if (widthMatch) {
+              newStyle += `; max-width: ${widthMatch[1].trim()}`;
+            } else {
+              // Default to a reasonable max-width for images without explicit width
+              newStyle += '; max-width: 100%';
+            }
+          }
+          return `style="${newStyle}"`;
+        });
+      } else {
+        // No style attribute - add one with sensible defaults
+        // If there's a width attribute, preserve it; otherwise default to reasonable size
+        const widthAttrMatch = attributes.match(/width\s*=\s*["']?(\d+)["']?/i);
+        let imgStyle = 'height: auto; max-width: 100%';
+        
+        if (widthAttrMatch) {
+          // Convert pixel width to a percentage of 600px email container
+          const pixelWidth = parseInt(widthAttrMatch[1], 10);
+          const percentWidth = Math.min(100, Math.round((pixelWidth / 600) * 100));
+          imgStyle = `width: ${percentWidth}%; max-width: ${percentWidth}%; height: auto`;
+        }
+        
+        return `<img${attributes} style="${imgStyle}">`;
+      }
+    });
+  };
+
   // Generate HTML from email blocks
   const generateEmailHTML = (blocks) => {
     const blockHTML = blocks.map(block => {
@@ -499,7 +550,11 @@ const EmailMarketingSystem = () => {
         case 'spacer':
           return `<div style="height: ${block.content.height || 20}px;"></div>`;
         case 'html':
-          return block.content.html;
+          // Transform blog HTML to ensure images have email-friendly styles
+          const htmlContent = block.content.source === 'blog' 
+            ? transformBlogHtmlForEmail(block.content.html)
+            : block.content.html;
+          return htmlContent;
         default:
           return '';
       }
