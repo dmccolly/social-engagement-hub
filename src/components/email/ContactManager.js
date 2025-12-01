@@ -44,6 +44,45 @@ const parseCSVLine = (line) => {
   return result;
 };
 
+const extractEmail = (emailString) => {
+  if (!emailString || !emailString.trim()) {
+    return '';
+  }
+  
+  const trimmed = emailString.trim();
+  
+  // Handle format: Name <email@domain.com>
+  const angleMatch = trimmed.match(/<([^>]+)>/);
+  if (angleMatch) {
+    return angleMatch[1].trim();
+  }
+  
+  // Handle format: email@domain.com,email@domain.com (take first)
+  if (trimmed.includes(',')) {
+    const parts = trimmed.split(',');
+    for (const part of parts) {
+      const cleaned = part.trim();
+      // Check if it looks like an email
+      if (cleaned.includes('@') && !cleaned.includes('<') && !cleaned.includes('>')) {
+        return cleaned;
+      }
+    }
+  }
+  
+  // Handle format: "Name" email@domain.com or Name email@domain.com
+  const spaceMatch = trimmed.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (spaceMatch) {
+    return spaceMatch[1].trim();
+  }
+  
+  // Return as-is if it looks like a simple email
+  if (trimmed.includes('@')) {
+    return trimmed;
+  }
+  
+  return '';
+};
+
 const splitFullName = (fullName) => {
   if (!fullName || !fullName.trim()) {
     return { first_name: '', last_name: '' };
@@ -146,7 +185,8 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
         const emailIndex = headers.findIndex(h => 
           h === 'email' || h === 'e-mail' || h === 'email address'
         );
-        const email = emailIndex !== -1 ? values[emailIndex]?.trim() : '';
+        const rawEmail = emailIndex !== -1 ? values[emailIndex]?.trim() : '';
+        const email = extractEmail(rawEmail);
         
         if (!email) {
           skipped.push({ row: i + 1, reason: 'No email address' });
@@ -219,6 +259,7 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
         if (list?.id) {
           try {
             console.log(`[ContactManager] Adding ${importedIds.length} contacts to group ${list.id}`);
+            console.log('[ContactManager] Contact IDs to add:', importedIds);
             const addResult = await addContactsToGroup(list.id, importedIds);
             console.log('[ContactManager] addContactsToGroup result:', addResult);
             
@@ -240,11 +281,12 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
               }
               alert(message);
             } else {
-              alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list:\n\n${addResult.error}\n\nPlease click "Save Changes" to retry.`);
+              console.error('[ContactManager] Failed to add contacts to group:', addResult.error);
+              alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list.\n\nError: ${addResult.error}\n\nThe contacts were created successfully. Please click "Save Changes" to add them to this list.`);
             }
           } catch (error) {
             console.error('Error adding imported contacts to group:', error);
-            alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list:\n\n${error.message}\n\nPlease click "Save Changes" to retry.`);
+            alert(`⚠️ Imported ${imported.length} contacts but failed to add them to the list.\n\nError: ${error.message}\n\nThe contacts were created successfully. Please click "Save Changes" to add them to this list.`);
           }
         }
       } else {
