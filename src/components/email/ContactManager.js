@@ -482,7 +482,12 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
   };
 
   const handleBulkDelete = async () => {
+    console.log('[ContactManager] handleBulkDelete called!');
+    console.log('[ContactManager] selectedContacts:', selectedContacts);
+    console.log('[ContactManager] selectedContacts.length:', selectedContacts.length);
+    
     if (selectedContacts.length === 0) {
+      console.log('[ContactManager] No contacts selected, showing alert');
       alert('Please select contacts to delete');
       return;
     }
@@ -690,9 +695,13 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
                     </button>
                   )}
                   <button
-                    onClick={handleBulkDelete}
+                    onClick={() => {
+                      console.log('[ContactManager] Delete Selected button clicked!');
+                      handleBulkDelete();
+                    }}
                     disabled={loading}
                     className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+                    type="button"
                   >
                     <Trash2 size={18} />
                     Delete Selected
