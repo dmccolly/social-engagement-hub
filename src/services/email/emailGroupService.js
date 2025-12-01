@@ -170,10 +170,7 @@ export const getGroupContacts = async (groupId) => {
       throw new Error(`Failed to fetch group contacts: ${response.statusText}`);
     }
     
-    let contacts = await response.json();
-    
-    // Filter out deleted contacts
-    contacts = contacts.filter(contact => contact.status !== 'deleted');
+    const contacts = await response.json();
     
     return { success: true, contacts };
   } catch (error) {

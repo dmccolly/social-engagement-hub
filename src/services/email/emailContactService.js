@@ -6,7 +6,6 @@ const XANO_BASE_URL = process.env.REACT_APP_XANO_PROXY_BASE ||
 
 /**
  * Get all email contacts with optional filtering
- * By default, filters out contacts with status='deleted'
  */
 export const getContacts = async (filters = {}) => {
   try {
@@ -24,12 +23,7 @@ export const getContacts = async (filters = {}) => {
       throw new Error(`Failed to fetch contacts: ${response.statusText}`);
     }
     
-    let contacts = await response.json();
-    
-    // Filter out deleted contacts unless explicitly requesting them
-    if (filters.status !== 'deleted' && filters.includeDeleted !== true) {
-      contacts = contacts.filter(contact => contact.status !== 'deleted');
-    }
+    const contacts = await response.json();
     
     return { success: true, contacts };
   } catch (error) {
@@ -115,20 +109,12 @@ export const updateContact = async (contactId, contactData) => {
 };
 
 /**
- * Delete a contact (soft delete - updates status to 'deleted')
+ * Delete a contact
  */
 export const deleteContact = async (contactId) => {
   try {
-    // Use PATCH to update status instead of DELETE
-    // This is a soft delete - contact remains in database but marked as deleted
     const response = await fetch(`${XANO_BASE_URL}/email_contacts/${contactId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: 'deleted'
-      }),
+      method: 'DELETE',
     });
     
     if (!response.ok) {
@@ -237,7 +223,7 @@ export const bulkUpdateStatus = async (contactIds, status) => {
 };
 
 /**
- * Bulk delete contacts (soft delete - updates status to 'deleted')
+ * Bulk delete contacts
  */
 export const bulkDeleteContacts = async (contactIds) => {
   try {
@@ -246,7 +232,6 @@ export const bulkDeleteContacts = async (contactIds) => {
       failed: 0
     };
     
-    // Use soft delete for each contact
     for (const contactId of contactIds) {
       const result = await deleteContact(contactId);
       if (result.success) {
