@@ -250,7 +250,30 @@ export const groupAPI = {
       }
       const data = await response.json();
       // Handle null or non-array responses
-      return Array.isArray(data) ? data : [];
+      const groups = Array.isArray(data) ? data : [];
+      
+      // Fetch member data for each group
+      const groupsWithMembers = await Promise.all(
+        groups.map(async (group) => {
+          try {
+            const membersResponse = await fetch(`${XANO_BASE_URL}/email_groups/${group.id}/contacts`);
+            if (membersResponse.ok) {
+              const members = await membersResponse.json();
+              const memberArray = Array.isArray(members) ? members : [];
+              return {
+                ...group,
+                member_count: memberArray.length,
+                members: memberArray
+              };
+            }
+          } catch (err) {
+            console.warn(`Error fetching members for group ${group.id}:`, err.message);
+          }
+          return { ...group, member_count: 0, members: [] };
+        })
+      );
+      
+      return groupsWithMembers;
     } catch (error) {
       console.warn('Error fetching groups:', error.message);
       return [];
@@ -304,7 +327,7 @@ export const groupAPI = {
   },
 
   async getMembers(groupId) {
-    const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}/members`);
+    const response = await fetch(`${XANO_BASE_URL}/email_groups/${groupId}/contacts`);
     if (!response.ok) throw new Error('Failed to fetch members');
     return response.json();
   }
