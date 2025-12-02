@@ -125,8 +125,30 @@ const transformHtmlForEmail = (html) => {
   });
   
   // Clean up excessive empty paragraphs and line breaks
-  transformedHtml = transformedHtml.replace(/(<p[^>]*>\s*(<br\s*\/?>|&nbsp;)?\s*<\/p>\s*){2,}/gi, '<p><br></p>');
-  transformedHtml = transformedHtml.replace(/(<br\s*\/?\s*>){3,}/gi, '<br><br>');
+  // Match paragraphs that only contain whitespace, NBSP variants, or <br> tags
+  const emptyParagraphPattern = /<p[^>]*>\s*(?:&nbsp;|&#160;|\u00A0|\s|<br\s*\/?>)*\s*<\/p>/gi;
+  
+  // Remove all empty paragraphs (they just add unwanted spacing)
+  transformedHtml = transformedHtml.replace(emptyParagraphPattern, '');
+  
+  // Clean up excessive line breaks (2+ becomes 1)
+  transformedHtml = transformedHtml.replace(/(<br\s*\/?\s*>[\s\r\n]*){2,}/gi, '<br>');
+  
+  // Normalize paragraph margins to prevent excessive spacing
+  // This ensures consistent spacing regardless of source HTML
+  transformedHtml = transformedHtml.replace(/<p([^>]*)>/gi, (match, attrs) => {
+    const styleMatch = attrs.match(/style\s*=\s*["']([^"']*)["']/i);
+    let style = styleMatch ? styleMatch[1] : '';
+    
+    // Strip any existing margin declarations
+    style = style.replace(/margin[^;]*;?/gi, '').trim();
+    
+    // Add a consistent bottom margin (12px is a good readable spacing)
+    const newStyle = (style ? style + '; ' : '') + 'margin: 0 0 12px 0;';
+    
+    const cleanAttrs = attrs.replace(/style\s*=\s*["'][^"']*["']/i, '').trim();
+    return `<p${cleanAttrs ? ' ' + cleanAttrs : ''} style="${newStyle}">`;
+  });
   
   return transformedHtml;
 };
