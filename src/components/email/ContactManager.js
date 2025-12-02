@@ -124,8 +124,9 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState([]);
-  const [showMoveToList, setShowMoveToList] = useState(false);
-  const [targetListId, setTargetListId] = useState('');
+    const [showMoveToList, setShowMoveToList] = useState(false);
+    const [targetListId, setTargetListId] = useState('');
+    const [showAllContacts, setShowAllContacts] = useState(false);
 
   // Load group contacts on mount
   useEffect(() => {
@@ -599,11 +600,24 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
     a.click();
   };
 
-  const filteredContacts = contacts.filter(c =>
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    const filteredContacts = contacts.filter(c => {
+      const matchesSearch =
+        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      if (!matchesSearch) return false;
+
+      // Default: only show contacts that are in this list
+      if (!showAllContacts) {
+        return listMembers
+          .map(id => normalizeId(id))
+          .includes(normalizeId(c.id));
+      }
+
+      // When showAllContacts is true, show everyone
+      return true;
+    });
 
   if (loading && contacts.length === 0) {
     return (
@@ -809,17 +823,29 @@ const ContactManager = ({ list, allContacts, allLists = [], onSave, onClose }) =
             </div>
           )}
 
-          {/* Stats */}
-          <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-4">
-            <Users size={24} className="text-blue-600" />
-            <div>
-              <div className="text-2xl font-bold">{listMembers.length}</div>
-              <div className="text-sm text-gray-600">contacts in this list</div>
-            </div>
-            <div className="ml-auto text-sm text-gray-600">
-              {filteredContacts.length} total contacts
-            </div>
-          </div>
+                    {/* Stats */}
+                    <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-4">
+                      <Users size={24} className="text-blue-600" />
+                      <div>
+                        <div className="text-2xl font-bold">{listMembers.length}</div>
+                        <div className="text-sm text-gray-600">contacts in this list</div>
+                      </div>
+                      <div className="ml-auto flex items-center gap-3">
+                        <span className="text-sm text-gray-600">View:</span>
+                        <button
+                          onClick={() => setShowAllContacts(false)}
+                          className={`px-3 py-1 rounded text-sm ${!showAllContacts ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                        >
+                          In this list ({listMembers.length})
+                        </button>
+                        <button
+                          onClick={() => setShowAllContacts(true)}
+                          className={`px-3 py-1 rounded text-sm ${showAllContacts ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                        >
+                          All contacts ({contacts.length})
+                        </button>
+                      </div>
+                    </div>
 
           {/* Contact List */}
           <div className="border rounded-lg overflow-hidden">

@@ -407,18 +407,18 @@ const EmailMarketingSystem = () => {
         return;
       }
       
-      // Get all contacts from selected lists
-      const recipients = [];
-      sendData.listIds.forEach(listId => {
-        const list = subscriberLists.find(l => l.id === listId);
-        if (list && list.members) {
-          const listContacts = allContacts.filter(c => list.members.includes(c.id));
-          recipients.push(...listContacts);
-        }
-      });
+            // Get all contacts from selected lists
+            // list.members is an array of contact objects from XANO (with id, email, first_name, last_name, etc.)
+            const recipients = [];
+            sendData.listIds.forEach(listId => {
+              const list = subscriberLists.find(l => l.id === listId);
+              if (list && Array.isArray(list.members)) {
+                recipients.push(...list.members);
+              }
+            });
 
-      // Remove duplicates
-      const uniqueRecipients = Array.from(new Map(recipients.map(r => [r.email, r])).values());
+            // Remove duplicates by email
+            const uniqueRecipients = Array.from(new Map(recipients.map(r => [r.email, r])).values());
 
       if (uniqueRecipients.length === 0) {
         alert('No recipients found in selected lists');
@@ -612,8 +612,9 @@ const EmailMarketingSystem = () => {
         case 'spacer':
           return `<div style="height: ${block.content.height || 20}px;"></div>`;
         case 'html':
-          // Transform HTML to ensure images have email-friendly inline styles
-          return transformHtmlForEmail(block.content.html);
+          // Don't transform here - the backend send functions will handle CSS-to-inline conversion
+          // This preserves the original CSS classes so the backend can properly transform them
+          return block.content.html;
         default:
           return '';
       }
@@ -705,7 +706,17 @@ const EmailMarketingSystem = () => {
                   setEmailBlocks(blocks.length > 0 ? blocks : (campaign.htmlContent ? [{ id: Date.now(), type: 'html', content: { html: campaign.htmlContent } }] : [])); 
                   setActiveView('builder'); 
                 }} className="p-2 hover:bg-gray-100 rounded"><Edit size={20} /></button>
-                <button onClick={() => { if (confirm('Delete this campaign?')) setCampaigns(campaigns.filter(c => c.id !== campaign.id)); }} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
+                <button onClick={async () => { 
+                  if (confirm('Delete this campaign?')) {
+                    try {
+                      await campaignAPI.delete(campaign.id);
+                      setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+                    } catch (error) {
+                      console.error('Failed to delete campaign:', error);
+                      alert('Failed to delete campaign. Please try again.');
+                    }
+                  }
+                }} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
               </div>
             </div>
             {campaign.status === 'sent' && (
