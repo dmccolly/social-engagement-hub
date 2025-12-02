@@ -612,8 +612,9 @@ const EmailMarketingSystem = () => {
         case 'spacer':
           return `<div style="height: ${block.content.height || 20}px;"></div>`;
         case 'html':
-          // Transform HTML to ensure images have email-friendly inline styles
-          return transformHtmlForEmail(block.content.html);
+          // Don't transform here - the backend send functions will handle CSS-to-inline conversion
+          // This preserves the original CSS classes so the backend can properly transform them
+          return block.content.html;
         default:
           return '';
       }
