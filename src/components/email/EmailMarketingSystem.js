@@ -473,15 +473,35 @@ const EmailMarketingSystem = () => {
   };
 
   // Transform HTML content to ensure images have email-friendly inline styles
-  // This preserves existing width/float styles while adding constraints to prevent images from blowing up
+  // This converts CSS classes to inline styles and cleans up excessive whitespace
   const transformHtmlForEmail = (html) => {
     if (!html || typeof html !== 'string') return html;
     
+    // CSS class to inline style mappings (from index.css)
+    const sizeStyles = {
+      'size-small': 'width: 200px; max-width: 200px',
+      'size-medium': 'width: 400px; max-width: 400px',
+      'size-large': 'width: 600px; max-width: 600px',
+      'size-full': 'width: 100%; max-width: 100%'
+    };
+    
+    const positionStyles = {
+      'position-left': 'float: left; margin: 0 15px 15px 0',
+      'position-right': 'float: right; margin: 0 0 15px 15px',
+      'position-center': 'display: block; margin: 0 auto 15px auto; float: none',
+      'position-wrap-left': 'float: left; margin: 0 15px 15px 0',
+      'position-wrap-right': 'float: right; margin: 0 0 15px 15px'
+    };
+    
     // Process all img tags to ensure they have proper email-friendly inline styles
-    return html.replace(/<img([^>]*?)(\s*\/?)>/gi, (match, attributes, selfClose) => {
+    let transformedHtml = html.replace(/<img([^>]*?)(\s*\/?)>/gi, (match, attributes, selfClose) => {
       // Extract existing style attribute if present
       const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
       const existingStyle = styleMatch ? styleMatch[1] : '';
+      
+      // Extract class attribute if present
+      const classMatch = attributes.match(/class\s*=\s*["']([^"']*)["']/i);
+      const classes = classMatch ? classMatch[1].split(/\s+/) : [];
       
       // Extract width from style or width attribute
       const styleWidthMatch = existingStyle.match(/width\s*:\s*([^;]+)/i);
@@ -490,33 +510,50 @@ const EmailMarketingSystem = () => {
       // Extract float from style
       const floatMatch = existingStyle.match(/float\s*:\s*([^;]+)/i);
       
-      // Build new style
+      // Build new style array
       let newStyles = [];
+      let hasWidth = false;
+      let hasFloat = false;
       
-      // Handle width - preserve existing or set reasonable default
-      if (styleWidthMatch) {
-        const widthValue = styleWidthMatch[1].trim();
-        newStyles.push(`width: ${widthValue}`);
-        newStyles.push(`max-width: ${widthValue}`);
-      } else if (attrWidthMatch) {
-        // Convert pixel width to percentage of 600px email container
-        const pixelWidth = parseInt(attrWidthMatch[1], 10);
-        const percentWidth = Math.min(100, Math.round((pixelWidth / 600) * 100));
-        newStyles.push(`width: ${percentWidth}%`);
-        newStyles.push(`max-width: ${percentWidth}%`);
-      } else {
-        // No width specified - default to max-width: 100% to prevent blowup
-        newStyles.push('max-width: 100%');
+      // First, check for size classes and convert to inline styles
+      for (const cls of classes) {
+        if (sizeStyles[cls]) {
+          newStyles.push(sizeStyles[cls]);
+          hasWidth = true;
+        }
+      }
+      
+      // Then, check for position classes and convert to inline styles
+      for (const cls of classes) {
+        if (positionStyles[cls]) {
+          newStyles.push(positionStyles[cls]);
+          hasFloat = true;
+        }
+      }
+      
+      // Handle width - preserve existing inline style if no class-based width
+      if (!hasWidth) {
+        if (styleWidthMatch) {
+          const widthValue = styleWidthMatch[1].trim();
+          newStyles.push(`width: ${widthValue}`);
+          newStyles.push(`max-width: ${widthValue}`);
+        } else if (attrWidthMatch) {
+          const pixelWidth = parseInt(attrWidthMatch[1], 10);
+          const percentWidth = Math.min(100, Math.round((pixelWidth / 600) * 100));
+          newStyles.push(`width: ${percentWidth}%`);
+          newStyles.push(`max-width: ${percentWidth}%`);
+        } else {
+          newStyles.push('max-width: 100%');
+        }
       }
       
       // Always add height: auto to maintain aspect ratio
       newStyles.push('height: auto');
       
-      // Preserve float if present
-      if (floatMatch) {
+      // Preserve float from inline style if no class-based float
+      if (!hasFloat && floatMatch) {
         const floatValue = floatMatch[1].trim();
         newStyles.push(`float: ${floatValue}`);
-        // Add appropriate margin for floated images
         if (floatValue === 'left') {
           newStyles.push('margin: 0 16px 16px 0');
         } else if (floatValue === 'right') {
@@ -524,13 +561,28 @@ const EmailMarketingSystem = () => {
         }
       }
       
-      // Remove old style attribute from attributes string
-      let cleanAttributes = attributes.replace(/style\s*=\s*["'][^"']*["']/gi, '').trim();
+      // Add border-radius for consistent styling
+      newStyles.push('border-radius: 8px');
+      
+      // Remove old style and class attributes from attributes string
+      let cleanAttributes = attributes
+        .replace(/style\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/class\s*=\s*["'][^"']*["']/gi, '')
+        .trim();
       
       // Build the new img tag with inline styles
       const newStyle = newStyles.join('; ');
       return `<img${cleanAttributes ? ' ' + cleanAttributes : ''} style="${newStyle}"${selfClose}>`;
     });
+    
+    // Clean up excessive empty paragraphs and line breaks
+    // Replace multiple consecutive <p><br></p> or <p>&nbsp;</p> with a single one
+    transformedHtml = transformedHtml.replace(/(<p[^>]*>\s*(<br\s*\/?>|&nbsp;)?\s*<\/p>\s*){2,}/gi, '<p><br></p>');
+    
+    // Replace multiple consecutive <br> tags with a single one
+    transformedHtml = transformedHtml.replace(/(<br\s*\/?\s*>){3,}/gi, '<br><br>');
+    
+    return transformedHtml;
   };
 
   // Generate HTML from email blocks
