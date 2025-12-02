@@ -3,31 +3,28 @@ const fetch = require('node-fetch');
 
 // Transform HTML content to ensure images have email-friendly inline styles
 // This converts CSS classes to inline styles for email client compatibility
+// Uses !important to override any global CSS rules in email templates
 const transformHtmlForEmail = (html) => {
   if (!html || typeof html !== 'string') return html;
   
-  // CSS class to inline style mappings
+  // CSS class to inline style mappings (with !important to override global CSS)
   const sizeStyles = {
-    'size-small': 'width: 200px; max-width: 200px',
-    'size-medium': 'width: 400px; max-width: 400px',
-    'size-large': 'width: 600px; max-width: 600px',
-    'size-full': 'width: 100%; max-width: 100%'
+    'size-small': 'width: 200px !important; max-width: 200px !important',
+    'size-medium': 'width: 400px !important; max-width: 400px !important',
+    'size-large': 'width: 600px !important; max-width: 600px !important',
+    'size-full': 'width: 100% !important; max-width: 100% !important'
   };
   
   const positionStyles = {
-    'position-left': 'float: left; margin: 0 15px 15px 0',
-    'position-right': 'float: right; margin: 0 0 15px 15px',
-    'position-center': 'display: block; margin: 0 auto 15px auto; float: none',
-    'position-wrap-left': 'float: left; margin: 0 15px 15px 0',
-    'position-wrap-right': 'float: right; margin: 0 0 15px 15px'
+    'position-left': 'float: left !important; margin: 0 15px 15px 0 !important',
+    'position-right': 'float: right !important; margin: 0 0 15px 15px !important',
+    'position-center': 'display: block !important; margin: 0 auto 15px auto !important; float: none !important',
+    'position-wrap-left': 'float: left !important; margin: 0 15px 15px 0 !important',
+    'position-wrap-right': 'float: right !important; margin: 0 0 15px 15px !important'
   };
   
-  // Process all img tags to ensure they have proper email-friendly inline styles
-  let transformedHtml = html.replace(/<img([^>]*?)(\s*\/?)>/gi, (match, attributes, selfClose) => {
-    // Extract existing style attribute if present
-    const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
-    const existingStyle = styleMatch ? styleMatch[1] : '';
-    
+  // Helper function to process element attributes and convert classes to inline styles
+  const processElementStyles = (attributes, existingStyle) => {
     // Extract class attribute if present
     const classMatch = attributes.match(/class\s*=\s*["']([^"']*)["']/i);
     const classes = classMatch ? classMatch[1].split(/\s+/) : [];
@@ -63,30 +60,30 @@ const transformHtmlForEmail = (html) => {
     // Handle width - preserve existing inline style if no class-based width
     if (!hasWidth) {
       if (styleWidthMatch) {
-        const widthValue = styleWidthMatch[1].trim();
-        newStyles.push(`width: ${widthValue}`);
-        newStyles.push(`max-width: ${widthValue}`);
+        const widthValue = styleWidthMatch[1].trim().replace(/!important/gi, '').trim();
+        newStyles.push(`width: ${widthValue} !important`);
+        newStyles.push(`max-width: ${widthValue} !important`);
       } else if (attrWidthMatch) {
         const pixelWidth = parseInt(attrWidthMatch[1], 10);
         const percentWidth = Math.min(100, Math.round((pixelWidth / 600) * 100));
-        newStyles.push(`width: ${percentWidth}%`);
-        newStyles.push(`max-width: ${percentWidth}%`);
+        newStyles.push(`width: ${percentWidth}% !important`);
+        newStyles.push(`max-width: ${percentWidth}% !important`);
       } else {
-        newStyles.push('max-width: 100%');
+        newStyles.push('max-width: 100% !important');
       }
     }
     
     // Always add height: auto to maintain aspect ratio
-    newStyles.push('height: auto');
+    newStyles.push('height: auto !important');
     
     // Preserve float from inline style if no class-based float
     if (!hasFloat && floatMatch) {
-      const floatValue = floatMatch[1].trim();
-      newStyles.push(`float: ${floatValue}`);
+      const floatValue = floatMatch[1].trim().replace(/!important/gi, '').trim();
+      newStyles.push(`float: ${floatValue} !important`);
       if (floatValue === 'left') {
-        newStyles.push('margin: 0 16px 16px 0');
+        newStyles.push('margin: 0 16px 16px 0 !important');
       } else if (floatValue === 'right') {
-        newStyles.push('margin: 0 0 16px 16px');
+        newStyles.push('margin: 0 0 16px 16px !important');
       }
     }
     
@@ -99,9 +96,32 @@ const transformHtmlForEmail = (html) => {
       .replace(/class\s*=\s*["'][^"']*["']/gi, '')
       .trim();
     
+    return { newStyle: newStyles.join('; '), cleanAttributes };
+  };
+  
+  // Process all img tags to ensure they have proper email-friendly inline styles
+  let transformedHtml = html.replace(/<img([^>]*?)(\s*\/?)>/gi, (match, attributes, selfClose) => {
+    // Extract existing style attribute if present
+    const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
+    const existingStyle = styleMatch ? styleMatch[1] : '';
+    
+    const { newStyle, cleanAttributes } = processElementStyles(attributes, existingStyle);
+    
     // Build the new img tag with inline styles
-    const newStyle = newStyles.join('; ');
     return `<img${cleanAttributes ? ' ' + cleanAttributes : ''} style="${newStyle}"${selfClose}>`;
+  });
+  
+  // Also process div.media-wrapper elements that contain images/videos
+  // These wrapper divs may have size/position classes that need to be converted
+  transformedHtml = transformedHtml.replace(/<div([^>]*class\s*=\s*["'][^"']*media-wrapper[^"']*["'][^>]*)>/gi, (match, attributes) => {
+    // Extract existing style attribute if present
+    const styleMatch = attributes.match(/style\s*=\s*["']([^"']*)["']/i);
+    const existingStyle = styleMatch ? styleMatch[1] : '';
+    
+    const { newStyle, cleanAttributes } = processElementStyles(attributes, existingStyle);
+    
+    // Build the new div tag with inline styles
+    return `<div${cleanAttributes ? ' ' + cleanAttributes : ''} style="${newStyle}">`;
   });
   
   // Clean up excessive empty paragraphs and line breaks
