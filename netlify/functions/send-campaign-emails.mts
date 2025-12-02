@@ -1,17 +1,31 @@
 // Netlify Function: Send Campaign Emails via SendGrid
 // This function handles the actual email sending for campaigns
+// Accepts campaign data and recipients directly from the frontend
 
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const XANO_BASE_URL = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
+const XANO_BASE_URL = process.env.XANO_BASE_URL || 'https://xajo-bs7d-cagt.n7e.xano.io/api:iZd1_fI5';
 const APP_URL = process.env.URL || 'http://localhost:3000';
 
-interface Recipient {
-  id: number;
+// Frontend sends recipients in this format
+interface FrontendRecipient {
+  id?: number;
   email: string;
-  tracking_token: string;
-  contact_id: number;
+  firstName?: string;
+  lastName?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+// Frontend sends campaign in this format
+interface FrontendCampaign {
+  id: number;
+  name: string;
+  subject: string;
+  fromName: string;
+  fromEmail: string;
+  htmlContent: string;
 }
 
 interface Campaign {
@@ -35,12 +49,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   }
 
   try {
-    const { campaign_id } = JSON.parse(event.body || '{}');
+    const body = JSON.parse(event.body || '{}');
+    
+    // Support both frontend format (campaign object + recipients) and legacy format (campaign_id)
+    const frontendCampaign = body.campaign as FrontendCampaign | undefined;
+    const frontendRecipients = body.recipients as FrontendRecipient[] | undefined;
+    const campaign_id = body.campaign_id || (frontendCampaign?.id);
 
-    if (!campaign_id) {
+    if (!campaign_id && !frontendCampaign) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'campaign_id is required' })
+        body: JSON.stringify({ error: 'campaign or campaign_id is required' })
       };
     }
 
@@ -51,38 +70,72 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       };
     }
 
-    // Get campaign from Xano
-    const campaignResponse = await fetch(`${XANO_BASE_URL}/email_campaigns/${campaign_id}`);
-    if (!campaignResponse.ok) {
-      throw new Error('Failed to fetch campaign');
+    // Use campaign data from frontend if provided, otherwise fetch from Xano
+    let campaignData: Campaign;
+    if (frontendCampaign) {
+      // Map frontend format to internal format
+      campaignData = {
+        id: frontendCampaign.id,
+        name: frontendCampaign.name,
+        subject: frontendCampaign.subject,
+        from_name: frontendCampaign.fromName,
+        from_email: frontendCampaign.fromEmail,
+        html_content: frontendCampaign.htmlContent
+      };
+    } else {
+      // Fetch from Xano (legacy path)
+      const campaignResponse = await fetch(`${XANO_BASE_URL}/email_campaigns/${campaign_id}`);
+      if (!campaignResponse.ok) {
+        throw new Error('Failed to fetch campaign');
+      }
+      campaignData = await campaignResponse.json();
     }
-    const campaignData: Campaign = await campaignResponse.json();
 
-    // Get pending recipients from Xano
-    const recipientsResponse = await fetch(
-      `${XANO_BASE_URL}/email_campaign_recipients?campaign_id=${campaign_id}&status=pending`
-    );
-    if (!recipientsResponse.ok) {
-      throw new Error('Failed to fetch recipients');
+    // Use recipients from frontend if provided
+    let recipientEmails: { email: string; firstName?: string; lastName?: string }[] = [];
+    
+    if (frontendRecipients && frontendRecipients.length > 0) {
+      // Use recipients provided by frontend
+      recipientEmails = frontendRecipients.map(r => ({
+        email: r.email,
+        firstName: r.firstName || r.first_name,
+        lastName: r.lastName || r.last_name
+      }));
+    } else {
+      // Legacy path: fetch from Xano queue (if implemented)
+      try {
+        const recipientsResponse = await fetch(
+          `${XANO_BASE_URL}/email_campaign_recipients?campaign_id=${campaign_id}&status=pending`
+        );
+        if (recipientsResponse.ok) {
+          const xanoRecipients = await recipientsResponse.json();
+          recipientEmails = xanoRecipients.map((r: any) => ({
+            email: r.email,
+            firstName: r.first_name,
+            lastName: r.last_name
+          }));
+        }
+      } catch (error) {
+        console.log('No Xano recipients queue available, using frontend recipients only');
+      }
     }
-    let recipients: Recipient[] = await recipientsResponse.json();
 
-    if (recipients.length === 0) {
+    if (recipientEmails.length === 0) {
       return {
-        statusCode: 200,
+        statusCode: 400,
         body: JSON.stringify({ 
-          success: true, 
-          message: 'No pending recipients',
+          success: false, 
+          error: 'No recipients provided',
           sent: 0 
         })
       };
     }
 
-    // Filter out suppressed emails before sending
-    const validRecipients: Recipient[] = [];
+    // Filter out suppressed emails before sending (optional - fail open if suppression check unavailable)
+    const validRecipients: typeof recipientEmails = [];
     let suppressedCount = 0;
 
-    for (const recipient of recipients) {
+    for (const recipient of recipientEmails) {
       try {
         // Check if email is suppressed
         const checkResponse = await fetch(
@@ -95,16 +148,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           if (!checkData.suppressed) {
             validRecipients.push(recipient);
           } else {
-            // Update recipient status to suppressed
             suppressedCount++;
-            await fetch(`${XANO_BASE_URL}/email_campaign_recipients/${recipient.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: 'suppressed',
-                bounce_reason: checkData.reason || 'Suppressed'
-              })
-            });
           }
         } else {
           // If check fails, include recipient (fail open)
@@ -117,10 +161,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       }
     }
 
-    // Update recipients list to only valid ones
-    recipients = validRecipients;
-
-    if (recipients.length === 0) {
+    if (validRecipients.length === 0) {
       return {
         statusCode: 200,
         body: JSON.stringify({ 
@@ -132,30 +173,24 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       };
     }
 
-    console.log(`Sending to ${recipients.length} recipients (${suppressedCount} suppressed)`);
+    console.log(`Sending to ${validRecipients.length} recipients (${suppressedCount} suppressed)`);
 
     // Send emails in batches (SendGrid limit: 1000 per request, we'll use 100 for safety)
     const batchSize = 100;
     let totalSent = 0;
     let totalFailed = 0;
 
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const batch = recipients.slice(i, i + batchSize);
+    for (let i = 0; i < validRecipients.length; i += batchSize) {
+      const batch = validRecipients.slice(i, i + batchSize);
 
       // Prepare messages for this batch with personalization
-      const messages = await Promise.all(batch.map(async (recipient) => {
-        // Fetch contact data for variable replacement
-        let contactData: any = {};
-        try {
-          const contactResponse = await fetch(
-            `${XANO_BASE_URL}/email_contacts/${recipient.contact_id}`
-          );
-          if (contactResponse.ok) {
-            contactData = await contactResponse.json();
-          }
-        } catch (error) {
-          console.error(`Failed to fetch contact data for ${recipient.email}:`, error);
-        }
+      const messages = batch.map((recipient) => {
+        // Use recipient data for variable replacement
+        const contactData = {
+          first_name: recipient.firstName || '',
+          last_name: recipient.lastName || '',
+          email: recipient.email
+        };
 
         // Replace variables in content
         const personalizedSubject = replaceVariables(campaignData.subject, contactData);
@@ -164,6 +199,9 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           campaignData.plain_text_content || stripHtml(campaignData.html_content),
           contactData
         );
+
+        // Generate a simple tracking token from email
+        const trackingToken = Buffer.from(recipient.email + ':' + campaign_id).toString('base64');
 
         return {
           to: recipient.email,
@@ -174,7 +212,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           reply_to: campaignData.reply_to || campaignData.from_email,
           subject: personalizedSubject,
           html: addUnsubscribeLink(
-            injectTrackingPixel(personalizedHtml, recipient.tracking_token),
+            injectTrackingPixel(personalizedHtml, trackingToken),
             recipient.email
           ),
           text: personalizedText,
@@ -184,101 +222,71 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           },
           custom_args: {
             campaign_id: campaign_id.toString(),
-            recipient_id: recipient.id.toString(),
-            tracking_token: recipient.tracking_token
+            tracking_token: trackingToken
           }
         };
-      }));
+      });
 
       try {
-        // Send batch via SendGrid
-        const sendResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${SENDGRID_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            personalizations: messages.map(msg => ({
-              to: [{ email: msg.to }],
-              custom_args: msg.custom_args
-            })),
-            from: messages[0].from,
-            reply_to: { email: messages[0].reply_to },
-            subject: messages[0].subject,
-            content: [
-              { type: 'text/html', value: messages[0].html },
-              { type: 'text/plain', value: messages[0].text }
-            ],
-            tracking_settings: messages[0].tracking_settings
-          })
-        });
+        // Send batch via SendGrid - use individual sends for personalization
+        for (const msg of messages) {
+          const sendResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SENDGRID_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              personalizations: [{
+                to: [{ email: msg.to }],
+                custom_args: msg.custom_args
+              }],
+              from: msg.from,
+              reply_to: { email: msg.reply_to },
+              subject: msg.subject,
+              content: [
+                { type: 'text/plain', value: msg.text },
+                { type: 'text/html', value: msg.html }
+              ],
+              tracking_settings: msg.tracking_settings
+            })
+          });
 
-        if (sendResponse.ok) {
-          // Update recipients status in Xano
-          for (const recipient of batch) {
-            await fetch(`${XANO_BASE_URL}/email_campaign_recipients/${recipient.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: 'sent',
-                sent_at: new Date().toISOString()
-              })
-            });
+          if (sendResponse.ok || sendResponse.status === 202) {
+            totalSent++;
+          } else {
+            const errorText = await sendResponse.text();
+            console.error(`SendGrid error for ${msg.to}:`, errorText);
+            totalFailed++;
           }
-          totalSent += batch.length;
-        } else {
-          const errorText = await sendResponse.text();
-          console.error('SendGrid error:', errorText);
-          
-          // Mark batch as failed
-          for (const recipient of batch) {
-            await fetch(`${XANO_BASE_URL}/email_campaign_recipients/${recipient.id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: 'failed',
-                bounce_reason: `SendGrid error: ${errorText.substring(0, 200)}`
-              })
-            });
-          }
-          totalFailed += batch.length;
         }
       } catch (error) {
         console.error('Batch send error:', error);
-        
-        // Mark batch as failed
-        for (const recipient of batch) {
-          await fetch(`${XANO_BASE_URL}/email_campaign_recipients/${recipient.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status: 'failed',
-              bounce_reason: error instanceof Error ? error.message : 'Unknown error'
-            })
-          });
-        }
         totalFailed += batch.length;
       }
 
       // Small delay between batches to avoid rate limiting
-      if (i + batchSize < recipients.length) {
+      if (i + batchSize < validRecipients.length) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
-    // Update campaign status
-    const campaignStatus = totalFailed === 0 ? 'sent' : (totalSent > 0 ? 'partially_sent' : 'failed');
-    await fetch(`${XANO_BASE_URL}/email_campaigns/${campaign_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: campaignStatus,
-        sent_at: new Date().toISOString(),
-        sent_count: totalSent,
-        bounced_count: totalFailed
-      })
-    });
+    // Update campaign status in Xano
+    try {
+      const campaignStatus = totalFailed === 0 ? 'sent' : (totalSent > 0 ? 'partially_sent' : 'failed');
+      await fetch(`${XANO_BASE_URL}/email_campaigns/${campaign_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: campaignStatus,
+          sent_at: new Date().toISOString(),
+          sent_count: totalSent,
+          bounced_count: totalFailed
+        })
+      });
+    } catch (error) {
+      console.error('Failed to update campaign status:', error);
+    }
 
     return {
       statusCode: 200,
@@ -289,7 +297,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         success: true,
         sent: totalSent,
         failed: totalFailed,
-        total: recipients.length
+        suppressed: suppressedCount,
+        total: validRecipients.length
       })
     };
 
