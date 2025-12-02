@@ -706,7 +706,17 @@ const EmailMarketingSystem = () => {
                   setEmailBlocks(blocks.length > 0 ? blocks : (campaign.htmlContent ? [{ id: Date.now(), type: 'html', content: { html: campaign.htmlContent } }] : [])); 
                   setActiveView('builder'); 
                 }} className="p-2 hover:bg-gray-100 rounded"><Edit size={20} /></button>
-                <button onClick={() => { if (confirm('Delete this campaign?')) setCampaigns(campaigns.filter(c => c.id !== campaign.id)); }} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
+                <button onClick={async () => { 
+                  if (confirm('Delete this campaign?')) {
+                    try {
+                      await campaignAPI.delete(campaign.id);
+                      setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+                    } catch (error) {
+                      console.error('Failed to delete campaign:', error);
+                      alert('Failed to delete campaign. Please try again.');
+                    }
+                  }
+                }} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
               </div>
             </div>
             {campaign.status === 'sent' && (
