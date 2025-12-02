@@ -6,13 +6,12 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
   const [blogPosts, setBlogPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [emailSettings, setEmailSettings] = useState({
-    includeImages: true,
-    includeExcerpt: true,
-    addCallToAction: true,
-    ctaText: 'Read Full Article',
-    ctaUrl: ''
-  });
+    const [emailSettings, setEmailSettings] = useState({
+      includeImages: true,
+      addCallToAction: true,
+      ctaText: 'Read Full Article',
+      ctaUrl: ''
+    });
 
   useEffect(() => {
     loadBlogPosts();
@@ -30,18 +29,30 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
     }
   };
 
-  const convertToEmail = () => {
-    if (!selectedPost) return;
-    const emailBlocks = [];
-    emailBlocks.push({ id: Date.now(), type: 'heading', content: { text: selectedPost.title, level: 1 } });
-    if (emailSettings.includeExcerpt && selectedPost.excerpt) emailBlocks.push({ id: Date.now() + 1, type: 'text', content: { text: selectedPost.excerpt } });
-    // Set image to float left with smaller width so text wraps around it
-    if (emailSettings.includeImages && selectedPost.featured_image) emailBlocks.push({ id: Date.now() + 2, type: 'image', content: { src: selectedPost.featured_image, alt: selectedPost.title, width: 40, float: 'left' } });
-    if (selectedPost.content) emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: selectedPost.content } });
-    if (emailSettings.addCallToAction) emailBlocks.push({ id: Date.now() + 4, type: 'button', content: { text: emailSettings.ctaText, url: emailSettings.ctaUrl || `https://yourblog.com/posts/${selectedPost.id}`, color: '#2563eb' } });
-    const campaignData = { name: `Newsletter: ${selectedPost.title}`, subject: selectedPost.title, fromName: 'Your Blog', fromEmail: 'blog@yourcompany.com', blocks: emailBlocks };
-    onConvert(campaignData);
-  };
+    const convertToEmail = () => {
+      if (!selectedPost) return;
+      const emailBlocks = [];
+      emailBlocks.push({ id: Date.now(), type: 'heading', content: { text: selectedPost.title, level: 1 } });
+    
+      // Set image to float left with smaller width so text wraps around it
+      // Place image BEFORE the content so text wraps around it naturally
+      if (emailSettings.includeImages && selectedPost.featured_image) {
+        emailBlocks.push({ id: Date.now() + 2, type: 'image', content: { src: selectedPost.featured_image, alt: selectedPost.title, width: 40, float: 'left' } });
+      }
+    
+      // Add the full content as HTML - don't add excerpt separately to avoid duplication
+      // The excerpt is typically the first paragraph of the content, so adding both causes duplicate text
+      if (selectedPost.content) {
+        emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: selectedPost.content } });
+      }
+    
+      if (emailSettings.addCallToAction) {
+        emailBlocks.push({ id: Date.now() + 4, type: 'button', content: { text: emailSettings.ctaText, url: emailSettings.ctaUrl || `https://yourblog.com/posts/${selectedPost.id}`, color: '#2563eb' } });
+      }
+    
+      const campaignData = { name: `Newsletter: ${selectedPost.title}`, subject: selectedPost.title, fromName: 'Your Blog', fromEmail: 'blog@yourcompany.com', blocks: emailBlocks };
+      onConvert(campaignData);
+    };
 
   if (isLoading) return <div className="text-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div><p className="mt-4 text-gray-600">Loading blog posts...</p></div>;
 
@@ -71,9 +82,8 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
         <div>
           <h3 className="font-semibold mb-3">Email Settings</h3>
           <div className="space-y-4">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={emailSettings.includeImages} onChange={(e) => setEmailSettings({...emailSettings, includeImages: e.target.checked})} className="rounded" /><span>Include featured image</span></label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={emailSettings.includeExcerpt} onChange={(e) => setEmailSettings({...emailSettings, includeExcerpt: e.target.checked})} className="rounded" /><span>Include excerpt</span></label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={emailSettings.addCallToAction} onChange={(e) => setEmailSettings({...emailSettings, addCallToAction: e.target.checked})} className="rounded" /><span>Add call-to-action button</span></label>
+                        <label className="flex items-center gap-2"><input type="checkbox" checked={emailSettings.includeImages} onChange={(e) => setEmailSettings({...emailSettings, includeImages: e.target.checked})} className="rounded" /><span>Include featured image</span></label>
+                        <label className="flex items-center gap-2"><input type="checkbox" checked={emailSettings.addCallToAction} onChange={(e) => setEmailSettings({...emailSettings, addCallToAction: e.target.checked})} className="rounded" /><span>Add call-to-action button</span></label>
             {emailSettings.addCallToAction && (
               <div className="ml-6 space-y-2">
                 <div><label className="block text-sm font-medium mb-1">Button Text</label><input type="text" value={emailSettings.ctaText} onChange={(e) => setEmailSettings({...emailSettings, ctaText: e.target.value})} className="w-full p-2 border rounded" /></div>
@@ -85,7 +95,7 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
                 <h4 className="font-semibold mb-2">Preview</h4>
                 <div className="text-sm space-y-1">
                   <p><strong>Subject:</strong> {selectedPost.title}</p>
-                  <p><strong>Blocks:</strong> {1 + (emailSettings.includeExcerpt ? 1 : 0) + (emailSettings.includeImages ? 1 : 0) + 1 + (emailSettings.addCallToAction ? 1 : 0)} content blocks</p>
+                  <p><strong>Blocks:</strong> {1 + (emailSettings.includeImages ? 1 : 0) + 1 + (emailSettings.addCallToAction ? 1 : 0)} content blocks</p>
                 </div>
               </div>
             )}
