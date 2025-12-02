@@ -407,18 +407,18 @@ const EmailMarketingSystem = () => {
         return;
       }
       
-      // Get all contacts from selected lists
-      const recipients = [];
-      sendData.listIds.forEach(listId => {
-        const list = subscriberLists.find(l => l.id === listId);
-        if (list && list.members) {
-          const listContacts = allContacts.filter(c => list.members.includes(c.id));
-          recipients.push(...listContacts);
-        }
-      });
+            // Get all contacts from selected lists
+            // list.members is an array of contact objects from XANO (with id, email, first_name, last_name, etc.)
+            const recipients = [];
+            sendData.listIds.forEach(listId => {
+              const list = subscriberLists.find(l => l.id === listId);
+              if (list && Array.isArray(list.members)) {
+                recipients.push(...list.members);
+              }
+            });
 
-      // Remove duplicates
-      const uniqueRecipients = Array.from(new Map(recipients.map(r => [r.email, r])).values());
+            // Remove duplicates by email
+            const uniqueRecipients = Array.from(new Map(recipients.map(r => [r.email, r])).values());
 
       if (uniqueRecipients.length === 0) {
         alert('No recipients found in selected lists');
