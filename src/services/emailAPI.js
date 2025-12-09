@@ -174,14 +174,31 @@ export const campaignAPI = {
       const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
         method: 'DELETE'
       });
+
       if (!response.ok) {
-        console.warn('Xano unavailable, using localStorage for campaign deletion');
-        return localStorageHelper.delete(id);
+        const text = await response.text().catch(() => '');
+        throw new Error(`Failed to delete campaign: ${response.status} ${text}`);
       }
-      return response.json();
+
+      // Xano may return 204 No Content or an empty body on success
+      if (response.status === 204) {
+        return { success: true };
+      }
+
+      const text = await response.text();
+      if (!text) {
+        return { success: true };
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch {
+        // If the backend returns a non-JSON body but status is ok, still count it as success
+        return { success: true };
+      }
     } catch (error) {
-      console.warn('Xano unavailable, using localStorage for campaign deletion:', error.message);
-      return localStorageHelper.delete(id);
+      console.error('Delete campaign error:', error);
+      throw error;
     }
   }
 };
