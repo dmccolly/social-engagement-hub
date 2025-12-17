@@ -1,9 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Edit, Eye, Code } from 'lucide-react';
+
+// Simple WYSIWYG editor component for email HTML blocks
+// Uses contentEditable with basic formatting toolbar
+const WysiwygEditor = ({ value, onChange }) => {
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    // Update the editor content if the value prop changes from outside
+    if (editorRef.current && value !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const execCommand = (command, arg) => {
+    document.execCommand(command, false, arg);
+    // After executing a command, trigger onChange with the updated HTML
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  return (
+    <div className="border rounded-lg bg-white">
+      {/* Toolbar */}
+      <div className="flex flex-wrap gap-1 p-2 border-b bg-gray-50">
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200 font-bold"
+          onClick={() => execCommand('bold')}
+          title="Bold"
+        >
+          B
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200 italic"
+          onClick={() => execCommand('italic')}
+          title="Italic"
+        >
+          I
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200 underline"
+          onClick={() => execCommand('underline')}
+          title="Underline"
+        >
+          U
+        </button>
+        <span className="border-l mx-1"></span>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200"
+          onClick={() => {
+            const url = prompt('Enter URL:');
+            if (url) execCommand('createLink', url);
+          }}
+          title="Insert Link"
+        >
+          Link
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200"
+          onClick={() => execCommand('unlink')}
+          title="Remove Link"
+        >
+          Unlink
+        </button>
+        <span className="border-l mx-1"></span>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200"
+          onClick={() => execCommand('insertUnorderedList')}
+          title="Bullet List"
+        >
+          List
+        </button>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded text-sm hover:bg-gray-200"
+          onClick={() => execCommand('insertOrderedList')}
+          title="Numbered List"
+        >
+          1. 2.
+        </button>
+      </div>
+      {/* Editable area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        className="min-h-[200px] p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 prose max-w-none"
+        onInput={handleInput}
+        style={{ minHeight: '200px' }}
+      />
+    </div>
+  );
+};
 
 // Memoized block editor components to prevent focus loss
 const BlockEditor = React.memo(({ block, onUpdate }) => {
-  const [isEditingHtml, setIsEditingHtml] = useState(false);
+  // Mode: 'wysiwyg' (default), 'preview', or 'html' (advanced)
+  // Default to WYSIWYG so users can immediately edit content visually
+  const [editMode, setEditMode] = useState('wysiwyg');
   
   const handleChange = (field, value) => {
     onUpdate(block.id, { ...block.content, [field]: value });
@@ -39,29 +145,52 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
     case 'html':
       return (
         <div className="email-block">
-          {/* Toggle buttons for Edit/Preview mode */}
-          <div className="flex items-center justify-between mb-2 pb-2 border-b">
-            <span className="text-sm font-medium text-gray-600">HTML Content Block</span>
+          {/* Toggle buttons for Edit/Preview/HTML mode - sticky header so it's always visible */}
+          <div className="flex items-center justify-between mb-2 pb-2 border-b bg-white sticky top-0 z-10 -mx-2 px-2 pt-2">
+            <span className="text-sm font-medium text-gray-600">Content Block</span>
             <div className="flex gap-1">
               <button
-                onClick={() => setIsEditingHtml(false)}
-                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${!isEditingHtml ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                onClick={() => setEditMode('wysiwyg')}
+                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${editMode === 'wysiwyg' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                <Edit size={14} />
+                Edit
+              </button>
+              <button
+                onClick={() => setEditMode('preview')}
+                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${editMode === 'preview' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               >
                 <Eye size={14} />
                 Preview
               </button>
               <button
-                onClick={() => setIsEditingHtml(true)}
-                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${isEditingHtml ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                onClick={() => setEditMode('html')}
+                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${editMode === 'html' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                title="Advanced: Edit raw HTML"
               >
                 <Code size={14} />
-                Edit HTML
+                HTML
               </button>
             </div>
           </div>
           
-          {isEditingHtml ? (
-            /* Edit mode - show textarea prominently */
+          {editMode === 'wysiwyg' ? (
+            /* WYSIWYG mode - click and edit like a word processor */
+            <div>
+              <WysiwygEditor 
+                value={block.content.html} 
+                onChange={(html) => handleChange('html', html)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Click to edit. Use the toolbar for formatting.</p>
+            </div>
+          ) : editMode === 'preview' ? (
+            /* Preview mode - show rendered HTML */
+            <div>
+              <div className="border rounded p-4 bg-white prose max-w-none min-h-[100px]" dangerouslySetInnerHTML={{ __html: block.content.html }} />
+              <p className="text-xs text-gray-500 mt-1">Click "Edit" to modify this content.</p>
+            </div>
+          ) : (
+            /* HTML mode - advanced raw HTML editing */
             <div>
               <textarea 
                 value={block.content.html} 
@@ -70,13 +199,7 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
                 rows="12" 
                 placeholder="<p>Your HTML content...</p>" 
               />
-              <p className="text-xs text-gray-500 mt-1">Edit the HTML directly. Click "Preview" to see how it will look.</p>
-            </div>
-          ) : (
-            /* Preview mode - show rendered HTML with edit hint */
-            <div>
-              <div className="border rounded p-4 bg-white prose max-w-none min-h-[100px]" dangerouslySetInnerHTML={{ __html: block.content.html }} />
-              <p className="text-xs text-gray-500 mt-1">Click "Edit HTML" above to modify this content.</p>
+              <p className="text-xs text-gray-500 mt-1">Advanced: Edit raw HTML directly.</p>
             </div>
           )}
         </div>
