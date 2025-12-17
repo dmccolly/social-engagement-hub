@@ -122,17 +122,65 @@
             margin: 20px 0;
         }
         
-        /* Float small images with position classes so text wraps around them */
-        .post-content img.size-small.position-left {
-            float: left;
-            margin: 4px 16px 12px 0;
-            width: min(45%, 240px);
+        /* Image size classes */
+        .post-content img.size-small {
+            width: 200px;
+            max-width: 100%;
         }
         
-        .post-content img.size-small.position-right {
+        .post-content img.size-medium {
+            width: 400px;
+            max-width: 100%;
+        }
+        
+        .post-content img.size-large {
+            width: 600px;
+            max-width: 100%;
+        }
+        
+        .post-content img.size-full {
+            width: 100%;
+        }
+        
+        /* Image position classes - apply to all sizes */
+        .post-content img.position-left,
+        .post-content .media-wrapper.position-left,
+        .post-content .position-left {
+            float: left;
+            margin: 0 15px 15px 0;
+            clear: left;
+            max-width: 45%;
+        }
+        
+        .post-content img.position-right,
+        .post-content .media-wrapper.position-right,
+        .post-content .position-right {
             float: right;
-            margin: 4px 0 12px 16px;
-            width: min(45%, 240px);
+            margin: 0 0 15px 15px;
+            clear: right;
+            max-width: 45%;
+        }
+        
+        .post-content img.position-center,
+        .post-content .media-wrapper.position-center,
+        .post-content .position-center {
+            display: block;
+            margin: 15px auto;
+            float: none;
+            max-width: 100%;
+        }
+        
+        /* Wrap position classes for text wrapping around images */
+        .post-content img.position-wrap-left,
+        .post-content .media-wrapper.position-wrap-left {
+            float: left;
+            margin: 0 15px 15px 0;
+        }
+        
+        .post-content img.position-wrap-right,
+        .post-content .media-wrapper.position-wrap-right {
+            float: right;
+            margin: 0 0 15px 15px;
         }
         
         /* Clear floats to prevent container collapse */
@@ -140,6 +188,22 @@
             content: "";
             display: table;
             clear: both;
+        }
+        
+        /* Responsive: remove floats on mobile */
+        @media (max-width: 768px) {
+            .post-content img.position-left,
+            .post-content img.position-right,
+            .post-content img.position-wrap-left,
+            .post-content img.position-wrap-right,
+            .post-content .media-wrapper.position-left,
+            .post-content .media-wrapper.position-right,
+            .post-content .position-left,
+            .post-content .position-right {
+                float: none;
+                max-width: 100%;
+                margin: 12px 0;
+            }
         }
         
         .post-content a {
