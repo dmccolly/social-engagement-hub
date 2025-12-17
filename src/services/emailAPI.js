@@ -174,14 +174,39 @@ export const campaignAPI = {
       const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
         method: 'DELETE'
       });
+      
+      // Handle 204 No Content (successful delete with no body)
+      if (response.status === 204) {
+        return { success: true };
+      }
+      
       if (!response.ok) {
-        console.warn('Xano unavailable, using localStorage for campaign deletion');
+        // Don't silently fall back to localStorage on backend errors
+        // This was causing "phantom deletes" where UI showed deleted but backend kept the record
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to delete campaign from backend:', response.status, errorText);
+        return { error: `Failed to delete: ${response.status} ${errorText}` };
+      }
+      
+      // Try to parse JSON response, but handle empty responses
+      const text = await response.text();
+      if (!text) {
+        return { success: true };
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { success: true };
+      }
+    } catch (error) {
+      // Only fall back to localStorage on true network failures
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn('Network error, using localStorage for campaign deletion:', error.message);
         return localStorageHelper.delete(id);
       }
-      return response.json();
-    } catch (error) {
-      console.warn('Xano unavailable, using localStorage for campaign deletion:', error.message);
-      return localStorageHelper.delete(id);
+      // For other errors, report them
+      console.error('Error deleting campaign:', error);
+      return { error: error.message };
     }
   }
 };
