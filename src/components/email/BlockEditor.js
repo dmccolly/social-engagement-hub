@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Edit, Eye, Code } from 'lucide-react';
 
 // Memoized block editor components to prevent focus loss
 const BlockEditor = React.memo(({ block, onUpdate }) => {
+  const [isEditingHtml, setIsEditingHtml] = useState(false);
+  
   const handleChange = (field, value) => {
     onUpdate(block.id, { ...block.content, [field]: value });
   };
@@ -36,14 +39,46 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
     case 'html':
       return (
         <div className="email-block">
-          <div className="border rounded p-4 bg-white prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content.html }} />
-          <textarea 
-            value={block.content.html} 
-            onChange={(e) => handleChange('html', e.target.value)}
-            className="w-full p-2 border rounded mt-2 font-mono text-sm" 
-            rows="6" 
-            placeholder="<p>Your HTML content...</p>" 
-          />
+          {/* Toggle buttons for Edit/Preview mode */}
+          <div className="flex items-center justify-between mb-2 pb-2 border-b">
+            <span className="text-sm font-medium text-gray-600">HTML Content Block</span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setIsEditingHtml(false)}
+                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${!isEditingHtml ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                <Eye size={14} />
+                Preview
+              </button>
+              <button
+                onClick={() => setIsEditingHtml(true)}
+                className={`flex items-center gap-1 px-3 py-1 text-sm rounded ${isEditingHtml ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                <Code size={14} />
+                Edit HTML
+              </button>
+            </div>
+          </div>
+          
+          {isEditingHtml ? (
+            /* Edit mode - show textarea prominently */
+            <div>
+              <textarea 
+                value={block.content.html} 
+                onChange={(e) => handleChange('html', e.target.value)}
+                className="w-full p-3 border rounded font-mono text-sm bg-gray-50" 
+                rows="12" 
+                placeholder="<p>Your HTML content...</p>" 
+              />
+              <p className="text-xs text-gray-500 mt-1">Edit the HTML directly. Click "Preview" to see how it will look.</p>
+            </div>
+          ) : (
+            /* Preview mode - show rendered HTML with edit hint */
+            <div>
+              <div className="border rounded p-4 bg-white prose max-w-none min-h-[100px]" dangerouslySetInnerHTML={{ __html: block.content.html }} />
+              <p className="text-xs text-gray-500 mt-1">Click "Edit HTML" above to modify this content.</p>
+            </div>
+          )}
         </div>
       );
     

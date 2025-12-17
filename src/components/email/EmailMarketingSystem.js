@@ -49,6 +49,18 @@ const EmailMarketingSystem = () => {
     return [];
   };
 
+  // Ensure all blocks have unique IDs - prevents silent update failures
+  // when blocks are loaded from storage without IDs
+  const ensureBlockIds = (blocks) => {
+    if (!Array.isArray(blocks)) return blocks;
+    return blocks.map((block, index) => {
+      if (!block.id) {
+        return { ...block, id: Date.now() + index };
+      }
+      return block;
+    });
+  };
+
   // Load data from Xano on mount
   useEffect(() => {
     console.log('EmailMarketingSystem build: 5b01f5fa - Campaign rendering fix active');
@@ -145,14 +157,14 @@ const EmailMarketingSystem = () => {
 
   const handleBlogToEmail = (campaignData) => {
     setCurrentCampaign({ id: Date.now(), ...campaignData, status: "draft", stats: { sent: 0, opened: 0, clicked: 0 } });
-    setEmailBlocks(campaignData.blocks || []);
+    setEmailBlocks(ensureBlockIds(campaignData.blocks || []));
     setShowBlogConverter(false);
     setActiveView('builder');
   };
 
   const handleNewsletterCreate = (newsletterData) => {
     setCurrentCampaign({ id: Date.now(), ...newsletterData, status: "draft", stats: { sent: 0, opened: 0, clicked: 0 } });
-    setEmailBlocks(newsletterData.blocks || []);
+    setEmailBlocks(ensureBlockIds(newsletterData.blocks || []));
     setShowNewsletterBuilder(false);
     setActiveView('builder');
   };
@@ -703,7 +715,8 @@ const EmailMarketingSystem = () => {
                 <button onClick={() => { 
                   setCurrentCampaign(campaign); 
                   const blocks = normalizeBlocks(campaign.blocks);
-                  setEmailBlocks(blocks.length > 0 ? blocks : (campaign.htmlContent ? [{ id: Date.now(), type: 'html', content: { html: campaign.htmlContent } }] : [])); 
+                  // Ensure all blocks have IDs to prevent silent update failures
+                  setEmailBlocks(ensureBlockIds(blocks.length > 0 ? blocks : (campaign.htmlContent ? [{ id: Date.now(), type: 'html', content: { html: campaign.htmlContent } }] : []))); 
                   setActiveView('builder'); 
                 }} className="p-2 hover:bg-gray-100 rounded"><Edit size={20} /></button>
                 <button onClick={async () => { 

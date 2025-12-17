@@ -2,6 +2,72 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Mail, ArrowRight, Check } from 'lucide-react';
 import { getPublishedPosts } from '../../services/xanoService';
 
+// Sanitize blog HTML for email use - removes editor-specific attributes and handlers
+const sanitizeBlogHtmlForEmail = (html) => {
+  if (!html || typeof html !== 'string') return html;
+  
+  // Create a temporary DOM element to parse the HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  
+  // Remove onclick handlers and editor-specific attributes from images
+  tempDiv.querySelectorAll('img').forEach(img => {
+    img.removeAttribute('onclick');
+    img.removeAttribute('contenteditable');
+    img.removeAttribute('draggable');
+    // Remove editor-specific IDs (img-xxx format)
+    const id = img.getAttribute('id');
+    if (id && id.startsWith('img-')) {
+      img.removeAttribute('id');
+    }
+    // Remove editor-specific classes but keep size/position classes
+    const classes = img.className.split(' ').filter(cls => 
+      cls.startsWith('size-') || cls.startsWith('position-') || 
+      cls === 'rounded' || cls === 'w-full'
+    );
+    img.className = classes.join(' ');
+    // Remove cursor pointer style since images won't be clickable
+    if (img.style.cursor === 'pointer') {
+      img.style.cursor = '';
+    }
+  });
+  
+  // Remove onclick handlers and editor-specific attributes from media wrappers
+  tempDiv.querySelectorAll('.media-wrapper, [id^="media-"]').forEach(el => {
+    el.removeAttribute('onclick');
+    el.removeAttribute('contenteditable');
+    // Remove editor-specific IDs (media-xxx format)
+    const id = el.getAttribute('id');
+    if (id && id.startsWith('media-')) {
+      el.removeAttribute('id');
+    }
+    // Remove cursor pointer style
+    if (el.style.cursor === 'pointer') {
+      el.style.cursor = '';
+    }
+  });
+  
+  // Remove any floating toolbars or resize handles that might have been saved
+  tempDiv.querySelectorAll('.floating-toolbar, .resize-handle, .selected-image').forEach(el => {
+    if (el.classList.contains('selected-image')) {
+      el.classList.remove('selected-image');
+    } else {
+      el.remove();
+    }
+  });
+  
+  // Remove image-wrapper-resizable divs but keep their content
+  tempDiv.querySelectorAll('.image-wrapper-resizable').forEach(wrapper => {
+    const parent = wrapper.parentNode;
+    while (wrapper.firstChild) {
+      parent.insertBefore(wrapper.firstChild, wrapper);
+    }
+    wrapper.remove();
+  });
+  
+  return tempDiv.innerHTML;
+};
+
 const BlogToEmailConverter = ({ onConvert, onCancel }) => {
   const [blogPosts, setBlogPosts] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
@@ -42,8 +108,10 @@ const BlogToEmailConverter = ({ onConvert, onCancel }) => {
     
       // Add the full content as HTML - don't add excerpt separately to avoid duplication
       // The excerpt is typically the first paragraph of the content, so adding both causes duplicate text
+      // Sanitize the HTML to remove editor-specific onclick handlers and attributes
       if (selectedPost.content) {
-        emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: selectedPost.content } });
+        const sanitizedContent = sanitizeBlogHtmlForEmail(selectedPost.content);
+        emailBlocks.push({ id: Date.now() + 3, type: 'html', content: { html: sanitizedContent } });
       }
     
       if (emailSettings.addCallToAction) {
