@@ -42,6 +42,9 @@ const BlogSection = () => {
         const savedSession = localStorage.getItem('visitor_session');
         if (savedSession) {
           const session = JSON.parse(savedSession);
+          // Normalize session data (trim whitespace) for consistent comparisons
+          if (session.name) session.name = session.name.trim();
+          if (session.email) session.email = session.email.trim();
           setVisitorSession(session);
           console.log('Loaded visitor session:', session);
         }
@@ -88,8 +91,8 @@ const BlogSection = () => {
             const tags = asset.tags || '';
             if (!tags.includes('status:draft')) return false;
             
-            const submittedBy = asset.submitted_by || '';
-            if (submittedBy !== visitorSession.name) return false;
+            const submittedBy = (asset.submitted_by || '').trim();
+            if (submittedBy !== visitorSession.name.trim()) return false;
             
             return true;
           })
@@ -141,8 +144,8 @@ const BlogSection = () => {
     try {
       const sessionData = {
         session_id: generateSessionId(),
-        email: visitorData.email,
-        name: visitorData.name,
+        email: visitorData.email.trim(),
+        name: visitorData.name.trim(),
         is_member: false,
         member_id: null
       };
@@ -294,8 +297,8 @@ const BlogSection = () => {
                 const tags = asset.tags || '';
                 if (!tags.includes('status:draft')) return false;
                 
-                const submittedBy = asset.submitted_by || '';
-                if (submittedBy !== visitorSession.name) return false;
+                const submittedBy = (asset.submitted_by || '').trim();
+                if (submittedBy !== visitorSession.name.trim()) return false;
                 
                 return true;
               })
