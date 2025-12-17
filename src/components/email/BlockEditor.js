@@ -3,7 +3,9 @@ import { Edit, Eye, Code } from 'lucide-react';
 
 // Memoized block editor components to prevent focus loss
 const BlockEditor = React.memo(({ block, onUpdate }) => {
-  const [isEditingHtml, setIsEditingHtml] = useState(false);
+  // Default HTML blocks to edit mode so users can immediately edit content
+  // This makes the edit functionality more discoverable, especially for blog-to-email conversions
+  const [isEditingHtml, setIsEditingHtml] = useState(true);
   
   const handleChange = (field, value) => {
     onUpdate(block.id, { ...block.content, [field]: value });
@@ -39,8 +41,8 @@ const BlockEditor = React.memo(({ block, onUpdate }) => {
     case 'html':
       return (
         <div className="email-block">
-          {/* Toggle buttons for Edit/Preview mode */}
-          <div className="flex items-center justify-between mb-2 pb-2 border-b">
+          {/* Toggle buttons for Edit/Preview mode - sticky header so it's always visible */}
+          <div className="flex items-center justify-between mb-2 pb-2 border-b bg-white sticky top-0 z-10 -mx-2 px-2 pt-2">
             <span className="text-sm font-medium text-gray-600">HTML Content Block</span>
             <div className="flex gap-1">
               <button
