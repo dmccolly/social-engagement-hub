@@ -171,17 +171,28 @@ export const campaignAPI = {
 
   async delete(id) {
     try {
-      const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
+      // Xano DELETE endpoint requires the id in the query string as well as the path
+      // DELETE /email_campaigns/:id?id=:id works correctly
+      const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}?id=${id}`, {
         method: 'DELETE'
       });
+      
       if (!response.ok) {
-        console.warn('Xano unavailable, using localStorage for campaign deletion');
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Failed to delete campaign from backend:', response.status, errorText);
+        return { error: `Failed to delete: ${response.status} ${errorText}` };
+      }
+      
+      return { success: true };
+    } catch (error) {
+      // Only fall back to localStorage on true network failures
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.warn('Network error, using localStorage for campaign deletion:', error.message);
         return localStorageHelper.delete(id);
       }
-      return response.json();
-    } catch (error) {
-      console.warn('Xano unavailable, using localStorage for campaign deletion:', error.message);
-      return localStorageHelper.delete(id);
+      // For other errors, report them
+      console.error('Error deleting campaign:', error);
+      return { error: error.message };
     }
   }
 };

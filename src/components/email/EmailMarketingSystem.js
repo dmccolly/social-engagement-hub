@@ -722,11 +722,15 @@ const EmailMarketingSystem = () => {
                 <button onClick={async () => { 
                   if (confirm('Delete this campaign?')) {
                     try {
-                      await campaignAPI.delete(campaign.id);
-                      setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+                      const result = await campaignAPI.delete(campaign.id);
+                      if (result.error) {
+                        throw new Error(result.error);
+                      }
+                      // Use functional setState to avoid stale closure issues
+                      setCampaigns(prev => prev.filter(c => c.id !== campaign.id));
                     } catch (error) {
                       console.error('Failed to delete campaign:', error);
-                      alert('Failed to delete campaign. Please try again.');
+                      alert('Failed to delete campaign: ' + error.message);
                     }
                   }
                 }} className="p-2 hover:bg-gray-100 rounded text-red-600"><Trash2 size={20} /></button>
