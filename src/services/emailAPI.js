@@ -72,7 +72,9 @@ export const campaignAPI = {
       }
       const data = await response.json();
       // Handle null or non-array responses
-      return Array.isArray(data) ? data : [];
+      const campaigns = Array.isArray(data) ? data : [];
+      // Filter out soft-deleted campaigns (status='deleted')
+      return campaigns.filter(c => c.status !== 'deleted');
     } catch (error) {
       console.warn('Xano unavailable, using localStorage for campaigns:', error.message);
       return localStorageHelper.getAll();
@@ -171,33 +173,21 @@ export const campaignAPI = {
 
   async delete(id) {
     try {
+      // Xano DELETE endpoint is misconfigured (returns 400 error for all IDs)
+      // Use soft delete via PATCH to set status='deleted' instead
       const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
-        method: 'DELETE'
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'deleted' })
       });
       
-      // Handle 204 No Content (successful delete with no body)
-      if (response.status === 204) {
-        return { success: true };
-      }
-      
       if (!response.ok) {
-        // Don't silently fall back to localStorage on backend errors
-        // This was causing "phantom deletes" where UI showed deleted but backend kept the record
         const errorText = await response.text().catch(() => 'Unknown error');
         console.error('Failed to delete campaign from backend:', response.status, errorText);
         return { error: `Failed to delete: ${response.status} ${errorText}` };
       }
       
-      // Try to parse JSON response, but handle empty responses
-      const text = await response.text();
-      if (!text) {
-        return { success: true };
-      }
-      try {
-        return JSON.parse(text);
-      } catch {
-        return { success: true };
-      }
+      return { success: true };
     } catch (error) {
       // Only fall back to localStorage on true network failures
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
