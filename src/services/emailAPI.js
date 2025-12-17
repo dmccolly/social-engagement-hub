@@ -72,9 +72,7 @@ export const campaignAPI = {
       }
       const data = await response.json();
       // Handle null or non-array responses
-      const campaigns = Array.isArray(data) ? data : [];
-      // Filter out soft-deleted campaigns (status='deleted')
-      return campaigns.filter(c => c.status !== 'deleted');
+      return Array.isArray(data) ? data : [];
     } catch (error) {
       console.warn('Xano unavailable, using localStorage for campaigns:', error.message);
       return localStorageHelper.getAll();
@@ -173,12 +171,10 @@ export const campaignAPI = {
 
   async delete(id) {
     try {
-      // Xano DELETE endpoint is misconfigured (returns 400 error for all IDs)
-      // Use soft delete via PATCH to set status='deleted' instead
-      const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'deleted' })
+      // Xano DELETE endpoint requires the id in the query string as well as the path
+      // DELETE /email_campaigns/:id?id=:id works correctly
+      const response = await fetch(`${XANO_BASE_URL}/email_campaigns/${id}?id=${id}`, {
+        method: 'DELETE'
       });
       
       if (!response.ok) {
