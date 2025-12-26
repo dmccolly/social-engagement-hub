@@ -59,6 +59,9 @@ exports.handler = async (event) => {
         if (tags.includes('status:draft')) {
           return false;
         }
+        if (tags.includes('status:archived')) {
+          return false;
+        }
 
         // Filter out scheduled posts that haven't reached their publish time
         if (asset.is_scheduled && asset.scheduled_datetime) {
