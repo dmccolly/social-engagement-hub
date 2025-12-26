@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Description Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .progress {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: white;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .file-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .file-info p {
+            margin: 5px 0;
+            color: #495057;
+        }
+        
+        .file-info strong {
+            color: #212529;
+        }
+        
+        .preview-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-container img {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .preview-container video {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 8px;
+        }
+        
+        .preview-container audio {
+            width: 100%;
+        }
+        
+        .no-preview {
+            text-align: center;
+            color: #6c757d;
+        }
+        
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: #212529;
+            font-size: 16px;
+        }
+        
+        .form-group textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .char-count {
+            text-align: right;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: auto;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-save:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-skip {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-skip:hover:not(:disabled) {
+            background: #5a6268;
+        }
+        
+        .btn-prev {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .btn-prev:hover:not(:disabled) {
+            background: #dee2e6;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6c757d;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 File Description Editor</h1>
+            <p id="status">Loading files...</p>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div id="loadingState" class="loading">
+            Loading assets from database
+        </div>
+        
+        <div id="errorState" style="display: none;" class="error"></div>
+        
+        <div id="editorContent" style="display: none;">
+            <div class="content">
+                <div class="preview-section">
+                    <div class="file-info">
+                        <p><strong>File ID:</strong> <span id="fileId">-</span></p>
+                        <p><strong>Title:</strong> <span id="fileTitle">-</span></p>
+                        <p><strong>Category:</strong> <span id="fileCategory">-</span></p>
+                        <p><strong>Submitted By:</strong> <span id="fileAuthor">-</span></p>
+                        <p><strong>Created:</strong> <span id="fileDate">-</span></p>
+                    </div>
+                    
+                    <div class="preview-container" id="previewContainer">
+                        <div class="no-preview">No preview available</div>
+                    </div>
+                </div>
+                
+                <div class="editor-section">
+                    <div id="successMessage" style="display: none;" class="success"></div>
+                    
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea 
+                            id="description" 
+                            placeholder="Enter file description here..."
+                        ></textarea>
+                        <div class="char-count">
+                            <span id="charCount">0</span> characters
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn-prev" id="btnPrev">← Previous</button>
+                        <button class="btn-skip" id="btnSkip">Skip →</button>
+                        <button class="btn-save" id="btnSave">Save & Next →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const XANO_BASE_URL = 'https://gleaming-cendol-417bf3.netlify.app/xano';
+        
+        let assets = [];
+        let currentIndex = 0;
+        
+        // Load all assets on page load
+        async function loadAssets() {
+            try {
+                const response = await fetch(`${XANO_BASE_URL}/asset`);
+                if (!response.ok) throw new Error('Failed to fetch assets');
+                
+                assets = await response.json();
+                console.log('Loaded assets:', assets.length);
+                
+                if (assets.length === 0) {
+                    showError('No assets found in database');
+                    return;
+                }
+                
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('editorContent').style.display = 'block';
+                
+                displayCurrentAsset();
+            } catch (error) {
+                console.error('Load error:', error);
+                showError('Failed to load assets: ' + error.message);
+            }
+        }
+        
+        function displayCurrentAsset() {
+            if (currentIndex < 0 || currentIndex >= assets.length) return;
+            
+            const asset = assets[currentIndex];
+            
+            // Update progress
+            const progress = ((currentIndex + 1) / assets.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('status').textContent = `File ${currentIndex + 1} of ${assets.length}`;
+            
+            // Update file info
+            document.getElementById('fileId').textContent = asset.id || '-';
+            document.getElementById('fileTitle').textContent = asset.title || 'Untitled';
+            document.getElementById('fileCategory').textContent = asset.category_id || '-';
+            document.getElementById('fileAuthor').textContent = asset.submitted_by || 'Unknown';
+            document.getElementById('fileDate').textContent = asset.created_at ? new Date(asset.created_at).toLocaleDateString() : '-';
+            
+            // Update description
+            const descriptionField = document.getElementById('description');
+            descriptionField.value = asset.description || '';
+            updateCharCount();
+            
+            // Update preview
+            displayPreview(asset);
+            
+            // Update button states
+            document.getElementById('btnPrev').disabled = currentIndex === 0;
+            
+            // Hide success message
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function displayPreview(asset) {
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = '';
+            
+            const mediaUrl = asset.media_url || asset.thumbnail_url;
+            
+            if (!mediaUrl) {
+                container.innerHTML = '<div class="no-preview">No preview available</div>';
+                return;
+            }
+            
+            // Determine file type from URL
+            const url = mediaUrl.toLowerCase();
+            
+            if (url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/)) {
+                const img = document.createElement('img');
+                img.src = mediaUrl;
+                img.alt = asset.title || 'Preview';
+                img.onerror = () => {
+                    container.innerHTML = '<div class="no-preview">Failed to load image</div>';
+                };
+                container.appendChild(img);
+            } else if (url.match(/\.(mp4|webm|mov)$/)) {
+                const video = document.createElement('video');
+                video.src = mediaUrl;
+                video.controls = true;
+                container.appendChild(video);
+            } else if (url.match(/\.(mp3|wav|ogg)$/)) {
+                const audio = document.createElement('audio');
+                audio.src = mediaUrl;
+                audio.controls = true;
+                container.appendChild(audio);
+            } else if (url.match(/\.(pdf)$/)) {
+                const link = document.createElement('a');
+                link.href = mediaUrl;
+                link.target = '_blank';
+                link.textContent = '📄 Open PDF in new tab';
+                link.style.color = '#667eea';
+                link.style.fontSize = '18px';
+                container.appendChild(link);
+            } else {
+                container.innerHTML = '<div class="no-preview">Preview not available for this file type</div>';
+            }
+        }
+        
+        function updateCharCount() {
+            const description = document.getElementById('description').value;
+            document.getElementById('charCount').textContent = description.length;
+        }
+        
+        async function saveDescription() {
+            const asset = assets[currentIndex];
+            const description = document.getElementById('description').value;
+            
+            const btnSave = document.getElementById('btnSave');
+            btnSave.disabled = true;
+            btnSave.textContent = 'Saving...';
+            
+            try {
+                const response = await fetch(`${XANO_BASE_URL}/asset/${asset.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        description: description
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to save');
+                
+                const updated = await response.json();
+                assets[currentIndex] = updated;
+                
+                showSuccess('Description saved successfully!');
+                
+                // Move to next after short delay
+                setTimeout(() => {
+                    nextAsset();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Save error:', error);
+                alert('Failed to save description: ' + error.message);
+            } finally {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Save & Next →';
+            }
+        }
+        
+        function nextAsset() {
+            if (currentIndex < assets.length - 1) {
+                currentIndex++;
+                displayCurrentAsset();
+            } else {
+                alert('You have reached the last file!');
+            }
+        }
+        
+        function prevAsset() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                displayCurrentAsset();
+            }
+        }
+        
+        function showError(message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').textContent = message;
+            document.getElementById('errorState').style.display = 'block';
+        }
+        
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+        }
+        
+        // Event listeners
+        document.getElementById('description').addEventListener('input', updateCharCount);
+        document.getElementById('btnSave').addEventListener('click', saveDescription);
+        document.getElementById('btnSkip').addEventListener('click', nextAsset);
+        document.getElementById('btnPrev').addEventListener('click', prevAsset);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 's') {
+                    e.preventDefault();
+                    saveDescription();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    nextAsset();
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    prevAsset();
+                }
+            }
+        });
+        
+        // Load assets on page load
+        loadAssets();
+    </script>
+</body>
+</html>
