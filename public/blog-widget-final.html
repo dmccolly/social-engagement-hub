@@ -272,9 +272,16 @@
                     return;
                 }
                 
-                   // Filter for blog posts only (category_id === 11)
+                   // Filter for blog posts only (category_id === 11) and exclude drafts/archived
                    const blogPosts = posts.filter(function(post) {
-                       return post.category_id === 11;
+                       if (post.category_id !== 11) return false;
+                       
+                       // Filter out drafts and archived posts
+                       const tags = post.tags || '';
+                       if (tags.includes('status:draft')) return false;
+                       if (tags.includes('status:archived')) return false;
+                       
+                       return true;
                    });
                    
                    // Sort: pinned first, then featured, then by sort_order, then by date (newest first)
