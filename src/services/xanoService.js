@@ -210,10 +210,14 @@ export const getPublishedPosts = async (limit = 50, offset = 0) => {
              return false;
            }
            
-           // Filter out drafts (check tags for status:draft)
+           // Filter out drafts and archived posts (check tags for status:draft or status:archived)
            const tags = asset.tags || '';
            if (tags.includes('status:draft')) {
              filteredByDraft++;
+             return false;
+           }
+           if (tags.includes('status:archived')) {
+             filteredByDraft++; // Count archived with drafts for simplicity
              return false;
            }
            

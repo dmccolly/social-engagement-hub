@@ -24,6 +24,8 @@ const BlogSection = () => {
   const [posts, setPosts] = useState([]);
   const [drafts, setDrafts] = useState([]);
   const [showDrafts, setShowDrafts] = useState(false);
+  const [archivedPosts, setArchivedPosts] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
@@ -70,6 +72,52 @@ const BlogSection = () => {
     };
     loadPosts();
   }, []);
+
+  // Load archived posts when showArchived is toggled
+  useEffect(() => {
+    const loadArchivedPosts = async () => {
+      if (!showArchived) return;
+      
+      try {
+        const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
+        if (!response.ok) {
+          console.error('Failed to fetch archived posts');
+          return;
+        }
+        
+        const assets = await response.json();
+        const archived = assets
+          .filter(asset => {
+            const catId = asset.category_id ?? asset.category?.id ?? asset.category;
+            if (Number(catId) !== 11) return false;
+            
+            const tags = asset.tags || '';
+            if (!tags.includes('status:archived')) return false;
+            
+            return true;
+          })
+          .map(asset => ({
+            id: asset.id,
+            title: asset.title || 'Untitled',
+            content: asset.description || '',
+            author: asset.submitted_by || 'Unknown',
+            created_at: asset.created_at,
+            featured: asset.is_featured || false,
+            pinned: asset.pinned || false,
+            sort_order: asset.sort_order || 0,
+            tags: asset.tags || '',
+            status: 'archived'
+          }))
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        setArchivedPosts(archived);
+      } catch (error) {
+        console.error('Load archived posts error:', error);
+      }
+    };
+    
+    loadArchivedPosts();
+  }, [showArchived]);
 
   useEffect(() => {
     const loadDrafts = async () => {
@@ -343,8 +391,84 @@ const BlogSection = () => {
     const response = await deleteBlogPost(post.id);
     if (response.success) {
       setPosts((prev) => prev.filter((p) => p.id !== post.id));
+      setArchivedPosts((prev) => prev.filter((p) => p.id !== post.id));
     } else {
       alert(response.error || 'Failed to delete post');
+    }
+  };
+
+  /**
+   * Handle archiving a post. Adds status:archived tag to hide from feed.
+   */
+  const handleArchive = async (post) => {
+    if (!window.confirm('Are you sure you want to archive this post? It will be hidden from the feed but not deleted.')) return;
+    
+    // Remove any existing status tags and add status:archived
+    let tags = post.tags || '';
+    tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
+    tags = tags ? `${tags},status:archived` : 'status:archived';
+    
+    const response = await updateBlogPost(post.id, {
+      title: post.title,
+      content: post.content,
+      author: post.author,
+      tags: tags.trim(),
+      featured: post.featured,
+      pinned: post.pinned,
+      sort_order: post.sort_order,
+      is_scheduled: post.is_scheduled,
+      scheduled_datetime: post.scheduled_datetime,
+    });
+    
+    if (response.success) {
+      // Remove from current list and reload
+      setPosts((prev) => prev.filter((p) => p.id !== post.id));
+      alert('Post archived successfully!');
+      
+      // If viewing archived posts, reload them
+      if (showArchived) {
+        loadArchivedPosts();
+      }
+    } else {
+      alert(response.error || 'Failed to archive post');
+    }
+  };
+
+  /**
+   * Handle unarchiving a post. Removes status:archived tag to show in feed.
+   */
+  const handleUnarchive = async (post) => {
+    if (!window.confirm('Are you sure you want to unarchive this post? It will be visible in the feed again.')) return;
+    
+    // Remove status:archived tag and add status:published
+    let tags = post.tags || '';
+    tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
+    tags = tags ? `${tags},status:published` : 'status:published';
+    
+    const response = await updateBlogPost(post.id, {
+      title: post.title,
+      content: post.content,
+      author: post.author,
+      tags: tags.trim(),
+      featured: post.featured,
+      pinned: post.pinned,
+      sort_order: post.sort_order,
+      is_scheduled: post.is_scheduled,
+      scheduled_datetime: post.scheduled_datetime,
+    });
+    
+    if (response.success) {
+      // Remove from archived list
+      setArchivedPosts((prev) => prev.filter((p) => p.id !== post.id));
+      alert('Post unarchived successfully!');
+      
+      // Reload published posts
+      const postsResult = await getPublishedPosts(1000, 0);
+      if (postsResult.success) {
+        setPosts(postsResult.posts);
+      }
+    } else {
+      alert(response.error || 'Failed to unarchive post');
     }
   };
 
@@ -529,7 +653,10 @@ const BlogSection = () => {
                 Signed in as: <strong>{visitorSession.name}</strong>
               </span>
               <button
-                onClick={() => setShowDrafts(!showDrafts)}
+                onClick={() => {
+                  setShowDrafts(!showDrafts);
+                  setShowArchived(false);
+                }}
                 className={`px-4 py-2 rounded transition ${
                   showDrafts
                     ? 'bg-gray-600 text-white hover:bg-gray-700'
@@ -541,6 +668,19 @@ const BlogSection = () => {
             </>
           )}
           <button
+            onClick={() => {
+              setShowArchived(!showArchived);
+              setShowDrafts(false);
+            }}
+            className={`px-4 py-2 rounded transition ${
+              showArchived
+                ? 'bg-orange-600 text-white hover:bg-orange-700'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {showArchived ? 'Show Published' : 'Show Archived'}
+          </button>
+          <button
             onClick={handleCreateNew}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -549,7 +689,59 @@ const BlogSection = () => {
         </div>
       </div>
       
-      {showDrafts && visitorSession ? (
+      {showArchived ? (
+        <div className="space-y-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="text-orange-800 font-semibold">Archived Posts</p>
+            <p className="text-orange-600 text-sm mt-1">
+              These posts are hidden from the public feed but not deleted
+            </p>
+          </div>
+          {archivedPosts.length === 0 ? (
+            <p className="text-gray-600">No archived posts found.</p>
+          ) : (
+            <ul className="space-y-4">
+              {archivedPosts.map((post) => (
+                <li key={post.id} className="bg-white shadow p-4 rounded-lg border-l-4 border-orange-400">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold mb-1">
+                        {post.title}
+                        <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                          ARCHIVED
+                        </span>
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleUnarchive(post)}
+                        className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+                      >
+                        Unarchive
+                      </button>
+                      <button
+                        onClick={() => handleEdit(post)}
+                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(post)}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : showDrafts && visitorSession ? (
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-blue-800 font-semibold">My Drafts</p>
@@ -671,6 +863,12 @@ const BlogSection = () => {
                     size="sm"
                     showLabels={false}
                   />
+                  <button
+                    onClick={() => handleArchive(post)}
+                    className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600"
+                  >
+                    Archive
+                  </button>
                   <button
                     onClick={() => handleEdit(post)}
                     className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
