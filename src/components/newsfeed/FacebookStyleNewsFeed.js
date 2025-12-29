@@ -94,6 +94,26 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
     loadAnalytics();
   }, []);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (activePostMenu !== null) {
+        // Check if click is outside the menu
+        const menuElement = document.querySelector('.post-menu-dropdown');
+        const buttonElement = event.target.closest('.post-menu-button');
+        
+        if (menuElement && !menuElement.contains(event.target) && !buttonElement) {
+          setActivePostMenu(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activePostMenu]);
+
   const loadVisitorSession = async () => {
     try {
       if (currentUser) {
@@ -809,22 +829,34 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                   {isAdmin && (
                     <div className="relative">
                       <button 
-                        onClick={() => togglePostMenu(post.id)}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePostMenu(post.id);
+                        }}
+                        className="post-menu-button p-2 hover:bg-gray-100 rounded-full transition-colors"
                         title="Admin actions"
                       >
                         <MoreVertical size={20} className="text-gray-400" />
                       </button>
                       {activePostMenu === post.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <div 
+                          className="post-menu-dropdown absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button
-                            onClick={() => handleEditPost(post)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditPost(post);
+                            }}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
                           >
                             <Edit2 size={16} /> Edit Post
                           </button>
                           <button
-                            onClick={() => handleDeletePost(post.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePost(post.id);
+                            }}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <Trash2 size={16} /> Delete Post
