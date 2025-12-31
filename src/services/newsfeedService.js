@@ -70,7 +70,7 @@ export async function getVisitorPosts() {
  */
 export async function createVisitorPost(postData) {
   try {
-    const response = await fetch(`${XANO_BASE_URL}/visitor/posts`, {
+    const response = await fetch(`${XANO_BASE_URL}/newsfeed_post`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
