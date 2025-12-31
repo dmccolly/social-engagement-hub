@@ -160,7 +160,9 @@ const StandaloneNewsfeedWidget = () => {
     try {
       const postData = {
         content: newPost,
-        visitor_token: visitorSession.visitor_token
+        visitor_token: visitorSession.visitor_token,
+        author_name: visitorSession.name,
+        author_email: visitorSession.email
       };
       
       const result = await createVisitorPost(postData);

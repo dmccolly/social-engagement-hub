@@ -75,7 +75,9 @@ export async function createVisitorPost(postData) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: postData.content,
-        visitor_token: postData.visitor_token
+        visitor_token: postData.visitor_token,
+        author_name: postData.author_name,
+        author_email: postData.author_email
       })
     });
     if (!response.ok) {
