@@ -7,11 +7,12 @@ import {
   MessageSquare, Heart, User, Clock, TrendingUp, ExternalLink, X, 
   Bold, Italic, Link as LinkIcon, Image as ImageIcon, Paperclip,
   Send, ChevronDown, ChevronUp, MoreHorizontal, Smile, MessageCircle, Trash2, Archive,
-  Share2, Copy, Check
+  Share2, Copy, Check, Edit2
 } from 'lucide-react';
 import { 
   getNewsfeedPosts, 
   createNewsfeedPost, 
+  updateNewsfeedPost,
   toggleNewsfeedLike, 
   getNewsfeedAnalytics,
   getNewsfeedReplies,
@@ -91,6 +92,7 @@ const EnhancedNewsfeedWidget = () => {
   
   // Admin moderation
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingPostId, setEditingPostId] = useState(null);
   
   // Share functionality
   const [copiedPostId, setCopiedPostId] = useState(null);
@@ -303,19 +305,23 @@ const EnhancedNewsfeedWidget = () => {
     }
   };
 
-  const handleAuthSubmit = () => {
+  const generateSessionId = () => {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const handleAuthSubmit = async () => {
     if (!authForm.name.trim() || !authForm.email.trim()) {
       alert('Please enter your name and email');
       return;
     }
-
+    
     const session = {
       name: authForm.name,
       email: authForm.email,
       session_id: generateSessionId(),
-      authenticated_at: new Date().toISOString()
+      timestamp: new Date().toISOString()
     };
-
+    
     setVisitorSession(session);
     localStorage.setItem('visitor_session', JSON.stringify(session));
     setShowAuthModal(false);
@@ -339,36 +345,59 @@ const EnhancedNewsfeedWidget = () => {
     setIsSubmitting(true);
     
     try {
-      const postData = {
-        author_name: visitorSession.name,
-        author_email: visitorSession.email,
-        author_id: visitorSession.member_id || null,
-        content: newPost,
-        session_id: visitorSession.session_id || generateSessionId(),
-        post_type: 'post'
-      };
-      
-      console.log('Submitting post:', postData);
-      
-      const result = await createNewsfeedPost(postData);
-      
-      if (result.success) {
-        setNewPost('');
-        setShowCreateForm(false);
-        loadPosts();
+      if (editingPostId) {
+        // Update existing post
+        const result = await updateNewsfeedPost(editingPostId, { content: newPost });
+        console.log('Post update result:', result);
         
-        if (window.parent !== window) {
-          window.parent.postMessage({ 
-            type: 'post_created',
-            post: result.post 
-          }, '*');
+        if (result.success) {
+          setNewPost('');
+          setEditingPostId(null);
+          setShowCreateForm(false);
+          loadPosts();
+          
+          if (window.parent !== window) {
+            window.parent.postMessage({ 
+              type: 'post_updated',
+              post: result 
+            }, '*');
+          }
+        } else {
+          alert('Failed to update post: ' + (result.error || 'Unknown error'));
         }
       } else {
-        alert('Failed to create post: ' + (result.error || 'Unknown error'));
+        // Create new post
+        const postData = {
+          author_name: visitorSession.name,
+          author_email: visitorSession.email,
+          author_id: visitorSession.member_id || null,
+          content: newPost,
+          session_id: visitorSession.session_id || generateSessionId(),
+          post_type: 'post'
+        };
+        
+        console.log('Submitting post:', postData);
+        
+        const result = await createNewsfeedPost(postData);
+        
+        if (result.success) {
+          setNewPost('');
+          setShowCreateForm(false);
+          loadPosts();
+          
+          if (window.parent !== window) {
+            window.parent.postMessage({ 
+              type: 'post_created',
+              post: result.post 
+            }, '*');
+          }
+        } else {
+          alert('Failed to create post: ' + (result.error || 'Unknown error'));
+        }
       }
     } catch (error) {
       console.error('Widget: Post submit error', error);
-      alert('Failed to create post: ' + error.message);
+      alert(`Failed to ${editingPostId ? 'update' : 'create'} post: ` + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -379,7 +408,7 @@ const EnhancedNewsfeedWidget = () => {
     const hasMedia = /<img|<iframe|<audio|<video/i.test(replyText);
     
     if (!strippedContent && !hasMedia) {
-      alert('Please enter a reply');
+      alert('Please enter some content');
       return;
     }
     
@@ -561,94 +590,52 @@ const EnhancedNewsfeedWidget = () => {
     }
   };
 
-  const toggleReplies = (postId) => {
-    setExpandedPosts(prev => {
-      const isExpanded = !prev[postId];
-      
-      // Load all replies if expanding
-      if (isExpanded && (!postReplies[postId] || postReplies[postId].length < 3)) {
-        loadAllReplies(postId);
-      }
-      
-      return { ...prev, [postId]: isExpanded };
-    });
+  const handleEditPost = (post) => {
+    setEditingPostId(post.id);
+    setNewPost(post.content);
+    setShowCreateForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCopyLink = async (postId) => {
-    const postUrl = `https://gleaming-cendol-417bf3.netlify.app/newsfeed/post/${postId}`;
+  const handleCancelEdit = () => {
+    setEditingPostId(null);
+    setNewPost('');
+    setShowCreateForm(false);
+  };
+
+  const handleShare = async (postId) => {
     try {
-      await navigator.clipboard.writeText(postUrl);
-      setCopiedPostId(postId);
-      setTimeout(() => setCopiedPostId(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = postUrl;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
+      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+      
+      if (navigator.share) {
+        await navigator.share({
+          title: `Post by ${post.author_name}`,
+          text: post.content.replace(/<[^>]*>/g, '').substring(0, 100),
+          url: shareUrl
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
         setCopiedPostId(postId);
         setTimeout(() => setCopiedPostId(null), 2000);
-      } catch (err2) {
-        alert('Failed to copy link');
       }
-      document.body.removeChild(textArea);
+    } catch (error) {
+      console.error('Share error:', error);
     }
   };
 
-  const handleViewFullFeed = () => {
-    if (window.parent !== window) {
-      window.parent.postMessage({ type: 'navigate_to_feed' }, '*');
-    } else {
-      // Navigate to the main site's News Feed section
-      window.location.href = '/?section=newsfeed';
+  const toggleReplies = (postId) => {
+    setExpandedPosts(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+    
+    // Load all replies when expanding
+    if (!expandedPosts[postId]) {
+      loadAllReplies(postId);
     }
-  };
-
-  const generateSessionId = () => {
-    return 'widget_session_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-  };
-
-  const getSamplePosts = () => {
-    return [
-      {
-        id: 1,
-        author_name: 'Sarah Johnson',
-        author_email: 'sarah@example.com',
-        content: 'Just discovered this amazing community widget! Perfect for engaging with website visitors. 🎉',
-        likes_count: 12,
-        comments_count: 3,
-        visitor_liked: false,
-        created_at: new Date().toISOString(),
-        post_type: 'post'
-      },
-      {
-        id: 2,
-        author_name: 'Mike Chen',
-        author_email: 'mike@example.com',
-        content: 'This widget integration is seamless! Love how visitors can interact without leaving the page.',
-        likes_count: 8,
-        comments_count: 1,
-        visitor_liked: false,
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        post_type: 'post'
-      },
-      {
-        id: 3,
-        author_name: 'Emily Rodriguez',
-        author_email: 'emily@example.com',
-        content: 'The visitor registration process is so smooth. Great for building community engagement!',
-        likes_count: 15,
-        comments_count: 2,
-        visitor_liked: false,
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-        post_type: 'post'
-      }
-    ];
   };
 
   const formatDate = (dateString) => {
@@ -658,7 +645,7 @@ const EnhancedNewsfeedWidget = () => {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
+    
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -666,76 +653,355 @@ const EnhancedNewsfeedWidget = () => {
     return date.toLocaleDateString();
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow" style={{ borderRadius: `${borderRadius}px` }}>
-        <div 
-          className="text-white p-4 text-center font-bold"
-          style={{ backgroundColor: headerColor, borderRadius: `${borderRadius}px ${borderRadius}px 0 0` }}
-        >
-          {headerText}
-        </div>
-        <div className="p-8 text-center">
-          <div className="flex items-center justify-center gap-2 text-gray-500">
-            <Clock size={20} className="animate-spin" />
-            Loading community feed...
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const getSamplePosts = () => {
+    return [
+      {
+        id: 1,
+        author_name: 'Sample User',
+        author_email: 'sample@example.com',
+        content: '<p>Welcome to the community newsfeed! This is a sample post to show how the feed works.</p>',
+        created_at: new Date().toISOString(),
+        likes_count: 0,
+        comments_count: 0,
+        post_type: 'post'
+      }
+    ];
+  };
 
   return (
     <div 
-      className="bg-white rounded-lg shadow overflow-hidden"
-      style={{ borderRadius: `${borderRadius}px` }}
+      className={`newsfeed-widget ${theme === 'dark' ? 'dark' : ''}`}
+      style={{ 
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        borderRadius: `${borderRadius}px`,
+        overflow: 'hidden'
+      }}
     >
-      <style>{`
-        .prose iframe {
-          pointer-events: auto !important;
-        }
-      `}</style>
-      {/* Authentication Modal */}
+      {/* Header */}
+      <div 
+        className="p-4 text-white font-bold text-lg flex items-center justify-between"
+        style={{ backgroundColor: headerColor }}
+      >
+        <span>{headerText}</span>
+        {analytics && (
+          <div className="flex items-center gap-3 text-sm font-normal">
+            <span className="flex items-center gap-1">
+              <TrendingUp size={14} />
+              {analytics.overview?.total_posts || 0} posts
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Create Post Form */}
+      {showCreateButton && (
+        <div className="p-4 bg-white border-b border-gray-200">
+          {!showCreateForm ? (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+            >
+              <MessageSquare size={16} />
+              Share an Update
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <RichTextEditor
+                value={newPost}
+                onChange={setNewPost}
+                placeholder="What's on your mind? Share text, images, videos, and more..."
+              />
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-3 py-1 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePostSubmit}
+                  disabled={!newPost.trim() || isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSubmitting ? (editingPostId ? 'Updating...' : 'Posting...') : (
+                    <>
+                      <Send size={14} />
+                      {editingPostId ? 'Update' : 'Post'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Posts List */}
+      <div className="divide-y divide-gray-200">
+        {posts.length === 0 ? (
+          <div className="p-8 text-center">
+            <MessageSquare size={48} className="mx-auto mb-4 text-gray-300" />
+            <p className="text-gray-500">No posts yet. Be the first to share!</p>
+          </div>
+        ) : (
+          posts.map((post) => {
+            const replies = postReplies[post.id] || [];
+            const isExpanded = expandedPosts[post.id];
+            const hasMoreReplies = post.comments_count > 2 && !isExpanded;
+            
+            return (
+              <div key={post.id} className="p-4 bg-white hover:bg-gray-50 transition-colors">
+                {/* Post Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    {showAvatars && (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold">
+                        {post.author_name?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-semibold text-gray-900">{post.author_name}</div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Clock size={12} />
+                        <span>{formatDate(post.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Admin Actions Menu */}
+                  {isAdmin && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setDeleteConfirm(deleteConfirm === post.id ? null : post.id)}
+                        className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                      >
+                        <MoreHorizontal size={18} className="text-gray-600" />
+                      </button>
+                      
+                      {deleteConfirm === post.id && (
+                        <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[150px]">
+                          <button
+                            onClick={() => {
+                              handleEditPost(post);
+                              setDeleteConfirm(null);
+                            }}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                          >
+                            <Edit2 size={16} /> Edit Post
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleArchive(post.id);
+                              setDeleteConfirm(null);
+                            }}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-yellow-600 hover:bg-yellow-50 transition-colors"
+                          >
+                            <Archive size={16} /> Archive
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleDelete(post.id);
+                              setDeleteConfirm(null);
+                            }}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 size={16} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Post Content */}
+                <div 
+                  className="text-gray-800 mb-3 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.content) }}
+                />
+
+                {/* Interaction Buttons */}
+                {showInteractions && (
+                  <div className="flex items-center gap-4 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleLike(post.id)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+                        post.visitor_liked 
+                          ? 'text-red-600 bg-red-50' 
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Heart size={16} fill={post.visitor_liked ? 'currentColor' : 'none'} />
+                      <span className="text-sm">{post.likes_count || 0}</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setReplyingTo(replyingTo === post.id ? null : post.id);
+                        if (replyingTo !== post.id) {
+                          toggleReplies(post.id);
+                        }
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                      <MessageCircle size={16} />
+                      <span className="text-sm">{post.comments_count || 0}</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => handleShare(post.id)}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                      {copiedPostId === post.id ? (
+                        <>
+                          <Check size={16} className="text-green-600" />
+                          <span className="text-sm text-green-600">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 size={16} />
+                          <span className="text-sm">Share</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Replies Section */}
+                {(isExpanded || replies.length > 0) && (
+                  <div className="mt-4 space-y-3">
+                    {/* Show More Replies Button */}
+                    {hasMoreReplies && (
+                      <button
+                        onClick={() => toggleReplies(post.id)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                      >
+                        <ChevronDown size={16} />
+                        View all {post.comments_count} replies
+                      </button>
+                    )}
+                    
+                    {/* Replies List */}
+                    {replies.map((reply) => (
+                      <div key={reply.id} className="ml-12 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                              {reply.author_name?.charAt(0).toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-sm text-gray-900">{reply.author_name}</div>
+                              <div className="text-xs text-gray-500">{formatDate(reply.created_at)}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Admin Actions for Replies */}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(reply.id, true)}
+                              className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                            >
+                              <Trash2 size={14} className="text-red-600" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        <div 
+                          className="text-sm text-gray-700 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: sanitizeHTML(reply.content) }}
+                        />
+                      </div>
+                    ))}
+                    
+                    {/* Show Less Button */}
+                    {isExpanded && post.comments_count > 2 && (
+                      <button
+                        onClick={() => {
+                          toggleReplies(post.id);
+                          loadRepliesPreview(post.id);
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                      >
+                        <ChevronUp size={16} />
+                        Show less
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Reply Form */}
+                {replyingTo === post.id && (
+                  <div className="ml-12 space-y-2">
+                    <RichTextEditor
+                      key={`reply-editor-${post.id}`}
+                      value={replyText}
+                      onChange={setReplyText}
+                      placeholder="Write a reply with text, images, videos, or audio..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setReplyText('');
+                        }}
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleReplySubmit(post.id)}
+                        disabled={!replyText.trim()}
+                        className="px-4 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <Send size={12} />
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Auth Modal */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
-            <button
-              onClick={() => setShowAuthModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X size={20} />
-            </button>
-            
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Join the Conversation</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Enter your details to interact with the community
-            </p>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Sign in to continue</h3>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Name
+                  Name
                 </label>
                 <input
                   type="text"
                   value={authForm.name}
                   onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })}
-                  placeholder="John Doe"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Your name"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
+                  Email
                 </label>
                 <input
                   type="email"
                   value={authForm.email}
                   onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
-                  placeholder="john@example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="your@email.com"
                 />
               </div>
               
@@ -750,322 +1016,13 @@ const EnhancedNewsfeedWidget = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div 
-        className="text-white p-4 text-center font-bold"
-        style={{ backgroundColor: headerColor, borderRadius: `${borderRadius}px ${borderRadius}px 0 0` }}
-      >
-        {headerText}
-      </div>
-
-      {/* Analytics Bar */}
-      {analytics && (
-        <div className="bg-gray-50 p-3 border-b">
-          <div className="flex justify-between items-center text-xs text-gray-600">
-            <span className="flex items-center gap-1">
-              <TrendingUp size={12} className="text-green-600" />
-              {analytics.overview.engagement_rate}% engagement
-            </span>
-            <span>{analytics.overview.total_posts} posts this week</span>
-            <span>{analytics.overview.total_likes} likes</span>
-          </div>
+      {/* Loading State */}
+      {isLoading && (
+        <div className="p-8 text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-500">Loading posts...</p>
         </div>
       )}
-
-      {/* Post Creation */}
-      {showCreateButton && (
-        <div className="p-4 border-b bg-gray-50">
-          {!showCreateForm ? (
-            <button
-              onClick={() => {
-                if (!visitorSession) {
-                  setShowAuthModal(true);
-                } else {
-                  setShowCreateForm(true);
-                  setShowFormattingToolbar(true);
-                }
-              }}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
-            >
-              <MessageSquare size={16} />
-              Share an Update
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <RichTextEditor
-                value={newPost}
-                onChange={setNewPost}
-                placeholder="What's on your mind? Share text, images, videos, and more..."
-              />
-              
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setNewPost('');
-                  }}
-                  className="px-3 py-1 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePostSubmit}
-                  disabled={!newPost.trim() || isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isSubmitting ? 'Posting...' : (
-                    <>
-                      <Send size={14} />
-                      Post
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Posts List */}
-      <div className="divide-y divide-gray-200">
-        {posts.length === 0 ? (
-          <div className="p-8 text-center">
-            <MessageSquare size={32} className="mx-auto mb-3 text-gray-300" />
-            <h3 className="font-semibold text-gray-900 mb-2">No posts yet</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Be the first to share something with the community!
-            </p>
-            <button
-              onClick={() => {
-                if (!visitorSession) {
-                  setShowAuthModal(true);
-                } else {
-                  setShowCreateForm(true);
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Create First Post
-            </button>
-          </div>
-        ) : (
-          posts.map(post => (
-            <div key={post.id} className="p-4 hover:bg-gray-50 transition-colors">
-              {/* Post Header */}
-              <div className="flex items-start gap-3 mb-3">
-                {showAvatars && (
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User className="text-blue-600" size={20} />
-                  </div>
-                )}
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-semibold text-gray-900 text-sm">{post.author_name}</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">
-                        <Clock size={12} className="inline mr-1" />
-                        {formatDate(post.created_at)}
-                      </span>
-                      {isAdmin && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleArchive(post.id, false)}
-                            className="text-yellow-600 hover:text-yellow-800 p-1 rounded hover:bg-yellow-50 transition-colors"
-                            title="Archive post"
-                          >
-                            <Archive size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(post.id, false)}
-                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="Delete post"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div 
-                    className="text-gray-800 text-sm leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.content) }}
-                  />
-                </div>
-              </div>
-
-              {/* Post Actions */}
-              {showInteractions && (
-                <div className="space-y-3 mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          post.visitor_liked 
-                            ? 'bg-red-100 text-red-600' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Heart size={14} className={post.visitor_liked ? 'fill-current' : ''} />
-                        <span>{post.likes_count} {post.likes_count === 1 ? 'Like' : 'Likes'}</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      >
-                        <MessageSquare size={14} />
-                        <span>Reply</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => handleCopyLink(post.id)}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          copiedPostId === post.id
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                        title="Copy link to share"
-                      >
-                        {copiedPostId === post.id ? <Check size={14} /> : <Share2 size={14} />}
-                        <span>{copiedPostId === post.id ? 'Copied!' : 'Share'}</span>
-                      </button>
-                      
-                      {post.comments_count > 0 && (
-                        <button
-                          onClick={() => toggleReplies(post.id)}
-                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          {expandedPosts[post.id] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          <span>{post.comments_count} {post.comments_count === 1 ? 'Reply' : 'Replies'}</span>
-                        </button>
-                      )}
-                    </div>
-                    
-                    <a
-                      href={`https://gleaming-cendol-417bf3.netlify.app/newsfeed/post/${post.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                    >
-                      View Full Discussion
-                      <ExternalLink size={12} />
-                    </a>
-                  </div>
-                  
-                  {/* Reply Form */}
-                  {replyingTo === post.id && (
-                    <div className="ml-12 space-y-2">
-                      <RichTextEditor
-                        key={`reply-editor-${post.id}`}
-                        value={replyText}
-                        onChange={setReplyText}
-                        placeholder="Write a reply with text, images, videos, or audio..."
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            setReplyingTo(null);
-                            setReplyText('');
-                          }}
-                          className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleReplySubmit(post.id)}
-                          disabled={!replyText.replace(/<[^>]*>/g, '').trim() && !/<img|<iframe|<audio|<video/i.test(replyText)}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                        >
-                          Reply
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Replies Preview/Full List */}
-                  {postReplies[post.id] && postReplies[post.id].length > 0 && (
-                    <div className="ml-12 space-y-2 border-l-2 border-gray-200 pl-3">
-                      {postReplies[post.id].map(reply => (
-                        <div key={reply.id} className="bg-gray-50 p-3 rounded-lg">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-semibold text-xs text-gray-900">{reply.author_name}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">{formatDate(reply.created_at)}</span>
-                              {isAdmin && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => handleArchive(reply.id, true)}
-                                    className="text-yellow-600 hover:text-yellow-800 p-1 rounded hover:bg-yellow-50 transition-colors"
-                                    title="Archive reply"
-                                  >
-                                    <Archive size={12} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(reply.id, true)}
-                                    className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
-                                    title="Delete reply"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div 
-                            className="text-xs text-gray-700 leading-relaxed prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHTML(reply.content) }}
-                          />
-                          <button
-                            onClick={() => setReplyingTo(post.id)}
-                            className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                          >
-                            <MessageCircle size={12} />
-                            Reply
-                          </button>
-                        </div>
-                      ))}
-                      
-                      {!expandedPosts[post.id] && post.comments_count > 2 && (
-                        <button
-                          onClick={() => toggleReplies(post.id)}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          View {post.comments_count - 2} more {post.comments_count - 2 === 1 ? 'reply' : 'replies'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="p-4 bg-gray-50 border-t">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">
-            Powered by Social Engagement Hub
-          </span>
-          <button
-            onClick={handleViewFullFeed}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-          >
-            View Full Community
-            <ExternalLink size={14} />
-          </button>
-        </div>
-        
-        {debug && (
-          <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-yellow-800">
-            <strong>Debug Info:</strong> Widget loaded with {posts.length} posts
-            {visitorSession && ` • Authenticated as ${visitorSession.name}`}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
