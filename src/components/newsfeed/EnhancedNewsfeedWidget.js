@@ -110,7 +110,7 @@ const EnhancedNewsfeedWidget = () => {
   ];
   
   // Check if current visitor is an admin
-  const isAdmin = visitorSession && ADMIN_EMAILS.includes(visitorSession.email.toLowerCase());
+  const isAdmin = visitorSession && visitorSession.email && ADMIN_EMAILS.includes(visitorSession.email.toLowerCase());
 
   const sanitizeHTML = (html) => {
     if (!html) return '';
