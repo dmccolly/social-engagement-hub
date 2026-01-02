@@ -837,8 +837,10 @@ const EnhancedNewsfeedWidget = () => {
                     
                     <button
                       onClick={() => {
-                        setReplyingTo(replyingTo === post.id ? null : post.id);
-                        if (replyingTo !== post.id) {
+                        const newReplyingTo = replyingTo === post.id ? null : post.id;
+                        setReplyingTo(newReplyingTo);
+                        // If opening reply form, also expand replies to show context
+                        if (newReplyingTo === post.id && !expandedPosts[post.id]) {
                           toggleReplies(post.id);
                         }
                       }}
