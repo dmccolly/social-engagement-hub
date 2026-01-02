@@ -1,5 +1,6 @@
 // src/components/newsfeed/EnhancedNewsfeedWidget.js
 // Enhanced Newsfeed Widget with Rich Text, Attachments, Replies, and Full Facebook-like Features
+// Updated: 2026-01-01 - Trigger rebuild to deploy reply functionality
 
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
