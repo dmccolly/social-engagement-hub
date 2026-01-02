@@ -844,10 +844,13 @@ const EnhancedNewsfeedWidget = () => {
                           toggleReplies(post.id);
                         }
                       }}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
                     >
                       <MessageCircle size={16} />
-                      <span className="text-sm">{post.comments_count || 0}</span>
+                      <span className="text-sm">Reply</span>
+                      {post.comments_count > 0 && (
+                        <span className="text-sm">({post.comments_count})</span>
+                      )}
                     </button>
                     
                     <button
