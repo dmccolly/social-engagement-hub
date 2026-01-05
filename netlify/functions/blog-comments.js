@@ -138,15 +138,17 @@ exports.handler = async (event, context) => {
     }
     
     // DELETE /blog-comments/:blogPostId/:commentId - Delete a comment
+    // Comments are stored as newsfeed posts with a parent field, so delete via /newsfeed_post
     if (event.httpMethod === 'DELETE' && segments.length === 2) {
       const commentId = parseInt(segments[1]);
       
-      const deleteResponse = await fetch(`${XANO_BASE_URL}/newsfeed_reply/${commentId}`, {
+      const deleteResponse = await fetch(`${XANO_BASE_URL}/newsfeed_post/${commentId}`, {
         method: 'DELETE'
       });
       
       if (!deleteResponse.ok) {
-        throw new Error('Failed to delete comment');
+        const errorText = await deleteResponse.text();
+        throw new Error(`Failed to delete comment: ${errorText}`);
       }
       
       return {
