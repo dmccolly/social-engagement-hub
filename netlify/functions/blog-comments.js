@@ -108,15 +108,17 @@ exports.handler = async (event, context) => {
         blogPost = await createPostResponse.json();
       }
       
-      // Now create the reply
-      const replyResponse = await fetch(`${XANO_BASE_URL}/newsfeed_post/${blogPost.id}/replies`, {
+      // Now create the reply by POSTing to /newsfeed_post with parent field
+      // (Xano doesn't have a /replies POST endpoint, replies are just posts with a parent)
+      const replyResponse = await fetch(`${XANO_BASE_URL}/newsfeed_post`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: body.content,
           author_name: body.author_name,
           author_email: body.author_email,
-          parent: blogPost.id
+          parent: blogPost.id,
+          post_type: 'reply'
         })
       });
       
