@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-const XANO_BASE_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpAz9OhS';
+const XANO_BASE_URL = 'https://xajo-bs7d-cagt.n7e.xano.io/api:PpStJiYV';
 
 exports.handler = async (event, context) => {
   const headers = {
