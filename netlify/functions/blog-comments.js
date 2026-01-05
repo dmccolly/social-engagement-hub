@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
     
     // GET /blog-comments/:blogPostId - Get comments for a blog post
     if (event.httpMethod === 'GET' && segments.length === 1) {
-      const blogPostId = parseInt(segments[0]);
+      const blogPostId = segments[0]; // Keep as string to handle various ID formats
       
       // Fetch all newsfeed posts
       const response = await fetch(`${XANO_BASE_URL}/newsfeed_post?type=posts_only`);
@@ -30,12 +30,10 @@ exports.handler = async (event, context) => {
       
       const posts = await response.json();
       
-      // Find the newsfeed post that corresponds to this blog
-      // Blog posts have author_email like "blog@historyofidahobroadcasting..."
+      // Find the newsfeed post that corresponds to this specific blog post
+      // Match by checking for blog-{blogPostId}@ in the author_email
       const blogPost = posts.find(post => {
-        // Match by checking if the post content references the blog post ID
-        // or if it's a blog-type post
-        return post.author_email && post.author_email.includes('blog@historyofidahobroadcasting');
+        return post.author_email && post.author_email.includes(`blog-${blogPostId}@historyofidahobroadcasting`);
       });
       
       if (!blogPost) {
@@ -55,10 +53,13 @@ exports.handler = async (event, context) => {
       
       const repliesData = await repliesResponse.json();
       
+      // Normalize response to always return { replies: [...] }
+      const replies = Array.isArray(repliesData) ? repliesData : (repliesData.replies || []);
+      
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify(repliesData)
+        body: JSON.stringify({ replies })
       };
     }
     
