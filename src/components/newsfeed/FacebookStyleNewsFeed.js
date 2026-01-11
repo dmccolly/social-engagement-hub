@@ -15,6 +15,7 @@ import {
   Search,
   Image,
   Video,
+  Music,
   Smile,
   MapPin,
   X,
@@ -679,6 +680,12 @@ const FacebookStyleNewsFeed = ({ currentUser }) => {
                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
               >
                 <Video size={18} className="text-red-600" /> <span className="text-sm font-medium">Video</span>
+              </button>
+              <button 
+                onClick={() => editorRef.current?.openAudioModal()}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <Music size={18} className="text-purple-600" /> <span className="text-sm font-medium">Audio</span>
               </button>
             </div>
             <div className="flex gap-2">

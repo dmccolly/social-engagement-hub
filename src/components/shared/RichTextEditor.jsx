@@ -335,6 +335,7 @@ const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on y
     openLinkModal: () => setShowLinkModal(true),
     openImageModal: () => setShowImageModal(true),
     openVideoModal: () => setShowVideoModal(true),
+    openAudioModal: () => setShowAudioModal(true),
   }));
 
   // Insert link
