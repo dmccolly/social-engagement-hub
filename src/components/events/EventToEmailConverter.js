@@ -227,6 +227,10 @@ const EventToEmailConverter = ({ event, onConvert, onCancel }) => {
   };
 
   const convertToEmail = () => {
+    console.log('🔄 Converting event to email...');
+    console.log('📝 Blog post selected:', selectedBlogPost?.title);
+    console.log('⚙️ Email settings:', emailSettings);
+    
     const emailBlocks = [];
     let blockId = Date.now();
 
@@ -361,6 +365,9 @@ const EventToEmailConverter = ({ event, onConvert, onCancel }) => {
       fromEmail: event.organizer_email || 'events@historyofidahobroadcasting.org',
       blocks: emailBlocks
     };
+
+    console.log('✅ Campaign data created with', emailBlocks.length, 'blocks');
+    console.log('📦 Campaign data:', campaignData);
 
     onConvert(campaignData);
   };
