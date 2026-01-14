@@ -64,25 +64,44 @@ const EmailMarketingSystem = () => {
   // Load data from Xano on mount
   // Check for pending email campaign from Event-to-Email converter
   useEffect(() => {
-    const pendingCampaign = localStorage.getItem('pendingEmailCampaign');
-    if (pendingCampaign) {
-      try {
-        const campaignData = JSON.parse(pendingCampaign);
-        // Clear the pending campaign
-        localStorage.removeItem('pendingEmailCampaign');
-        // Load the campaign into the builder
-        setCurrentCampaign({
-          id: Date.now(),
-          ...campaignData,
-          status: 'draft',
-          stats: { sent: 0, opened: 0, clicked: 0 }
-        });
-        setEmailBlocks(ensureBlockIds(campaignData.blocks || []));
-        setActiveView('builder');
-      } catch (error) {
-        console.error('Error loading pending campaign:', error);
+    const loadPendingCampaign = () => {
+      const pendingCampaign = localStorage.getItem('pendingEmailCampaign');
+      if (pendingCampaign) {
+        try {
+          const campaignData = JSON.parse(pendingCampaign);
+          // Clear the pending campaign
+          localStorage.removeItem('pendingEmailCampaign');
+          // Load the campaign into the builder
+          setCurrentCampaign({
+            id: Date.now(),
+            ...campaignData,
+            status: 'draft',
+            stats: { sent: 0, opened: 0, clicked: 0 }
+          });
+          setEmailBlocks(ensureBlockIds(campaignData.blocks || []));
+          setActiveView('builder');
+          console.log('✅ Event campaign loaded into email builder');
+        } catch (error) {
+          console.error('Error loading pending campaign:', error);
+        }
       }
-    }
+    };
+
+    // Check on mount
+    loadPendingCampaign();
+
+    // Also listen for custom event from EventListManager
+    const handleEventCampaign = (event) => {
+      console.log('📧 Received event campaign data:', event.detail);
+      loadPendingCampaign();
+    };
+
+    window.addEventListener('eventCampaignCreated', handleEventCampaign);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('eventCampaignCreated', handleEventCampaign);
+    };
   }, []);
 
   useEffect(() => {

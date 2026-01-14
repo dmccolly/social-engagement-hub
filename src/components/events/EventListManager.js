@@ -524,9 +524,16 @@ const EventListManager = ({ currentUser }) => {
           onConvert={(campaignData) => {
             // Store campaign data in localStorage to pass to email tab
             localStorage.setItem('pendingEmailCampaign', JSON.stringify(campaignData));
+            
+            // Dispatch custom event to notify EmailMarketingSystem
+            window.dispatchEvent(new CustomEvent('eventCampaignCreated', { 
+              detail: campaignData 
+            }));
+            
             setConvertingToEmail(null);
+            
             // Show success message and guide user to email tab
-            alert('Email campaign created! Please go to the Email tab to review and send.');
+            alert('Email campaign created! Please click the Email tab to review and send.');
           }}
           onCancel={() => setConvertingToEmail(null)}
         />
