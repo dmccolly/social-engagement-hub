@@ -7,7 +7,7 @@ import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../..
 import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
 import EventPreview from './EventPreview';
-import EventToEmailConverter from './EventToEmailConverter';
+import { convertEventToEmailCampaign } from './EventToEmailConverter_Simple';
 
 const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
@@ -18,7 +18,7 @@ const EventListManager = ({ currentUser }) => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingRSVPs, setViewingRSVPs] = useState(null);
   const [previewingEvent, setPreviewingEvent] = useState(null);
-  const [convertingToEmail, setConvertingToEmail] = useState(null);
+  // Removed convertingToEmail state - using direct conversion now
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -434,7 +434,16 @@ const EventListManager = ({ currentUser }) => {
                         </button>
                         {/* Send as Email Campaign */}
                         <button
-                          onClick={() => setConvertingToEmail(event)}
+                          onClick={() => {
+                            // Convert event to email campaign
+                            const campaignData = convertEventToEmailCampaign(event);
+                            // Store in localStorage
+                            localStorage.setItem('pendingEmailCampaign', JSON.stringify(campaignData));
+                            // Dispatch event
+                            window.dispatchEvent(new CustomEvent('eventCampaignCreated', { detail: campaignData }));
+                            // Show success
+                            alert('Email campaign created! Please click the Email tab to review and send.');
+                          }}
                           className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
                         >
                           <Mail size={14} />
@@ -517,27 +526,7 @@ const EventListManager = ({ currentUser }) => {
         />
       )}
 
-      {/* Event to Email Converter Modal */}
-      {convertingToEmail && (
-        <EventToEmailConverter
-          event={convertingToEmail}
-          onConvert={(campaignData) => {
-            // Store campaign data in localStorage to pass to email tab
-            localStorage.setItem('pendingEmailCampaign', JSON.stringify(campaignData));
-            
-            // Dispatch custom event to notify EmailMarketingSystem
-            window.dispatchEvent(new CustomEvent('eventCampaignCreated', { 
-              detail: campaignData 
-            }));
-            
-            setConvertingToEmail(null);
-            
-            // Show success message and guide user to email tab
-            alert('Email campaign created! Please click the Email tab to review and send.');
-          }}
-          onCancel={() => setConvertingToEmail(null)}
-        />
-      )}
+      {/* Removed EventToEmailConverter modal - using direct conversion now */}
     </div>
   );
 };
