@@ -87,25 +87,44 @@ export const convertEventToEmailCampaign = (event, blogPost = null) => {
       id: blockId++,
       type: 'html',
       content: { 
-        html: `<h2 style="color: #1f2937; font-size: 24px; margin-bottom: 16px;">${blogPost.title}</h2>` 
+        html: `<h2 style="color: #1f2937; font-size: 24px; margin-bottom: 16px; font-family: Arial, sans-serif;">${blogPost.title}</h2>` 
       }
     });
 
-    // Blog content (first 500 chars)
-    if (blogPost.content) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = blogPost.content;
-      const textContent = tempDiv.textContent || tempDiv.innerText || '';
-      const excerpt = textContent.substring(0, 500) + (textContent.length > 500 ? '...' : '');
-      
+    // Blog featured image (if exists)
+    if (blogPost.featured_image) {
       emailBlocks.push({
         id: blockId++,
         type: 'html',
         content: { 
-          html: `<p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">${excerpt}</p>` 
+          html: `<div style="margin-bottom: 20px;"><img src="${blogPost.featured_image}" alt="${blogPost.title}" style="max-width: 100%; height: auto; border-radius: 8px;" /></div>` 
         }
       });
     }
+
+    // Blog content with full HTML formatting preserved
+    if (blogPost.content) {
+      // Clean and sanitize the HTML content for email
+      let emailSafeContent = blogPost.content
+        .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove scripts
+        .replace(/<style[^>]*>.*?<\/style>/gi, '') // Remove style tags
+        .replace(/style="[^"]*"/gi, ''); // Remove inline styles
+      
+      // Wrap in email-safe container
+      emailSafeContent = `<div style="font-family: Arial, sans-serif; color: #374151; line-height: 1.6; margin-bottom: 20px;">${emailSafeContent}</div>`;
+      
+      emailBlocks.push({
+        id: blockId++,
+        type: 'html',
+        content: { html: emailSafeContent }
+      });
+    }
+
+    emailBlocks.push({
+      id: blockId++,
+      type: 'spacer',
+      content: { height: 20 }
+    });
 
     // Read more button
     emailBlocks.push({
