@@ -8,6 +8,8 @@ import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
 import EventPreview from './EventPreview';
 import { convertEventToEmailCampaign } from './EventToEmailConverter_Simple';
+import EventToEmailModal from './EventToEmailModal';
+import { getPublishedPosts } from '../../services/xanoService';
 
 const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
@@ -18,7 +20,8 @@ const EventListManager = ({ currentUser }) => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingRSVPs, setViewingRSVPs] = useState(null);
   const [previewingEvent, setPreviewingEvent] = useState(null);
-  // Removed convertingToEmail state - using direct conversion now
+  const [convertingEvent, setConvertingEvent] = useState(null);
+  const [blogPosts, setBlogPosts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -30,7 +33,19 @@ const EventListManager = ({ currentUser }) => {
 
   useEffect(() => {
     loadEvents();
+    loadBlogPosts();
   }, []);
+
+  const loadBlogPosts = async () => {
+    try {
+      const result = await getPublishedPosts();
+      if (result.success && result.posts) {
+        setBlogPosts(result.posts);
+      }
+    } catch (error) {
+      console.error('Failed to load blog posts:', error);
+    }
+  };
 
   useEffect(() => {
     filterEvents();
@@ -434,16 +449,7 @@ const EventListManager = ({ currentUser }) => {
                         </button>
                         {/* Send as Email Campaign */}
                         <button
-                          onClick={() => {
-                            // Convert event to email campaign
-                            const campaignData = convertEventToEmailCampaign(event);
-                            // Store in localStorage
-                            localStorage.setItem('pendingEmailCampaign', JSON.stringify(campaignData));
-                            // Dispatch event
-                            window.dispatchEvent(new CustomEvent('eventCampaignCreated', { detail: campaignData }));
-                            // Show success
-                            alert('Email campaign created! Please click the Email tab to review and send.');
-                          }}
+                          onClick={() => setConvertingEvent(event)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
                         >
                           <Mail size={14} />
@@ -526,7 +532,26 @@ const EventListManager = ({ currentUser }) => {
         />
       )}
 
-      {/* Removed EventToEmailConverter modal - using direct conversion now */}
+      {/* Event to Email Modal */}
+      {convertingEvent && (
+        <EventToEmailModal
+          event={convertingEvent}
+          blogPosts={blogPosts}
+          onConvert={(selectedBlogPost) => {
+            // Convert event to email campaign with optional blog post
+            const campaignData = convertEventToEmailCampaign(convertingEvent, selectedBlogPost);
+            // Store in localStorage
+            localStorage.setItem('pendingEmailCampaign', JSON.stringify(campaignData));
+            // Dispatch event
+            window.dispatchEvent(new CustomEvent('eventCampaignCreated', { detail: campaignData }));
+            // Close modal
+            setConvertingEvent(null);
+            // Show success
+            alert('Email campaign created! Please click the Email tab to review and send.');
+          }}
+          onCancel={() => setConvertingEvent(null)}
+        />
+      )}
     </div>
   );
 };

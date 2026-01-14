@@ -51,7 +51,7 @@ const generateEventEmailHTML = (event) => {
   `;
 };
 
-export const convertEventToEmailCampaign = (event) => {
+export const convertEventToEmailCampaign = (event, blogPost = null) => {
   const emailBlocks = [];
   let blockId = Date.now();
 
@@ -61,6 +61,66 @@ export const convertEventToEmailCampaign = (event) => {
     type: 'html',
     content: { html: generateEventEmailHTML(event) }
   });
+
+  // Blog post content if provided
+  if (blogPost) {
+    emailBlocks.push({
+      id: blockId++,
+      type: 'spacer',
+      content: { height: 30 }
+    });
+
+    emailBlocks.push({
+      id: blockId++,
+      type: 'divider',
+      content: { color: '#e5e7eb', thickness: '2' }
+    });
+
+    emailBlocks.push({
+      id: blockId++,
+      type: 'spacer',
+      content: { height: 20 }
+    });
+
+    // Blog title
+    emailBlocks.push({
+      id: blockId++,
+      type: 'html',
+      content: { 
+        html: `<h2 style="color: #1f2937; font-size: 24px; margin-bottom: 16px;">${blogPost.title}</h2>` 
+      }
+    });
+
+    // Blog content (first 500 chars)
+    if (blogPost.content) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = blogPost.content;
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      const excerpt = textContent.substring(0, 500) + (textContent.length > 500 ? '...' : '');
+      
+      emailBlocks.push({
+        id: blockId++,
+        type: 'html',
+        content: { 
+          html: `<p style="color: #374151; line-height: 1.6; margin-bottom: 20px;">${excerpt}</p>` 
+        }
+      });
+    }
+
+    // Read more button
+    emailBlocks.push({
+      id: blockId++,
+      type: 'button',
+      content: {
+        text: 'Read Full Article',
+        url: `https://historyofidahobroadcasting.org/tools-hoibf/social-admin?tab=blog&post=${blogPost.id}`,
+        color: '#059669',
+        textColor: '#ffffff',
+        borderRadius: '8',
+        fontSize: '16'
+      }
+    });
+  }
 
   // RSVP button if enabled
   if (event.rsvp_enabled) {
