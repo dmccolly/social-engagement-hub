@@ -7,6 +7,7 @@ import { shareEventToEmail, shareEventToBlog, shareEventToNewsfeed } from '../..
 import EventCreator from './EventCreator';
 import EventRSVPDashboard from './EventRSVPDashboard';
 import EventPreview from './EventPreview';
+import EventToEmailConverter from './EventToEmailConverter';
 
 const EventListManager = ({ currentUser }) => {
   const [events, setEvents] = useState([]);
@@ -17,6 +18,7 @@ const EventListManager = ({ currentUser }) => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingRSVPs, setViewingRSVPs] = useState(null);
   const [previewingEvent, setPreviewingEvent] = useState(null);
+  const [convertingToEmail, setConvertingToEmail] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -430,13 +432,13 @@ const EventListManager = ({ currentUser }) => {
                           <Copy size={14} />
                           Duplicate
                         </button>
-                        {/* Share to Email */}
+                        {/* Send as Email Campaign */}
                         <button
-                          onClick={() => handleShareToEmail(event)}
-                          className="flex items-center gap-1 px-3 py-1.5 border rounded hover:bg-gray-50 text-sm"
+                          onClick={() => setConvertingToEmail(event)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
                         >
                           <Mail size={14} />
-                          Email
+                          Send as Email
                         </button>
                         {/* Add to Blog */}
                         <button
@@ -512,6 +514,21 @@ const EventListManager = ({ currentUser }) => {
         <EventPreview
           event={previewingEvent}
           onClose={() => setPreviewingEvent(null)}
+        />
+      )}
+
+      {/* Event to Email Converter Modal */}
+      {convertingToEmail && (
+        <EventToEmailConverter
+          event={convertingToEmail}
+          onConvert={(campaignData) => {
+            // Store campaign data in localStorage to pass to email tab
+            localStorage.setItem('pendingEmailCampaign', JSON.stringify(campaignData));
+            setConvertingToEmail(null);
+            // Show success message and guide user to email tab
+            alert('Email campaign created! Please go to the Email tab to review and send.');
+          }}
+          onCancel={() => setConvertingToEmail(null)}
         />
       )}
     </div>

@@ -62,6 +62,29 @@ const EmailMarketingSystem = () => {
   };
 
   // Load data from Xano on mount
+  // Check for pending email campaign from Event-to-Email converter
+  useEffect(() => {
+    const pendingCampaign = localStorage.getItem('pendingEmailCampaign');
+    if (pendingCampaign) {
+      try {
+        const campaignData = JSON.parse(pendingCampaign);
+        // Clear the pending campaign
+        localStorage.removeItem('pendingEmailCampaign');
+        // Load the campaign into the builder
+        setCurrentCampaign({
+          id: Date.now(),
+          ...campaignData,
+          status: 'draft',
+          stats: { sent: 0, opened: 0, clicked: 0 }
+        });
+        setEmailBlocks(ensureBlockIds(campaignData.blocks || []));
+        setActiveView('builder');
+      } catch (error) {
+        console.error('Error loading pending campaign:', error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     console.log('EmailMarketingSystem build: 5b01f5fa - Campaign rendering fix active');
     
