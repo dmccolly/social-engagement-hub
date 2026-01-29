@@ -145,16 +145,29 @@ const BlogWidget = ({ settings = {} }) => {
       const tmp = document.createElement('div');
       tmp.innerHTML = content;
       
-      // Find all <p> tags and get the first one with actual content
+      // Find all <p> tags and get the first one with actual TEXT content
+      // Skip paragraphs that only contain iframes, videos, or other embedded media
       const allParagraphs = tmp.querySelectorAll('p');
       for (let i = 0; i < allParagraphs.length; i++) {
-        const text = allParagraphs[i].textContent || allParagraphs[i].innerText || '';
+        const para = allParagraphs[i];
+        
+        // Check if this paragraph contains only iframes/videos
+        const hasIframe = para.querySelector('iframe');
+        const hasVideo = para.querySelector('video');
+        
+        // Get the text content
+        const text = para.textContent || para.innerText || '';
         const trimmedText = text.trim();
-        // Skip empty paragraphs and find the first one with real content
-        if (trimmedText.length > 0) {
-          if (trimmedText.length <= maxLength) return trimmedText;
-          return trimmedText.substring(0, maxLength).trim() + '...';
-        }
+        
+        // Skip if:
+        // 1. Paragraph is empty
+        // 2. Paragraph only contains iframe/video (no meaningful text)
+        if (trimmedText.length === 0) continue;
+        if ((hasIframe || hasVideo) && trimmedText.length < 20) continue;
+        
+        // Found the first paragraph with actual text content!
+        if (trimmedText.length <= maxLength) return trimmedText;
+        return trimmedText.substring(0, maxLength).trim() + '...';
       }
       
       // Fallback: get all text content and find first meaningful paragraph
