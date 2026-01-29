@@ -145,13 +145,15 @@ const BlogWidget = ({ settings = {} }) => {
       const tmp = document.createElement('div');
       tmp.innerHTML = content;
       
-      // Find the first <p> tag
-      const firstParagraph = tmp.querySelector('p');
-      if (firstParagraph) {
-        const text = firstParagraph.textContent || firstParagraph.innerText || '';
-        if (text.trim().length > 0) {
-          if (text.length <= maxLength) return text.trim();
-          return text.substring(0, maxLength).trim() + '...';
+      // Find all <p> tags and get the first one with actual content
+      const allParagraphs = tmp.querySelectorAll('p');
+      for (let i = 0; i < allParagraphs.length; i++) {
+        const text = allParagraphs[i].textContent || allParagraphs[i].innerText || '';
+        const trimmedText = text.trim();
+        // Skip empty paragraphs and find the first one with real content
+        if (trimmedText.length > 0) {
+          if (trimmedText.length <= maxLength) return trimmedText;
+          return trimmedText.substring(0, maxLength).trim() + '...';
         }
       }
       
