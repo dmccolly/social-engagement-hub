@@ -134,10 +134,44 @@ const BlogWidget = ({ settings = {} }) => {
     return tmp.textContent || tmp.innerText || '';
   };
 
+  /**
+   * Extract the first paragraph from HTML content
+   * This ensures we show the actual first paragraph, not random text
+   */
   const createExcerpt = (content, maxLength = 200) => {
-    const text = stripHtml(content);
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + '...';
+    if (!content) return '';
+    
+    try {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = content;
+      
+      // Find the first <p> tag
+      const firstParagraph = tmp.querySelector('p');
+      if (firstParagraph) {
+        const text = firstParagraph.textContent || firstParagraph.innerText || '';
+        if (text.trim().length > 0) {
+          if (text.length <= maxLength) return text.trim();
+          return text.substring(0, maxLength).trim() + '...';
+        }
+      }
+      
+      // Fallback: get all text content and find first meaningful paragraph
+      const allText = tmp.textContent || tmp.innerText || '';
+      const lines = allText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      
+      if (lines.length > 0) {
+        const firstLine = lines[0];
+        if (firstLine.length <= maxLength) return firstLine;
+        return firstLine.substring(0, maxLength).trim() + '...';
+      }
+      
+      return '';
+    } catch (e) {
+      console.error('Error creating excerpt:', e);
+      const text = stripHtml(content);
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength).trim() + '...';
+    }
   };
 
   const canonicalBase = settings.canonical || window.location.origin;
@@ -218,7 +252,7 @@ const BlogWidget = ({ settings = {} }) => {
           {posts.map((post) => {
             // Get preview media (video thumbnail or image)
             const previewUrl = settings.showImages !== false ? getPreviewMedia(post.description) : null;
-            const excerpt = createExcerpt(post.description, 200);
+            const excerpt = createExcerpt(post.description, 500);
             const date = new Date(post.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',

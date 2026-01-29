@@ -253,11 +253,18 @@ const BlogSection = () => {
    */
   const handleSavePost = async ({ title, content, status, scheduled_datetime, featured, pinned, sort_order }) => {
     try {
+      console.log('[DRAFT SAVE DEBUG] handleSavePost called with status:', status);
+      console.log('[DRAFT SAVE DEBUG] visitorSession:', visitorSession);
+      console.log('[DRAFT SAVE DEBUG] visitorSession exists:', !!visitorSession);
+      
       if (status === 'draft' && !visitorSession) {
+        console.log('[DRAFT SAVE DEBUG] No visitor session - showing form');
         alert('Please sign in to save drafts. Your drafts are associated with your account.');
         setShowVisitorForm(true);
         return;
       }
+      
+      console.log('[DRAFT SAVE DEBUG] Proceeding with save...');
       
       let tags = editingPost?.tags || '';
       console.log('[PUBLISH DEBUG] Original tags:', tags);
