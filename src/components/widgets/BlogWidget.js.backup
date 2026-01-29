@@ -18,13 +18,8 @@ const BlogWidget = ({ settings = {} }) => {
         
         const assets = await response.json();
         
-        // Filter to only blog posts (category_id === 11) and exclude drafts/archived
-        const blogPosts = assets.filter(asset => {
-          if (asset.category_id !== 11) return false;
-          const tags = asset.tags || '';
-          if (tags.includes('status:draft') || tags.includes('status:archived')) return false;
-          return true;
-        });
+        // Filter to only blog posts (category_id === 11)
+        const blogPosts = assets.filter(asset => asset.category_id === 11);
         
         const sortedPosts = blogPosts.sort((a, b) => {
           if (a.is_pinned && !b.is_pinned) return -1;
@@ -57,49 +52,6 @@ const BlogWidget = ({ settings = {} }) => {
     fetchPosts();
   }, [settings.postCount]);
 
-  /**
-   * Extract first video embed (YouTube or Vimeo) from HTML content
-   * Returns video thumbnail URL if found, null otherwise
-   */
-  const extractVideoThumbnail = (html) => {
-    if (!html) return null;
-    try {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      
-      // Look for YouTube iframe
-      const youtubeIframe = tmp.querySelector('iframe[src*="youtube.com"], iframe[src*="youtu.be"]');
-      if (youtubeIframe) {
-        const src = youtubeIframe.getAttribute('src');
-        // Extract video ID from YouTube URL
-        const videoIdMatch = src.match(/(?:embed\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (videoIdMatch && videoIdMatch[1]) {
-          return `https://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
-        }
-      }
-      
-      // Look for Vimeo iframe
-      const vimeoIframe = tmp.querySelector('iframe[src*="vimeo.com"]');
-      if (vimeoIframe) {
-        const src = vimeoIframe.getAttribute('src');
-        const videoIdMatch = src.match(/vimeo\.com\/video\/(\d+)/);
-        if (videoIdMatch && videoIdMatch[1]) {
-          // Note: Vimeo thumbnails require an API call, so we'll use a placeholder
-          // For production, you'd want to fetch this from Vimeo's API
-          return `https://vumbnail.com/${videoIdMatch[1]}.jpg`;
-        }
-      }
-      
-      return null;
-    } catch (e) {
-      console.error('Error extracting video thumbnail:', e);
-      return null;
-    }
-  };
-
-  /**
-   * Extract first image from HTML content
-   */
   const extractImage = (html) => {
     if (!html) return null;
     try {
@@ -110,21 +62,6 @@ const BlogWidget = ({ settings = {} }) => {
     } catch (e) {
       return null;
     }
-  };
-
-  /**
-   * Get the best preview media for a post
-   * Priority: Video thumbnail > First image > null
-   */
-  const getPreviewMedia = (html) => {
-    if (!html) return null;
-    
-    // Try video thumbnail first
-    const videoThumb = extractVideoThumbnail(html);
-    if (videoThumb) return videoThumb;
-    
-    // Fall back to first image
-    return extractImage(html);
   };
 
   const stripHtml = (html) => {
@@ -216,8 +153,7 @@ const BlogWidget = ({ settings = {} }) => {
       <div className="p-6">
         <div className="space-y-6">
           {posts.map((post) => {
-            // Get preview media (video thumbnail or image)
-            const previewUrl = settings.showImages !== false ? getPreviewMedia(post.description) : null;
+            const imageUrl = settings.showImages !== false ? extractImage(post.description) : null;
             const excerpt = createExcerpt(post.description, 200);
             const date = new Date(post.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
@@ -227,32 +163,12 @@ const BlogWidget = ({ settings = {} }) => {
 
             return (
               <div key={post.id} className="border-b pb-6 last:border-b-0">
-                {previewUrl && (
-                  <div className="relative mb-4">
-                    <img 
-                      src={previewUrl}
-                      alt={post.title || 'Blog post preview'}
-                      className="w-full h-48 object-cover rounded-lg"
-                      onError={(e) => {
-                        // If video thumbnail fails to load, try to get a regular image instead
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                    {/* Add play button overlay if it's a video thumbnail */}
-                    {previewUrl.includes('youtube.com') || previewUrl.includes('vumbnail.com') ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-black bg-opacity-60 rounded-full p-4">
-                          <svg 
-                            className="w-12 h-12 text-white" 
-                            fill="currentColor" 
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
+                {imageUrl && (
+                  <img 
+                    src={imageUrl}
+                    alt={post.title || 'Blog post image'}
+                    className="w-full h-48 object-cover rounded-lg mb-4"
+                  />
                 )}
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-xl font-bold text-gray-900">

@@ -1,0 +1,18 @@
+--- src/components/BlogPostView.js
++++ src/components/BlogPostView.js
+@@ -234,11 +234,15 @@
+             {/* Post Content */}
+             <div
+               className="prose prose-lg max-w-none"
+               dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(post.content) }}
+               style={{
+                 lineHeight: '1.8',
+                 fontSize: '18px',
+                 color: '#374151',
++                wordWrap: 'break-word',
++                overflowWrap: 'break-word',
++                wordBreak: 'break-word',
++                hyphens: 'auto'
+               }}
+             />
+           </div>

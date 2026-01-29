@@ -239,10 +239,6 @@ const BlogPostView = ({ posts }) => {
                 lineHeight: '1.8',
                 fontSize: '18px',
                 color: '#374151',
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-                hyphens: 'auto'
               }}
             />
           </div>
@@ -344,11 +340,6 @@ const BlogPostView = ({ posts }) => {
         }
         .prose p {
           margin-bottom: 1.5rem;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          word-break: break-word;
-          hyphens: auto;
-          max-width: 100%;
         }
         .prose a {
           color: #2563eb;
