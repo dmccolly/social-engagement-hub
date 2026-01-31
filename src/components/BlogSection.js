@@ -257,11 +257,17 @@ const BlogSection = () => {
       console.log('[DRAFT SAVE DEBUG] visitorSession:', visitorSession);
       console.log('[DRAFT SAVE DEBUG] visitorSession exists:', !!visitorSession);
       
-      if (status === 'draft' && !visitorSession) {
+      // For drafts, check if we have visitor session or are editing an existing post
+      if (status === 'draft' && !visitorSession && !editingPost) {
         console.log('[DRAFT SAVE DEBUG] No visitor session - showing form');
         alert('Please sign in to save drafts. Your drafts are associated with your account.');
         setShowVisitorForm(true);
         return;
+      }
+      
+      // If saving a draft without visitor session but editing existing post, use existing author
+      if (status === 'draft' && !visitorSession && editingPost) {
+        console.log('[DRAFT SAVE DEBUG] Editing existing draft without session - using existing author');
       }
       
       console.log('[DRAFT SAVE DEBUG] Proceeding with save...');

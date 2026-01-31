@@ -79,6 +79,18 @@
             word-break: break-word;
             hyphens: auto;
             white-space: normal;
+            overflow: visible;
+        }
+        
+        /* Ensure text wraps around floated images */
+        .post-content::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
+        .post-content > * {
+            clear: none;
         }
         
         .post-content [style*="white-space:nowrap"],
@@ -122,6 +134,21 @@
             margin: 20px 0;
         }
         
+        /* Support for inline float styles */
+        .post-content img[style*="float: left"],
+        .post-content img[style*="float:left"] {
+            float: left !important;
+            margin: 0 20px 15px 0 !important;
+            max-width: 45%;
+        }
+        
+        .post-content img[style*="float: right"],
+        .post-content img[style*="float:right"] {
+            float: right !important;
+            margin: 0 0 15px 20px !important;
+            max-width: 45%;
+        }
+        
         /* Image size classes */
         .post-content img.size-small {
             width: 200px;
@@ -146,19 +173,21 @@
         .post-content img.position-left,
         .post-content .media-wrapper.position-left,
         .post-content .position-left {
-            float: left;
-            margin: 0 15px 15px 0;
+            float: left !important;
+            margin: 0 20px 15px 0 !important;
             clear: left;
             max-width: 45%;
+            display: block;
         }
         
         .post-content img.position-right,
         .post-content .media-wrapper.position-right,
         .post-content .position-right {
-            float: right;
-            margin: 0 0 15px 15px;
+            float: right !important;
+            margin: 0 0 15px 20px !important;
             clear: right;
             max-width: 45%;
+            display: block;
         }
         
         .post-content img.position-center,
@@ -173,14 +202,18 @@
         /* Wrap position classes for text wrapping around images */
         .post-content img.position-wrap-left,
         .post-content .media-wrapper.position-wrap-left {
-            float: left;
-            margin: 0 15px 15px 0;
+            float: left !important;
+            margin: 0 20px 15px 0 !important;
+            max-width: 45%;
+            display: block;
         }
         
         .post-content img.position-wrap-right,
         .post-content .media-wrapper.position-wrap-right {
-            float: right;
-            margin: 0 0 15px 15px;
+            float: right !important;
+            margin: 0 0 15px 20px !important;
+            max-width: 45%;
+            display: block;
         }
         
         /* Clear floats to prevent container collapse */
