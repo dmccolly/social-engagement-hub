@@ -283,19 +283,36 @@ const BlogPostView = ({ posts }) => {
         .prose video.position-left,
         .prose iframe.position-left,
         .prose .position-left {
-          float: left;
-          margin: 0 15px 15px 0;
+          float: left !important;
+          margin: 0 20px 15px 0 !important;
           clear: left;
-          max-width: 40%;
+          max-width: 45%;
+          display: block;
         }
         .prose img.position-right,
         .prose video.position-right,
         .prose iframe.position-right,
         .prose .position-right {
-          float: right;
-          margin: 0 0 15px 15px;
+          float: right !important;
+          margin: 0 0 15px 20px !important;
           clear: right;
-          max-width: 40%;
+          max-width: 45%;
+          display: block;
+        }
+        
+        /* Support for inline float styles */
+        .prose img[style*="float: left"],
+        .prose img[style*="float:left"] {
+          float: left !important;
+          margin: 0 20px 15px 0 !important;
+          max-width: 45%;
+        }
+        
+        .prose img[style*="float: right"],
+        .prose img[style*="float:right"] {
+          float: right !important;
+          margin: 0 0 15px 20px !important;
+          max-width: 45%;
         }
         .prose img.position-center,
         .prose video.position-center,
