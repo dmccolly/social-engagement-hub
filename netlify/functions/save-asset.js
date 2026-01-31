@@ -49,7 +49,7 @@ exports.handler = async (event) => {
 
     const xanoData = {
       title: asset.title || asset.name,
-      description: '',
+      description: asset.description || '',
       category: asset.type === 'image' ? 'images' : asset.type === 'video' ? 'videos' : 'documents',
       type: asset.type,
       station: '',
