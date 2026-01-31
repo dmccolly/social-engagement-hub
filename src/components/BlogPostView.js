@@ -300,6 +300,27 @@ const BlogPostView = ({ posts }) => {
           display: block;
         }
         
+        /* Support for position-wrap-left and position-wrap-right classes */
+        .prose img.position-wrap-left,
+        .prose video.position-wrap-left,
+        .prose .position-wrap-left {
+          float: left !important;
+          margin: 0 20px 15px 0 !important;
+          clear: left;
+          max-width: 45%;
+          display: block;
+        }
+        
+        .prose img.position-wrap-right,
+        .prose video.position-wrap-right,
+        .prose .position-wrap-right {
+          float: right !important;
+          margin: 0 0 15px 20px !important;
+          clear: right;
+          max-width: 45%;
+          display: block;
+        }
+        
         /* Support for inline float styles */
         .prose img[style*="float: left"],
         .prose img[style*="float:left"] {
@@ -335,15 +356,23 @@ const BlogPostView = ({ posts }) => {
         @media (max-width: 768px) {
           .prose .position-left,
           .prose .position-right,
+          .prose .position-wrap-left,
+          .prose .position-wrap-right,
           .prose img.position-left,
           .prose img.position-right,
+          .prose img.position-wrap-left,
+          .prose img.position-wrap-right,
           .prose video.position-left,
           .prose video.position-right,
+          .prose video.position-wrap-left,
+          .prose video.position-wrap-right,
           .prose iframe.position-left,
-          .prose iframe.position-right {
-            float: none;
-            max-width: 100%;
-            margin: 12px 0;
+          .prose iframe.position-right,
+          .prose iframe.position-wrap-left,
+          .prose iframe.position-wrap-right {
+            float: none !important;
+            max-width: 100% !important;
+            margin: 12px 0 !important;
           }
         }
         .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
