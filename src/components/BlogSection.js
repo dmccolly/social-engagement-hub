@@ -121,7 +121,7 @@ const BlogSection = () => {
 
   useEffect(() => {
     const loadDrafts = async () => {
-      if (!showDrafts || !visitorSession) return;
+      if (!showDrafts) return;
       
       try {
         const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
@@ -139,8 +139,11 @@ const BlogSection = () => {
             const tags = asset.tags || '';
             if (!tags.includes('status:draft')) return false;
             
-            const submittedBy = (asset.submitted_by || '').trim();
-            if (submittedBy !== visitorSession.name.trim()) return false;
+            // Filter by visitor session if one exists, otherwise show all drafts for admin
+            if (visitorSession) {
+              const submittedBy = (asset.submitted_by || '').trim();
+              if (submittedBy !== visitorSession.name.trim()) return false;
+            }
             
             return true;
           })
@@ -661,25 +664,23 @@ const BlogSection = () => {
         <h1 className="text-3xl font-bold">Blog Posts</h1>
         <div className="flex items-center gap-4">
           {visitorSession && (
-            <>
-              <span className="text-sm text-gray-600">
-                Signed in as: <strong>{visitorSession.name}</strong>
-              </span>
-              <button
-                onClick={() => {
-                  setShowDrafts(!showDrafts);
-                  setShowArchived(false);
-                }}
-                className={`px-4 py-2 rounded transition ${
-                  showDrafts
-                    ? 'bg-gray-600 text-white hover:bg-gray-700'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {showDrafts ? 'Show Published' : 'Show My Drafts'}
-              </button>
-            </>
+            <span className="text-sm text-gray-600">
+              Signed in as: <strong>{visitorSession.name}</strong>
+            </span>
           )}
+          <button
+            onClick={() => {
+              setShowDrafts(!showDrafts);
+              setShowArchived(false);
+            }}
+            className={`px-4 py-2 rounded transition ${
+              showDrafts
+                ? 'bg-gray-600 text-white hover:bg-gray-700'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            {showDrafts ? 'Show Published' : 'Show My Drafts'}
+          </button>
           <button
             onClick={() => {
               setShowArchived(!showArchived);

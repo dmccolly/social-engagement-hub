@@ -285,9 +285,8 @@ const BlogPostView = ({ posts }) => {
         .prose .position-left {
           float: left !important;
           margin: 0 20px 15px 0 !important;
-          clear: left;
           max-width: 45%;
-          display: block;
+          display: inline-block;
         }
         .prose img.position-right,
         .prose video.position-right,
@@ -295,9 +294,8 @@ const BlogPostView = ({ posts }) => {
         .prose .position-right {
           float: right !important;
           margin: 0 0 15px 20px !important;
-          clear: right;
           max-width: 45%;
-          display: block;
+          display: inline-block;
         }
         
         /* Support for position-wrap-left and position-wrap-right classes */
@@ -306,9 +304,8 @@ const BlogPostView = ({ posts }) => {
         .prose .position-wrap-left {
           float: left !important;
           margin: 0 20px 15px 0 !important;
-          clear: left !important;
           max-width: 45% !important;
-          display: block !important;
+          display: inline-block !important;
         }
         
         .prose img.position-wrap-right,
@@ -316,9 +313,8 @@ const BlogPostView = ({ posts }) => {
         .prose .position-wrap-right {
           float: right !important;
           margin: 0 0 15px 20px !important;
-          clear: right !important;
           max-width: 45% !important;
-          display: block !important;
+          display: inline-block !important;
         }
         
         /* Support for inline float styles */
