@@ -139,9 +139,16 @@ const BlogSection = () => {
             const tags = asset.tags || '';
             if (!tags.includes('status:draft')) return false;
             
-            // Filter by visitor session if one exists, otherwise show all drafts for admin
+            // Check if this is an admin draft (email format) or visitor draft
+            const submittedBy = (asset.submitted_by || '').trim();
+            
+            // If submitted_by contains @ (email), it's an admin post - show all admin drafts
+            if (submittedBy.includes('@')) {
+              return true; // Show all admin drafts
+            }
+            
+            // For visitor posts, filter by visitor session if one exists
             if (visitorSession) {
-              const submittedBy = (asset.submitted_by || '').trim();
               if (submittedBy !== visitorSession.name.trim()) return false;
             }
             
@@ -755,12 +762,14 @@ const BlogSection = () => {
             </ul>
           )}
         </div>
-      ) : showDrafts && visitorSession ? (
+      ) : showDrafts ? (
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-blue-800 font-semibold">My Drafts</p>
             <p className="text-blue-600 text-sm mt-1">
-              Showing draft posts saved by {visitorSession.name}
+              {visitorSession 
+                ? `Showing draft posts saved by ${visitorSession.name}` 
+                : 'Showing all draft posts (admin view)'}
             </p>
           </div>
           {drafts.length === 0 ? (
