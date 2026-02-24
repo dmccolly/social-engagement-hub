@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { sanitizeBeforeSave } from '../utils/htmlSanitizer';
 import { Link } from 'react-router-dom';
-import { User, X, ChevronUp, ChevronDown, Share2 } from 'lucide-react';
+import { User, X, ChevronUp, ChevronDown, Share2, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import PatchedRichBlogEditor from '../PatchedRichBlogEditor';
 import SocialShareButtons from './SocialShareButtons';
 import {
@@ -12,14 +12,54 @@ import {
 } from '../services/xanoService';
 import { createVisitorSession } from '../services/newsfeedService';
 
-/**
- * BlogSection component with Visitor Session Support
- *
- * This component renders a list of blog posts fetched from the Xano backend
- * and provides UI to create a new post, edit an existing post, and delete posts.
- * It now includes visitor session support to attribute posts to actual users
- * instead of generic "Admin" credits.
- */
+// ------------------------------------------------------------------
+// Toast notification system (replaces alert())
+// ------------------------------------------------------------------
+const useToast = () => {
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = useCallback((message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+  }, []);
+
+  return { toasts, addToast };
+};
+
+const TOAST_STYLES = {
+  success: 'bg-green-50 border-green-200 text-green-800',
+  error:   'bg-red-50 border-red-200 text-red-800',
+  info:    'bg-blue-50 border-blue-200 text-blue-800',
+};
+
+const TOAST_ICONS = {
+  success: CheckCircle,
+  error:   AlertCircle,
+  info:    Info,
+};
+
+const ToastContainer = ({ toasts }) => (
+  <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    {toasts.map(({ id, message, type }) => {
+      const Icon = TOAST_ICONS[type] || Info;
+      return (
+        <div
+          key={id}
+          className={`flex items-start gap-2 px-4 py-3 rounded-xl border shadow-lg
+            text-sm font-medium animate-fade-in pointer-events-auto ${TOAST_STYLES[type]}`}
+        >
+          <Icon size={16} className="mt-0.5 flex-shrink-0" />
+          <span>{message}</span>
+        </div>
+      );
+    })}
+  </div>
+);
+
+// ------------------------------------------------------------------
+// BlogSection component with Visitor Session Support
+// ------------------------------------------------------------------
 const BlogSection = () => {
   const [posts, setPosts] = useState([]);
   const [drafts, setDrafts] = useState([]);
@@ -30,36 +70,33 @@ const BlogSection = () => {
   const [loadError, setLoadError] = useState(null);
   const [editingPost, setEditingPost] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
-  
+
   // Visitor session state
   const [visitorSession, setVisitorSession] = useState(null);
   const [showVisitorForm, setShowVisitorForm] = useState(false);
   const [visitorData, setVisitorData] = useState({ name: '', email: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { toasts, addToast } = useToast();
+
   // Load visitor session on mount
   useEffect(() => {
-    const loadVisitorSession = async () => {
-      try {
-        const savedSession = localStorage.getItem('visitor_session');
-        if (savedSession) {
-          const session = JSON.parse(savedSession);
-          // Normalize session data (trim whitespace) for consistent comparisons
-          if (session.name) session.name = session.name.trim();
-          if (session.email) session.email = session.email.trim();
-          setVisitorSession(session);
-          console.log('Loaded visitor session:', session);
-        }
-      } catch (error) {
-        console.error('Load visitor session error:', error);
+    try {
+      const saved = localStorage.getItem('visitor_session');
+      if (saved) {
+        const session = JSON.parse(saved);
+        if (session.name) session.name = session.name.trim();
+        if (session.email) session.email = session.email.trim();
+        setVisitorSession(session);
       }
-    };
-    loadVisitorSession();
+    } catch (err) {
+      console.error('Load visitor session error:', err);
+    }
   }, []);
 
-  // Load posts on mount
+  // Load published posts
   useEffect(() => {
-    const loadPosts = async () => {
+    const load = async () => {
       setIsLoading(true);
       setLoadError(null);
       const result = await getPublishedPosts(100, 0);
@@ -70,88 +107,60 @@ const BlogSection = () => {
       }
       setIsLoading(false);
     };
-    loadPosts();
+    load();
   }, []);
 
-  // Load archived posts when showArchived is toggled
-  useEffect(() => {
-    const loadArchivedPosts = async () => {
-      if (!showArchived) return;
-      
-      try {
-        const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
-        if (!response.ok) {
-          console.error('Failed to fetch archived posts');
-          return;
-        }
-        
-        const assets = await response.json();
-        const archived = assets
-          .filter(asset => {
-            const catId = asset.category_id ?? asset.category?.id ?? asset.category;
-            if (Number(catId) !== 11) return false;
-            
-            const tags = asset.tags || '';
-            if (!tags.includes('status:archived')) return false;
-            
-            return true;
-          })
-          .map(asset => ({
-            id: asset.id,
-            title: asset.title || 'Untitled',
-            content: asset.description || '',
-            author: asset.submitted_by || 'Unknown',
-            created_at: asset.created_at,
-            featured: asset.is_featured || false,
-            pinned: asset.pinned || false,
-            sort_order: asset.sort_order || 0,
-            tags: asset.tags || '',
-            status: 'archived'
-          }))
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        
-        setArchivedPosts(archived);
-      } catch (error) {
-        console.error('Load archived posts error:', error);
-      }
-    };
-    
-    loadArchivedPosts();
-  }, [showArchived]);
+  // Load archived posts when the archived tab is opened
+  const loadArchivedPosts = useCallback(async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
+      if (!response.ok) { console.error('Failed to fetch archived posts'); return; }
+      const assets = await response.json();
+      const archived = assets
+        .filter(asset => {
+          const catId = asset.category_id ?? asset.category?.id ?? asset.category;
+          if (Number(catId) !== 11) return false;
+          return (asset.tags || '').includes('status:archived');
+        })
+        .map(asset => ({
+          id: asset.id,
+          title: asset.title || 'Untitled',
+          content: asset.description || '',
+          author: asset.submitted_by || 'Unknown',
+          created_at: asset.created_at,
+          featured: asset.is_featured || false,
+          pinned: asset.pinned || false,
+          sort_order: asset.sort_order || 0,
+          tags: asset.tags || '',
+          status: 'archived',
+        }))
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setArchivedPosts(archived);
+    } catch (err) {
+      console.error('Load archived posts error:', err);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadDrafts = async () => {
-      if (!showDrafts) return;
-      
+    if (showArchived) loadArchivedPosts();
+  }, [showArchived, loadArchivedPosts]);
+
+  // Load drafts when the drafts tab is opened
+  useEffect(() => {
+    if (!showDrafts) return;
+    const load = async () => {
       try {
         const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
-        if (!response.ok) {
-          console.error('Failed to fetch drafts');
-          return;
-        }
-        
+        if (!response.ok) return;
         const assets = await response.json();
         const draftPosts = assets
           .filter(asset => {
             const catId = asset.category_id ?? asset.category?.id ?? asset.category;
             if (Number(catId) !== 11) return false;
-            
-            const tags = asset.tags || '';
-            if (!tags.includes('status:draft')) return false;
-            
-            // Check if this is an admin draft (email format) or visitor draft
+            if (!(asset.tags || '').includes('status:draft')) return false;
             const submittedBy = (asset.submitted_by || '').trim();
-            
-            // If submitted_by contains @ (email), it's an admin post - show all admin drafts
-            if (submittedBy.includes('@')) {
-              return true; // Show all admin drafts
-            }
-            
-            // For visitor posts, filter by visitor session if one exists
-            if (visitorSession) {
-              if (submittedBy !== visitorSession.name.trim()) return false;
-            }
-            
+            if (submittedBy.includes('@')) return true;
+            if (visitorSession) return submittedBy === visitorSession.name.trim();
             return true;
           })
           .map(asset => ({
@@ -161,155 +170,96 @@ const BlogSection = () => {
             author: asset.submitted_by || 'Unknown',
             created_at: asset.created_at,
             featured: asset.is_featured || false,
-            pinned: asset.pinned || false,
-            sort_order: asset.sort_order || 0,
             tags: asset.tags || '',
-            status: 'draft'
+            status: 'draft',
           }))
           .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        
         setDrafts(draftPosts);
-      } catch (error) {
-        console.error('Load drafts error:', error);
+      } catch (err) {
+        console.error('Load drafts error:', err);
       }
     };
-    
-    loadDrafts();
+    load();
   }, [showDrafts, visitorSession]);
 
-  // Generate a unique session ID
-  const generateSessionId = () => {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  };
+  const generateSessionId = () =>
+    `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Handle visitor form submission
   const handleVisitorFormSubmit = async (e) => {
     e.preventDefault();
-    
     if (!visitorData.name.trim() || !visitorData.email.trim()) {
-      alert('Please fill in both name and email');
+      addToast('Please fill in both name and email.', 'error');
       return;
     }
-    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(visitorData.email)) {
-      alert('Please enter a valid email address');
+      addToast('Please enter a valid email address.', 'error');
       return;
     }
-    
     setIsSubmitting(true);
-    
     try {
       const sessionData = {
         session_id: generateSessionId(),
         email: visitorData.email.trim(),
         name: visitorData.name.trim(),
         is_member: false,
-        member_id: null
+        member_id: null,
       };
-      
       const result = await createVisitorSession(sessionData);
-      
-      console.log('createVisitorSession result:', result);
-      
       if (result.success) {
-        // Handle both response formats: {success, session} or direct session object
         const session = result.session || result;
-        console.log('Storing visitor session:', session);
         localStorage.setItem('visitor_session', JSON.stringify(session));
         setVisitorSession(session);
         setShowVisitorForm(false);
         setVisitorData({ name: '', email: '' });
         setShowEditor(true);
-        alert('Welcome! You can now create blog posts with your name.');
+        addToast(`Welcome, ${session.name}! You can now create blog posts.`, 'success');
       } else {
-        alert('Failed to create visitor session: ' + result.error);
+        addToast('Failed to create session: ' + result.error, 'error');
       }
-    } catch (error) {
-      console.error('Visitor form submit error:', error);
-      alert('Failed to create visitor session: ' + error.message);
+    } catch (err) {
+      console.error('Visitor form submit error:', err);
+      addToast('Failed to create session: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  /**
-   * Handle creating a new post.
-   * Check for visitor session first.
-   */
   const handleCreateNew = () => {
-    // Check if visitor has a session
-    if (!visitorSession) {
-      setShowVisitorForm(true);
-      return;
-    }
-    
+    if (!visitorSession) { setShowVisitorForm(true); return; }
     setEditingPost(null);
     setShowEditor(true);
   };
 
-  /**
-   * Handle editing an existing post.
-   */
   const handleEdit = (post) => {
     setEditingPost(post);
     setShowEditor(true);
   };
 
-  /**
-   * Handle saving a new or edited post. On save, call the appropriate
-   * Xano service and update the local posts state.
-   * Now uses visitor session for author attribution.
-   */
   const handleSavePost = async ({ title, content, status, scheduled_datetime, featured, pinned, sort_order }) => {
     try {
-      console.log('[DRAFT SAVE DEBUG] handleSavePost called with status:', status);
-      console.log('[DRAFT SAVE DEBUG] visitorSession:', visitorSession);
-      console.log('[DRAFT SAVE DEBUG] visitorSession exists:', !!visitorSession);
-      
-      // For drafts, check if we have visitor session or are editing an existing post
       if (status === 'draft' && !visitorSession && !editingPost) {
-        console.log('[DRAFT SAVE DEBUG] No visitor session - showing form');
-        alert('Please sign in to save drafts. Your drafts are associated with your account.');
+        addToast('Please sign in to save drafts.', 'info');
         setShowVisitorForm(true);
         return;
       }
-      
-      // If saving a draft without visitor session but editing existing post, use existing author
-      if (status === 'draft' && !visitorSession && editingPost) {
-        console.log('[DRAFT SAVE DEBUG] Editing existing draft without session - using existing author');
-      }
-      
-      console.log('[DRAFT SAVE DEBUG] Proceeding with save...');
-      
+
       let tags = editingPost?.tags || '';
-      console.log('[PUBLISH DEBUG] Original tags:', tags);
-      console.log('[PUBLISH DEBUG] Status parameter:', status);
-      
       tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
-      console.log('[PUBLISH DEBUG] Tags after removing status:', tags);
-      
       if (status === 'draft') {
         tags = tags ? `${tags},status:draft` : 'status:draft';
-        console.log('[PUBLISH DEBUG] Added status:draft, final tags:', tags);
       } else {
-        // Xano ignores empty strings and spaces, so use status:published instead
         tags = tags ? `${tags},status:published` : 'status:published';
-        console.log('[PUBLISH DEBUG] Added status:published, final tags:', tags);
       }
-      
+
       const isScheduled = status === 'scheduled' && scheduled_datetime;
-      
-      // Determine author name from visitor session with email fallback
-      const authorName = editingPost 
-        ? editingPost.author 
+      const authorName = editingPost
+        ? editingPost.author
         : (visitorSession?.name?.trim() || visitorSession?.email?.trim() || 'Anonymous');
-      
-      console.log('Saving post with author:', authorName, 'visitorSession:', visitorSession);
-      
+
       let response;
       if (editingPost) {
-        // Updating an existing post - use values from editor
         response = await updateBlogPost(editingPost.id, {
           title,
           content: sanitizeBeforeSave(content),
@@ -322,11 +272,10 @@ const BlogSection = () => {
           scheduled_datetime: isScheduled ? scheduled_datetime : null,
         });
       } else {
-        // Creating a new post - use values from editor
         response = await createBlogPost({
           title,
           content: sanitizeBeforeSave(content),
-          author: authorName,  // Use visitor's actual name
+          author: authorName,
           tags: tags.trim(),
           featured: featured !== undefined ? featured : false,
           pinned: pinned !== undefined ? pinned : false,
@@ -335,253 +284,143 @@ const BlogSection = () => {
           scheduled_datetime: isScheduled ? scheduled_datetime : null,
         });
       }
-      
+
       if (response.success) {
-        console.log('Post saved successfully:', response.post);
-        console.log('Post tags after save:', tags);
-        console.log('Post status:', status);
-        console.log('Is scheduled:', isScheduled);
-        console.log('Scheduled datetime:', scheduled_datetime);
-        
-        // Reload posts to include the new/updated entry (increased limit to 1000)
         const postsResult = await getPublishedPosts(1000, 0);
-        if (postsResult.success) {
-          console.log('Loaded posts after save:', postsResult.posts.length);
-          console.log('Post IDs in list:', postsResult.posts.map(p => p.id));
-          console.log('Looking for post ID:', editingPost?.id || response.post?.id);
-          setPosts(postsResult.posts);
-        } else {
-          console.error('Failed to reload posts after save:', postsResult.error);
-        }
-        
-        if (status === 'draft' && visitorSession) {
+        if (postsResult.success) setPosts(postsResult.posts);
+
+        if (status === 'draft') {
           setShowDrafts(true);
-          // Reload drafts to show the newly saved draft
-          const response = await fetch(`${process.env.REACT_APP_XANO_PROXY_BASE || '/xano'}/asset`);
-          if (response.ok) {
-            const assets = await response.json();
-            const draftPosts = assets
-              .filter(asset => {
-                const catId = asset.category_id ?? asset.category?.id ?? asset.category;
-                if (Number(catId) !== 11) return false;
-                
-                const tags = asset.tags || '';
-                if (!tags.includes('status:draft')) return false;
-                
-                const submittedBy = (asset.submitted_by || '').trim();
-                if (submittedBy !== visitorSession.name.trim()) return false;
-                
-                return true;
-              })
-              .map(asset => ({
-                id: asset.id,
-                title: asset.title || 'Untitled',
-                content: asset.description || '',
-                author: asset.submitted_by || 'Unknown',
-                created_at: asset.created_at,
-                featured: asset.is_featured || false,
-                tags: asset.tags || '',
-              }));
-            setDrafts(draftPosts);
-          }
+          addToast('Saved as draft.', 'info');
+        } else if (status === 'scheduled') {
+          addToast('Post scheduled successfully!', 'success');
+        } else {
+          addToast('Post published!', 'success');
         }
-        
+
         setShowEditor(false);
         setEditingPost(null);
-        
-        if (status === 'draft') {
-          alert('Post saved as draft successfully! Showing your drafts.');
-        } else if (status === 'scheduled') {
-          alert('Post scheduled successfully!');
-        } else {
-          alert('Post published successfully!');
-        }
       } else {
-        alert(response.error || 'Failed to save post');
+        addToast(response.error || 'Failed to save post.', 'error');
       }
-    } catch (error) {
-      console.error('Error saving post:', error);
-      alert('Error saving post. See console for details.');
+    } catch (err) {
+      console.error('Error saving post:', err);
+      addToast('Error saving post. See console for details.', 'error');
     }
   };
 
-  /**
-   * Handle deleting a post. Calls the deleteBlogPost service and removes
-   * the post from the local state on success.
-   */
   const handleDelete = async (post) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    if (!window.confirm('Delete this post permanently?')) return;
     const response = await deleteBlogPost(post.id);
     if (response.success) {
-      setPosts((prev) => prev.filter((p) => p.id !== post.id));
-      setArchivedPosts((prev) => prev.filter((p) => p.id !== post.id));
+      setPosts(prev => prev.filter(p => p.id !== post.id));
+      setArchivedPosts(prev => prev.filter(p => p.id !== post.id));
+      addToast('Post deleted.', 'info');
     } else {
-      alert(response.error || 'Failed to delete post');
+      addToast(response.error || 'Failed to delete post.', 'error');
     }
   };
 
-  /**
-   * Handle archiving a post. Adds status:archived tag to hide from feed.
-   */
   const handleArchive = async (post) => {
-    if (!window.confirm('Are you sure you want to archive this post? It will be hidden from the feed but not deleted.')) return;
-    
-    // Remove any existing status tags and add status:archived
-    let tags = post.tags || '';
-    tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
+    if (!window.confirm('Archive this post? It will be hidden from the feed but not deleted.')) return;
+    let tags = (post.tags || '').split(',').filter(t => !t.trim().startsWith('status:')).join(',');
     tags = tags ? `${tags},status:archived` : 'status:archived';
-    
     const response = await updateBlogPost(post.id, {
-      title: post.title,
-      content: post.content,
-      author: post.author,
-      tags: tags.trim(),
-      featured: post.featured,
-      pinned: post.pinned,
-      sort_order: post.sort_order,
-      is_scheduled: post.is_scheduled,
+      title: post.title, content: post.content, author: post.author,
+      tags: tags.trim(), featured: post.featured, pinned: post.pinned,
+      sort_order: post.sort_order, is_scheduled: post.is_scheduled,
       scheduled_datetime: post.scheduled_datetime,
     });
-    
     if (response.success) {
-      // Remove from current list and reload
-      setPosts((prev) => prev.filter((p) => p.id !== post.id));
-      alert('Post archived successfully!');
-      
-      // If viewing archived posts, reload them
-      if (showArchived) {
-        loadArchivedPosts();
-      }
+      setPosts(prev => prev.filter(p => p.id !== post.id));
+      addToast('Post archived.', 'info');
+      if (showArchived) loadArchivedPosts();
     } else {
-      alert(response.error || 'Failed to archive post');
+      addToast(response.error || 'Failed to archive post.', 'error');
     }
   };
 
-  /**
-   * Handle unarchiving a post. Removes status:archived tag to show in feed.
-   */
   const handleUnarchive = async (post) => {
-    if (!window.confirm('Are you sure you want to unarchive this post? It will be visible in the feed again.')) return;
-    
-    // Remove status:archived tag and add status:published
-    let tags = post.tags || '';
-    tags = tags.split(',').filter(tag => !tag.trim().startsWith('status:')).join(',');
+    if (!window.confirm('Restore this post to the public feed?')) return;
+    let tags = (post.tags || '').split(',').filter(t => !t.trim().startsWith('status:')).join(',');
     tags = tags ? `${tags},status:published` : 'status:published';
-    
     const response = await updateBlogPost(post.id, {
-      title: post.title,
-      content: post.content,
-      author: post.author,
-      tags: tags.trim(),
-      featured: post.featured,
-      pinned: post.pinned,
-      sort_order: post.sort_order,
-      is_scheduled: post.is_scheduled,
+      title: post.title, content: post.content, author: post.author,
+      tags: tags.trim(), featured: post.featured, pinned: post.pinned,
+      sort_order: post.sort_order, is_scheduled: post.is_scheduled,
       scheduled_datetime: post.scheduled_datetime,
     });
-    
     if (response.success) {
-      // Remove from archived list
-      setArchivedPosts((prev) => prev.filter((p) => p.id !== post.id));
-      alert('Post unarchived successfully!');
-      
-      // Reload published posts
+      setArchivedPosts(prev => prev.filter(p => p.id !== post.id));
       const postsResult = await getPublishedPosts(1000, 0);
-      if (postsResult.success) {
-        setPosts(postsResult.posts);
-      }
+      if (postsResult.success) setPosts(postsResult.posts);
+      addToast('Post restored to feed.', 'success');
     } else {
-      alert(response.error || 'Failed to unarchive post');
+      addToast(response.error || 'Failed to unarchive post.', 'error');
     }
   };
 
-  /**
-   * Handle moving a post up in the sort order
-   */
   const handleMoveUp = async (post, index) => {
-    if (index === 0) return; // Already at top
-    
+    if (index === 0) return;
     const prevPost = posts[index - 1];
-    const newSortOrder = prevPost.sort_order - 1;
-    
     const response = await updateBlogPost(post.id, {
-      title: post.title,
-      content: post.content,
-      author: post.author,
-      tags: post.tags,
-      featured: post.featured,
-      pinned: post.pinned,
-      sort_order: newSortOrder,
-      is_scheduled: post.is_scheduled,
-      scheduled_datetime: post.scheduled_datetime,
+      title: post.title, content: post.content, author: post.author,
+      tags: post.tags, featured: post.featured, pinned: post.pinned,
+      sort_order: prevPost.sort_order - 1,
+      is_scheduled: post.is_scheduled, scheduled_datetime: post.scheduled_datetime,
     });
-    
     if (response.success) {
-      const postsResult = await getPublishedPosts(100, 0);
-      if (postsResult.success) {
-        setPosts(postsResult.posts);
-      }
+      const r = await getPublishedPosts(100, 0);
+      if (r.success) setPosts(r.posts);
     } else {
-      alert(response.error || 'Failed to reorder post');
+      addToast(response.error || 'Failed to reorder post.', 'error');
     }
   };
 
-  /**
-   * Handle moving a post down in the sort order
-   */
   const handleMoveDown = async (post, index) => {
-    if (index === posts.length - 1) return; // Already at bottom
-    
+    if (index === posts.length - 1) return;
     const nextPost = posts[index + 1];
-    const newSortOrder = nextPost.sort_order + 1;
-    
     const response = await updateBlogPost(post.id, {
-      title: post.title,
-      content: post.content,
-      author: post.author,
-      tags: post.tags,
-      featured: post.featured,
-      pinned: post.pinned,
-      sort_order: newSortOrder,
-      is_scheduled: post.is_scheduled,
-      scheduled_datetime: post.scheduled_datetime,
+      title: post.title, content: post.content, author: post.author,
+      tags: post.tags, featured: post.featured, pinned: post.pinned,
+      sort_order: nextPost.sort_order + 1,
+      is_scheduled: post.is_scheduled, scheduled_datetime: post.scheduled_datetime,
     });
-    
     if (response.success) {
-      const postsResult = await getPublishedPosts(100, 0);
-      if (postsResult.success) {
-        setPosts(postsResult.posts);
-      }
+      const r = await getPublishedPosts(100, 0);
+      if (r.success) setPosts(r.posts);
     } else {
-      alert(response.error || 'Failed to reorder post');
+      addToast(response.error || 'Failed to reorder post.', 'error');
     }
   };
 
+  // ---- Render states ----
 
-
-  // Render loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Loading posts...</p>
+      <div className="flex items-center justify-center min-h-64">
+        <div className="flex flex-col items-center gap-3 text-gray-500">
+          <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm">Loading posts…</p>
+        </div>
       </div>
     );
   }
 
-  // If editor is open, render the editor
   if (showEditor) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">
-          {editingPost ? 'Edit Post' : 'Create New Post'}
-        </h1>
-        {visitorSession && !editingPost && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Posting as:</strong> {visitorSession.name} ({visitorSession.email})
-            </p>
-          </div>
-        )}
+      <div className="max-w-4xl mx-auto space-y-4">
+        {/* Breadcrumb / context header */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {editingPost ? 'Edit Post' : 'New Post'}
+          </h1>
+          {visitorSession && !editingPost && (
+            <span className="text-sm text-gray-500">
+              Posting as <strong>{visitorSession.name}</strong>
+            </span>
+          )}
+        </div>
         <PatchedRichBlogEditor
           initialTitle={editingPost?.title || ''}
           initialContent={editingPost?.content || ''}
@@ -589,77 +428,79 @@ const BlogSection = () => {
           initialPinned={editingPost?.pinned || false}
           initialSortOrder={editingPost?.sort_order || 0}
           onSave={handleSavePost}
-          onCancel={() => {
-            setShowEditor(false);
-            setEditingPost(null);
-          }}
+          onCancel={() => { setShowEditor(false); setEditingPost(null); }}
         />
+        <ToastContainer toasts={toasts} />
       </div>
     );
   }
 
-  // Default view: show list of posts
+  // ---- Main list view ----
+
+  const currentList = showArchived ? archivedPosts : showDrafts ? drafts : posts;
+
   return (
     <div className="space-y-6">
+      <ToastContainer toasts={toasts} />
+
       {/* Visitor registration modal */}
       {showVisitorForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
             <div className="flex justify-between items-center p-6 border-b">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <User className="text-blue-600" /> Join to Post
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <User size={20} className="text-blue-600" /> Join to Post
               </h2>
               <button
                 onClick={() => setShowVisitorForm(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleVisitorFormSubmit} className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Name *</label>
-                  <input
-                    type="text"
-                    value={visitorData.name}
-                    onChange={(e) => setVisitorData({ ...visitorData, name: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="Enter your name"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                  <input
-                    type="email"
-                    value={visitorData.email}
-                    onChange={(e) => setVisitorData({ ...visitorData, email: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-colors"
-                    placeholder="your-email@domain.com"
-                    required
-                  />
-                </div>
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <p className="text-sm text-blue-800">
-                    <strong>Why we need this:</strong> Your name will be credited on your blog posts. We use your email to recognize you on return visits.
-                  </p>
-                </div>
+            <form onSubmit={handleVisitorFormSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Name *</label>
+                <input
+                  type="text"
+                  value={visitorData.name}
+                  onChange={(e) => setVisitorData({ ...visitorData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl
+                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Your name"
+                  required
+                />
               </div>
-              <div className="flex gap-3 mt-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email *</label>
+                <input
+                  type="email"
+                  value={visitorData.email}
+                  onChange={(e) => setVisitorData({ ...visitorData, email: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl
+                    focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500 bg-blue-50 rounded-lg px-3 py-2">
+                Your name will appear on your posts. We use your email to recognise you on return visits.
+              </p>
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowVisitorForm(false)}
-                  className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-colors"
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-400 font-semibold transition-colors"
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700
+                    disabled:bg-gray-300 font-medium transition-colors"
                 >
-                  {isSubmitting ? 'Creating...' : 'Continue'}
+                  {isSubmitting ? 'Joining…' : 'Continue'}
                 </button>
               </div>
             </form>
@@ -667,240 +508,198 @@ const BlogSection = () => {
         </div>
       )}
 
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Blog Posts</h1>
-        <div className="flex items-center gap-4">
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <h1 className="text-3xl font-bold text-gray-900">Blog Posts</h1>
+        <div className="flex items-center gap-2 flex-wrap">
           {visitorSession && (
-            <span className="text-sm text-gray-600">
-              Signed in as: <strong>{visitorSession.name}</strong>
+            <span className="text-sm text-gray-500 mr-1">
+              Signed in as <strong>{visitorSession.name}</strong>
             </span>
           )}
           <button
-            onClick={() => {
-              setShowDrafts(!showDrafts);
-              setShowArchived(false);
-            }}
-            className={`px-4 py-2 rounded transition ${
+            onClick={() => { setShowDrafts(!showDrafts); setShowArchived(false); }}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
               showDrafts
-                ? 'bg-gray-600 text-white hover:bg-gray-700'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-gray-700 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {showDrafts ? 'Show Published' : 'Show My Drafts'}
+            {showDrafts ? 'View Published' : 'My Drafts'}
           </button>
           <button
-            onClick={() => {
-              setShowArchived(!showArchived);
-              setShowDrafts(false);
-            }}
-            className={`px-4 py-2 rounded transition ${
+            onClick={() => { setShowArchived(!showArchived); setShowDrafts(false); }}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
               showArchived
-                ? 'bg-orange-600 text-white hover:bg-orange-700'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {showArchived ? 'Show Published' : 'Show Archived'}
+            {showArchived ? 'View Published' : 'Archived'}
           </button>
           <button
             onClick={handleCreateNew}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-4 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
           >
-            New Post
+            + New Post
           </button>
         </div>
       </div>
-      
-      {showArchived ? (
-        <div className="space-y-4">
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <p className="text-orange-800 font-semibold">Archived Posts</p>
-            <p className="text-orange-600 text-sm mt-1">
-              These posts are hidden from the public feed but not deleted
-            </p>
-          </div>
-          {archivedPosts.length === 0 ? (
-            <p className="text-gray-600">No archived posts found.</p>
-          ) : (
-            <ul className="space-y-4">
-              {archivedPosts.map((post) => (
-                <li key={post.id} className="bg-white shadow p-4 rounded-lg border-l-4 border-orange-400">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h2 className="text-xl font-bold mb-1">
-                        {post.title}
-                        <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                          ARCHIVED
-                        </span>
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleUnarchive(post)}
-                        className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-                      >
-                        Unarchive
-                      </button>
-                      <button
-                        onClick={() => handleEdit(post)}
-                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(post)}
-                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+
+      {/* Status banners */}
+      {showArchived && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+          <p className="text-sm font-semibold text-orange-800">Archived Posts</p>
+          <p className="text-xs text-orange-600 mt-0.5">Hidden from the public feed but not deleted</p>
         </div>
-      ) : showDrafts ? (
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 font-semibold">My Drafts</p>
-            <p className="text-blue-600 text-sm mt-1">
-              {visitorSession 
-                ? `Showing draft posts saved by ${visitorSession.name}` 
-                : 'Showing all draft posts (admin view)'}
-            </p>
-          </div>
-          {drafts.length === 0 ? (
-            <p className="text-gray-600">No drafts found. Save a post as draft to see it here.</p>
-          ) : (
-            <ul className="space-y-4">
-              {drafts.map((post) => (
-                <li key={post.id} className="bg-white shadow p-4 rounded-lg border-l-4 border-yellow-400">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h2 className="text-xl font-bold mb-1">
-                        {post.title}
-                        <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                          DRAFT
-                        </span>
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(post)}
-                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(post)}
-                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ) : loadError ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-semibold">Failed to load blog posts</p>
-          <p className="text-red-600 text-sm mt-1">{loadError}</p>
-          <p className="text-red-600 text-sm mt-2">
-            This is usually caused by CORS configuration. Check the browser console for details.
+      )}
+      {showDrafts && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <p className="text-sm font-semibold text-blue-800">My Drafts</p>
+          <p className="text-xs text-blue-600 mt-0.5">
+            {visitorSession ? `Drafts by ${visitorSession.name}` : 'All drafts (admin view)'}
           </p>
         </div>
-      ) : posts.length === 0 ? (
-        <p>No blog posts yet. Click "New Post" to create one.</p>
-      ) : (
-        <ul className="space-y-4">
-          {posts.map((post, index) => (
-            <li key={post.id} className="bg-white shadow p-4 rounded-lg">
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <div className="flex items-start gap-2">
-                    <div className="flex flex-col gap-1 mt-1">
+      )}
+
+      {/* Error state */}
+      {!showArchived && !showDrafts && loadError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-sm font-semibold text-red-800">Failed to load posts</p>
+          <p className="text-xs text-red-600 mt-1">{loadError}</p>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {currentList.length === 0 && !loadError && (
+        <div className="text-center py-16 text-gray-400">
+          <p className="text-lg font-medium">
+            {showArchived ? 'No archived posts.' : showDrafts ? 'No drafts saved yet.' : 'No posts yet.'}
+          </p>
+          {!showArchived && !showDrafts && (
+            <button
+              onClick={handleCreateNew}
+              className="mt-4 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              Write your first post
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Post list */}
+      {currentList.length > 0 && (
+        <ul className="space-y-3">
+          {currentList.map((post, index) => (
+            <li
+              key={post.id}
+              className={`bg-white rounded-xl shadow-sm border transition-shadow hover:shadow-md ${
+                showArchived ? 'border-l-4 border-l-orange-400' :
+                showDrafts   ? 'border-l-4 border-l-yellow-400' :
+                'border-gray-100'
+              }`}
+            >
+              <div className="flex justify-between items-start gap-4 p-4">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  {/* Reorder controls (published list only) */}
+                  {!showArchived && !showDrafts && (
+                    <div className="flex flex-col gap-0.5 mt-0.5 flex-shrink-0">
                       <button
                         onClick={() => handleMoveUp(post, index)}
                         disabled={index === 0}
-                        className="p-1 text-gray-600 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                        className="p-0.5 text-gray-400 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
                         title="Move up"
                       >
-                        <ChevronUp size={16} />
+                        <ChevronUp size={14} />
                       </button>
                       <button
                         onClick={() => handleMoveDown(post, index)}
                         disabled={index === posts.length - 1}
-                        className="p-1 text-gray-600 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed"
+                        className="p-0.5 text-gray-400 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
                         title="Move down"
                       >
-                        <ChevronDown size={16} />
+                        <ChevronDown size={14} />
                       </button>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold mb-1">
-                        <Link to={`/blog/${post.id}`} className="text-blue-600 hover:underline">
-                          {post.title}
-                        </Link>
-                        {post.pinned && (
-                          <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                            PINNED
-                          </span>
-                        )}
-                        {post.featured && (
-                          <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                            FEATURED
-                          </span>
-                        )}
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        {new Date(post.created_at).toLocaleDateString()} • {post.author || 'Anonymous'}
-                        {post.sort_order !== 0 && (
-                          <span className="ml-2 text-xs text-gray-400">
-                            (Order: {post.sort_order})
-                          </span>
-                        )}
-                      </p>
-                      {post.excerpt && (
-                        <div
-                          className="mt-2 text-gray-700"
-                          dangerouslySetInnerHTML={{ __html: post.excerpt }}
-                        />
+                  )}
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <Link
+                        to={`/blog/${post.id}`}
+                        className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate"
+                      >
+                        {post.title}
+                      </Link>
+                      {post.pinned && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-md font-medium">
+                          Pinned
+                        </span>
+                      )}
+                      {post.featured && (
+                        <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-md font-medium">
+                          Featured
+                        </span>
+                      )}
+                      {showDrafts && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-md font-medium">
+                          Draft
+                        </span>
+                      )}
+                      {showArchived && (
+                        <span className="text-xs bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded-md font-medium">
+                          Archived
+                        </span>
                       )}
                     </div>
+                    <p className="text-xs text-gray-400">
+                      {new Date(post.created_at).toLocaleDateString()} · {post.author || 'Anonymous'}
+                    </p>
+                    {post.excerpt && (
+                      <div
+                        className="mt-1.5 text-sm text-gray-600 line-clamp-2"
+                        dangerouslySetInnerHTML={{ __html: post.excerpt }}
+                      />
+                    )}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <SocialShareButtons
-                    url={`${window.location.origin}/blog/${post.id}`}
-                    title={post.title}
-                    description={post.excerpt || ''}
-                    size="sm"
-                    showLabels={false}
-                  />
-                  <button
-                    onClick={() => handleArchive(post)}
-                    className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600"
-                  >
-                    Archive
-                  </button>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {!showArchived && !showDrafts && (
+                    <SocialShareButtons
+                      url={`${window.location.origin}/blog/${post.id}`}
+                      title={post.title}
+                      description={post.excerpt || ''}
+                      size="sm"
+                      showLabels={false}
+                    />
+                  )}
+                  {showArchived && (
+                    <button
+                      onClick={() => handleUnarchive(post)}
+                      className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                    >
+                      Restore
+                    </button>
+                  )}
+                  {!showArchived && (
+                    <button
+                      onClick={() => handleArchive(post)}
+                      className="px-2.5 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
+                    >
+                      Archive
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(post)}
-                    className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                    className="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(post)}
-                    className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                    className="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                   >
                     Delete
                   </button>
