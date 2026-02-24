@@ -11,6 +11,9 @@ importers:
       '@sendgrid/mail':
         specifier: ^8.1.6
         version: 8.1.6
+      '@tiptap/extension-bubble-menu':
+        specifier: ^3.4.6
+        version: 3.11.0(@tiptap/core@3.11.0(@tiptap/pm@3.11.0))(@tiptap/pm@3.11.0)
       '@tiptap/extension-color':
         specifier: ^3.4.6
         version: 3.11.0(@tiptap/extension-text-style@3.11.0(@tiptap/core@3.11.0(@tiptap/pm@3.11.0)))
@@ -7007,16 +7010,13 @@ snapshots:
   '@floating-ui/core@1.7.3':
     dependencies:
       '@floating-ui/utils': 0.2.10
-    optional: true
 
   '@floating-ui/dom@1.7.4':
     dependencies:
       '@floating-ui/core': 1.7.3
       '@floating-ui/utils': 0.2.10
-    optional: true
 
-  '@floating-ui/utils@0.2.10':
-    optional: true
+  '@floating-ui/utils@0.2.10': {}
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
@@ -7433,7 +7433,6 @@ snapshots:
       '@floating-ui/dom': 1.7.4
       '@tiptap/core': 3.11.0(@tiptap/pm@3.11.0)
       '@tiptap/pm': 3.11.0
-    optional: true
 
   '@tiptap/extension-bullet-list@3.11.0(@tiptap/extension-list@3.11.0(@tiptap/core@3.11.0(@tiptap/pm@3.11.0))(@tiptap/pm@3.11.0))':
     dependencies:

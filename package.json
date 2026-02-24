@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "@tiptap/extension-bubble-menu": "^3.4.6",
     "@tiptap/extension-color": "^3.4.6",
     "@tiptap/extension-heading": "^3.4.6",
     "@tiptap/extension-image": "^3.4.6",
