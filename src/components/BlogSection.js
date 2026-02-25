@@ -160,7 +160,7 @@ const BlogSection = () => {
             if (!(asset.tags || '').includes('status:draft')) return false;
             const submittedBy = (asset.submitted_by || '').trim();
             if (submittedBy.includes('@')) return true;
-            if (visitorSession) return submittedBy === visitorSession.name.trim();
+            if (visitorSession) return submittedBy === (visitorSession.name || visitorSession.email || '').trim();
             return true;
           })
           .map(asset => ({
@@ -208,7 +208,11 @@ const BlogSection = () => {
       };
       const result = await createVisitorSession(sessionData);
       if (result.success) {
-        const session = result.session || result;
+        // Merge API response with form data so `name` is always present
+        // even if the API response structure doesn't include it.
+        const session = { ...(result.session || result) };
+        if (!session.name && visitorData.name) session.name = visitorData.name.trim();
+        if (!session.email && visitorData.email) session.email = visitorData.email.trim();
         localStorage.setItem('visitor_session', JSON.stringify(session));
         setVisitorSession(session);
         setShowVisitorForm(false);
