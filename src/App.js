@@ -103,7 +103,6 @@ const AppContent = () => {
   const navigationItems = [
     { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'blog', label: 'Blog', icon: FileText },
-    { id: 'calendar', label: 'Events', icon: Calendar },
     { id: 'admin', label: 'Admin', icon: Shield },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
