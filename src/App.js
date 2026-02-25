@@ -103,7 +103,6 @@ const AppContent = () => {
   const navigationItems = [
     { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'blog', label: 'Blog', icon: FileText },
-    { id: 'newsfeed', label: 'News Feed', icon: MessageSquare },
     { id: 'calendar', label: 'Events', icon: Calendar },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'admin', label: 'Admin', icon: Shield },
