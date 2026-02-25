@@ -104,9 +104,7 @@ const AppContent = () => {
     { id: 'home', label: 'Home', icon: HomeIcon },
     { id: 'blog', label: 'Blog', icon: FileText },
     { id: 'calendar', label: 'Events', icon: Calendar },
-    { id: 'email', label: 'Email', icon: Mail },
     { id: 'admin', label: 'Admin', icon: Shield },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
