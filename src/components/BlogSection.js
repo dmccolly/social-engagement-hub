@@ -661,7 +661,7 @@ const BlogSection = () => {
                     </p>
                     {post.excerpt && (
                       <div
-                        className="mt-1.5 text-sm text-gray-600 line-clamp-2"
+                        className="mt-1.5 text-sm text-gray-600 line-clamp-2 [&_strong]:font-bold [&_b]:font-bold [&_em]:italic [&_i]:italic [&_a]:text-blue-600 [&_a]:underline [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_h4]:font-bold [&_h5]:font-bold [&_h6]:font-bold"
                         dangerouslySetInnerHTML={{ __html: post.excerpt }}
                       />
                     )}
