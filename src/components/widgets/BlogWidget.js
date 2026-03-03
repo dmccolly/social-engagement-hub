@@ -135,57 +135,45 @@ const BlogWidget = ({ settings = {} }) => {
   };
 
   /**
-   * Extract the first paragraph from HTML content
-   * This ensures we show the actual first paragraph, not random text
+   * Extract the first paragraph from HTML content as formatted HTML.
+   * Returns a dangerouslySetInnerHTML-compatible object.
+   * Media elements (img, iframe, video, audio) are stripped so only
+   * text and inline formatting (bold, italic, colour, etc.) show.
    */
-  const createExcerpt = (content, maxLength = 200) => {
-    if (!content) return '';
-    
+  const createHtmlExcerpt = (content, maxChars = 300) => {
+    if (!content) return { __html: '' };
+
     try {
       const tmp = document.createElement('div');
       tmp.innerHTML = content;
-      
-      // Find all <p> tags and get the first one with actual TEXT content
-      // Skip paragraphs that only contain iframes, videos, or other embedded media
-      const allParagraphs = tmp.querySelectorAll('p');
-      for (let i = 0; i < allParagraphs.length; i++) {
-        const para = allParagraphs[i];
-        
-        // Check if this paragraph contains only iframes/videos
-        const hasIframe = para.querySelector('iframe');
-        const hasVideo = para.querySelector('video');
-        
-        // Get the text content
-        const text = para.textContent || para.innerText || '';
-        const trimmedText = text.trim();
-        
-        // Skip if:
-        // 1. Paragraph is empty
-        // 2. Paragraph only contains iframe/video (no meaningful text)
-        if (trimmedText.length === 0) continue;
-        if ((hasIframe || hasVideo) && trimmedText.length < 20) continue;
-        
-        // Found the first paragraph with actual text content!
-        if (trimmedText.length <= maxLength) return trimmedText;
-        return trimmedText.substring(0, maxLength).trim() + '...';
+
+      // Find the first block that has meaningful text
+      const candidates = tmp.querySelectorAll('p, li, h2, h3, h4');
+      for (const el of candidates) {
+        const clone = el.cloneNode(true);
+        // Remove embedded media — we only want text content in the preview
+        clone.querySelectorAll('img, iframe, video, audio').forEach(m => m.remove());
+        const text = (clone.textContent || '').trim();
+        if (text.length < 10) continue;
+
+        if (text.length > maxChars) {
+          // Too long — fall back to truncated plain text
+          return { __html: text.substring(0, maxChars).trim() + '…' };
+        }
+        // Return inner HTML of the element, preserving inline formatting
+        return { __html: clone.innerHTML };
       }
-      
-      // Fallback: get all text content and find first meaningful paragraph
-      const allText = tmp.textContent || tmp.innerText || '';
-      const lines = allText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-      
-      if (lines.length > 0) {
-        const firstLine = lines[0];
-        if (firstLine.length <= maxLength) return firstLine;
-        return firstLine.substring(0, maxLength).trim() + '...';
-      }
-      
-      return '';
+
+      // Fallback: plain text from the whole document
+      const allText = (tmp.textContent || '').trim();
+      return {
+        __html: allText.length > maxChars
+          ? allText.substring(0, maxChars).trim() + '…'
+          : allText,
+      };
     } catch (e) {
       console.error('Error creating excerpt:', e);
-      const text = stripHtml(content);
-      if (text.length <= maxLength) return text;
-      return text.substring(0, maxLength).trim() + '...';
+      return { __html: stripHtml(content).substring(0, maxChars) };
     }
   };
 
@@ -267,7 +255,7 @@ const BlogWidget = ({ settings = {} }) => {
           {posts.map((post) => {
             // Get preview media (video thumbnail or image)
             const previewUrl = settings.showImages !== false ? getPreviewMedia(post.description) : null;
-            const excerpt = createExcerpt(post.description, 500);
+            const excerpt = createHtmlExcerpt(post.description, 300);
             const date = new Date(post.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -316,9 +304,10 @@ const BlogWidget = ({ settings = {} }) => {
                 <p className="text-sm text-gray-500 mb-3">
                   {post.submitted_by || 'Unknown'} • {date}
                 </p>
-                <p className="text-gray-600 mb-3">
-                  {excerpt}
-                </p>
+                <div
+                  className="text-gray-600 mb-3 text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={excerpt}
+                />
                 <a 
                   href={`${canonicalBase}/blog-post.html?id=${post.id}`}
                   target="_blank"

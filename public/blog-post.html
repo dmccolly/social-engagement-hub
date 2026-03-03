@@ -116,7 +116,7 @@
             margin-bottom: 15px;
             font-weight: 700;
             line-height: 1.3;
-            color: #111827;
+            /* No color override — let inline style="color:..." from the editor win */
         }
         
         .post-content h2 {
@@ -293,6 +293,31 @@
         .post-content iframe {
             pointer-events: auto !important;
         }
+
+        /* Responsive YouTube / video iframes (Tiptap editor-youtube class + data-youtube-video wrapper) */
+        .post-content div[data-youtube-video] {
+            position: relative;
+            width: 100%;
+            margin: 1.25em 0;
+        }
+        .post-content div[data-youtube-video] iframe,
+        .post-content iframe.editor-youtube {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            border: 0;
+        }
+
+        /* Text alignment from Tiptap inline styles passes through natively;
+           ensure nothing in this sheet overrides it */
+        .post-content [style*="text-align: center"],
+        .post-content [style*="text-align:center"] { text-align: center; }
+        .post-content [style*="text-align: right"],
+        .post-content [style*="text-align:right"]  { text-align: right; }
+        .post-content [style*="text-align: left"],
+        .post-content [style*="text-align:left"]   { text-align: left; }
         
         /* Preserve XANO HTML formatting */
         .post-content font {

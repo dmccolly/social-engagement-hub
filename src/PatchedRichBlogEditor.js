@@ -1,170 +1,171 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import RichTextEditor from './components/shared/RichTextEditor';
 
 /**
- * PatchedRichBlogEditor provides a rich blog-post editing
- * experience with full formatting toolbar and Cloudinary image uploads.
- * 
- * This component uses the shared RichTextEditor which includes a complete
- * formatting toolbar with built-in Cloudinary image upload functionality.
- * Images are inserted at the cursor position with full control options
- * (resize, position, delete).
+ * BlogPostEditor — wrapper around RichTextEditor for blog post creation/editing.
  *
- * To persist the result, supply onSave and onCancel callbacks.
+ * Improvements over the previous version:
+ *  - Live word count + estimated read time
+ *  - Unsaved-changes indicator
+ *  - Confirmation before cancelling with unsaved changes
+ *  - Cleaner action bar layout
  */
-const PatchedRichBlogEditor = ({ 
-  onSave, 
-  onCancel, 
-  initialTitle = '', 
+const PatchedRichBlogEditor = ({
+  onSave,
+  onCancel,
+  initialTitle = '',
   initialContent = '',
   initialFeatured = false,
   initialPinned = false,
-  initialSortOrder = 0
+  initialSortOrder = 0,
 }) => {
-  // Title and content state
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [scheduledDateTime, setScheduledDateTime] = useState('');
-  
   const [featured, setFeatured] = useState(initialFeatured);
   const [pinned, setPinned] = useState(initialPinned);
   const [sortOrder, setSortOrder] = useState(initialSortOrder);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduledDateTime, setScheduledDateTime] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
 
-  /**
-   * Handle save as draft
-   */
-  const handleSaveAsDraft = () => {
-    if (onSave) {
-      onSave({
-        title: title.trim(),
-        content: content.trim(),
-        status: 'draft',
-        scheduled_datetime: null,
-        featured,
-        pinned,
-        sort_order: sortOrder,
-      });
-    }
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+    setIsDirty(true);
   };
 
-  /**
-   * Handle publish now
-   */
-  const handlePublishNow = () => {
-    if (onSave) {
-      onSave({
-        title: title.trim(),
-        content: content.trim(),
-        status: 'published',
-        scheduled_datetime: null,
-        featured,
-        pinned,
-        sort_order: sortOrder,
-      });
-    }
-  };
+  const handleContentChange = useCallback((html) => {
+    setContent(html);
+    setIsDirty(true);
+  }, []);
 
-  /**
-   * Handle schedule post
-   */
+  // Word count: strip HTML tags then count whitespace-separated tokens
+  const wordCount = content
+    ? content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length
+    : 0;
+
+  const canSave = title.trim().length > 0 && content.replace(/<[^>]+>/g, '').trim().length > 0;
+
+  const buildPayload = (status, scheduled_datetime = null) => ({
+    title: title.trim(),
+    content: content.trim(),
+    status,
+    scheduled_datetime,
+    featured,
+    pinned,
+    sort_order: sortOrder,
+  });
+
+  const handleSaveAsDraft = () => { if (onSave) onSave(buildPayload('draft')); };
+  const handlePublishNow  = () => { if (onSave) onSave(buildPayload('published')); };
+
   const handleSchedule = () => {
-    if (!scheduledDateTime) {
-      alert('Please select a date and time to schedule the post.');
-      return;
-    }
-    if (onSave) {
-      onSave({
-        title: title.trim(),
-        content: content.trim(),
-        status: 'scheduled',
-        scheduled_datetime: scheduledDateTime,
-        featured,
-        pinned,
-        sort_order: sortOrder,
-      });
-    }
+    if (!scheduledDateTime) return;
+    if (onSave) onSave(buildPayload('scheduled', scheduledDateTime));
     setShowScheduleModal(false);
     setScheduledDateTime('');
   };
 
+  const handleCancel = () => {
+    if (isDirty && !window.confirm('You have unsaved changes. Leave without saving?')) return;
+    onCancel?.();
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Title Input */}
+    <div className="space-y-5">
+
+      {/* Title row */}
       <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="post-title">
-          Post Title
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-sm font-medium text-gray-700" htmlFor="post-title">
+            Post Title
+          </label>
+          {isDirty && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+              Unsaved changes
+            </span>
+          )}
+        </div>
         <input
           id="post-title"
           type="text"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter post title..."
-          className="w-full px-4 py-3 text-2xl font-bold border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={handleTitleChange}
+          placeholder="Give your post a title…"
+          className="w-full px-4 py-3 text-xl font-bold border border-gray-300 rounded-xl
+            focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-300"
         />
       </div>
 
-      {/* Premium Listing and Ordering Controls */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Post Options</h3>
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
+      {/* Post options */}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          Post Options
+        </p>
+        <div className="flex flex-wrap gap-6 items-center">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={featured}
-              onChange={(e) => setFeatured(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              onChange={(e) => { setFeatured(e.target.checked); setIsDirty(true); }}
+              className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="text-sm font-medium text-gray-700">
-              Premium Listing (Featured)
-            </span>
+            <span className="text-sm text-gray-700 font-medium">Featured (premium listing)</span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={pinned}
-              onChange={(e) => setPinned(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              onChange={(e) => { setPinned(e.target.checked); setIsDirty(true); }}
+              className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="text-sm font-medium text-gray-700">
-              Pin to Top
-            </span>
+            <span className="text-sm text-gray-700 font-medium">Pin to top</span>
           </label>
           <div className="flex items-center gap-2">
             <label htmlFor="sort-order" className="text-sm font-medium text-gray-700">
-              Sort Order:
+              Sort order:
             </label>
             <input
               id="sort-order"
               type="number"
               value={sortOrder}
-              onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
-              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => { setSortOrder(parseInt(e.target.value, 10) || 0); setIsDirty(true); }}
+              className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="0"
             />
-            <span className="text-xs text-gray-500">(lower numbers appear first)</span>
+            <span className="text-xs text-gray-400">(lower = earlier)</span>
           </div>
         </div>
       </div>
 
-      {/* Rich Text Editor for Content */}
+      {/* Editor with word count header */}
       <div>
-        <label className="block text-sm font-medium mb-1">Post Content</label>
-        <RichTextEditor 
-          value={content} 
-          onChange={setContent}
-          placeholder="Write your blog post content here..."
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-sm font-medium text-gray-700">Content</label>
+          <span className="text-xs text-gray-400">
+            {wordCount} {wordCount === 1 ? 'word' : 'words'}
+            {wordCount > 0 && (
+              <span className="ml-2 text-gray-300">
+                ~{Math.max(1, Math.ceil(wordCount / 200))} min read
+              </span>
+            )}
+          </span>
+        </div>
+        <RichTextEditor
+          value={content}
+          onChange={handleContentChange}
+          placeholder="Write your post here…"
         />
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 justify-between items-center">
+      {/* Action bar */}
+      <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
         <button
           type="button"
-          onClick={onCancel}
-          className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-600"
+          onClick={handleCancel}
+          className="px-4 py-2.5 text-sm font-medium rounded-xl border border-gray-300
+            text-gray-700 hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
@@ -172,69 +173,72 @@ const PatchedRichBlogEditor = ({
           <button
             type="button"
             onClick={handleSaveAsDraft}
-            disabled={!title.trim() || !content.trim()}
-            className="px-4 py-2 rounded bg-gray-400 text-white hover:bg-gray-500 disabled:opacity-50"
-            title="Save as draft (not visible to public)"
+            disabled={!canSave}
+            title="Save without publishing — only visible to you"
+            className="px-4 py-2.5 text-sm font-medium rounded-xl border border-gray-300
+              text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Save as Draft
-          </button>
-          <button
-            type="button"
-            onClick={handlePublishNow}
-            disabled={!title.trim() || !content.trim()}
-            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-            title="Publish immediately to live site"
-          >
-            Publish Now
+            Save Draft
           </button>
           <button
             type="button"
             onClick={() => setShowScheduleModal(true)}
-            disabled={!title.trim() || !content.trim()}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-            title="Schedule for future publication"
+            disabled={!canSave}
+            title="Choose a future date and time to publish"
+            className="px-4 py-2.5 text-sm font-medium rounded-xl border border-blue-300
+              text-blue-700 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Schedule...
+            Schedule…
+          </button>
+          <button
+            type="button"
+            onClick={handlePublishNow}
+            disabled={!canSave}
+            title="Publish immediately"
+            className="px-4 py-2.5 text-sm font-medium rounded-xl bg-green-600 text-white
+              hover:bg-green-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Publish Now
           </button>
         </div>
       </div>
 
-      {/* Schedule Modal */}
+      {/* Schedule modal */}
       {showScheduleModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Schedule Post</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Publish Date & Time
-                </label>
-                <input
-                  type="datetime-local"
-                  value={scheduledDateTime}
-                  onChange={(e) => setScheduledDateTime(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min={new Date().toISOString().slice(0, 16)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Post will be published automatically at this time (your local timezone)
-                </p>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => { setShowScheduleModal(false); setScheduledDateTime(''); }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSchedule}
-                  disabled={!scheduledDateTime}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Schedule Post
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-base font-semibold text-gray-900">Schedule Post</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Publish date &amp; time
+              </label>
+              <input
+                type="datetime-local"
+                value={scheduledDateTime}
+                onChange={(e) => setScheduledDateTime(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+                  focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">Uses your local timezone.</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => { setShowScheduleModal(false); setScheduledDateTime(''); }}
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSchedule}
+                disabled={!scheduledDateTime}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                  disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Schedule
+              </button>
             </div>
           </div>
         </div>

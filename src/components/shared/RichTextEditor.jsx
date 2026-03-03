@@ -1,1347 +1,887 @@
-// Rich Text Editor Component for News Feed
-// Supports: Text formatting, links, images, videos (YouTube/Vimeo), and more
+// Rich Text Editor — powered by Tiptap (ProseMirror-based)
+// Replaces the deprecated document.execCommand() contentEditable approach.
 
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/extension-bubble-menu';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
+import Youtube from '@tiptap/extension-youtube';
+import Heading from '@tiptap/extension-heading';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
 import {
-  Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon,
-  Video, List, ListOrdered, Quote, Code, AlignLeft,
-  AlignCenter, AlignRight, X, Check, Youtube, Film, Type, Palette, Music
+  Bold, Italic, Underline as UnderlineIcon, Strikethrough,
+  Link as LinkIcon, Image as ImageIcon, Video, Music,
+  List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight,
+  X, Type, Heading1, Heading2, Heading3,
+  Code, Undo, Redo,
 } from 'lucide-react';
 
-const RichTextEditor = forwardRef(({ value, onChange, placeholder = "What's on your mind?" }, ref) => {
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [showAudioModal, setShowAudioModal] = useState(false);
+// ------------------------------------------------------------------
+// Toolbar button helper
+// ------------------------------------------------------------------
+const Btn = ({ onClick, active, title, disabled, children }) => (
+  <button
+    type="button"
+    onMouseDown={(e) => e.preventDefault()} // keep editor focus
+    onClick={onClick}
+    title={title}
+    disabled={disabled}
+    className={`p-1.5 rounded transition-colors text-sm font-medium
+      ${active
+        ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-300'
+        : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'}
+      ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+  >
+    {children}
+  </button>
+);
+
+const Divider = () => <div className="w-px h-5 bg-gray-300 mx-1 self-center" />;
+
+// ------------------------------------------------------------------
+// Common swatches shown in colour pickers
+// ------------------------------------------------------------------
+const SWATCHES = [
+  '#000000', '#374151', '#6B7280', '#9CA3AF', '#D1D5DB', '#FFFFFF',
+  '#EF4444', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6',
+  '#EC4899', '#14B8A6', '#0EA5E9', '#A855F7',
+];
+
+// ------------------------------------------------------------------
+// Shared modal wrapper
+// ------------------------------------------------------------------
+const Modal = ({ title, onClose, children }) => (
+  <div
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+    onClick={(e) => e.target === e.currentTarget && onClose()}
+  >
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+      <div className="flex items-center justify-between px-5 py-4 border-b">
+        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <X size={18} />
+        </button>
+      </div>
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  </div>
+);
+
+const Field = ({ label, hint, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    {children}
+    {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+  </div>
+);
+
+const TextInput = (props) => (
+  <input
+    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg
+      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    {...props}
+  />
+);
+
+const ModalActions = ({ onCancel, onConfirm, confirmLabel = 'Insert', confirmDisabled }) => (
+  <div className="flex justify-end gap-2 pt-2">
+    <button
+      type="button"
+      onClick={onCancel}
+      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition"
+    >
+      Cancel
+    </button>
+    <button
+      type="button"
+      onClick={onConfirm}
+      disabled={confirmDisabled}
+      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700
+        disabled:opacity-50 disabled:cursor-not-allowed transition"
+    >
+      {confirmLabel}
+    </button>
+  </div>
+);
+
+// ------------------------------------------------------------------
+// Colour picker dropdown
+// ------------------------------------------------------------------
+const ColorPicker = ({ value, onChange, onClose }) => (
+  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-50 w-52">
+    <div className="grid grid-cols-8 gap-1 mb-2">
+      {SWATCHES.map(c => (
+        <button
+          key={c}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { onChange(c); onClose(); }}
+          className="w-5 h-5 rounded border border-gray-300 hover:scale-110 transition"
+          style={{ backgroundColor: c }}
+          title={c}
+        />
+      ))}
+    </div>
+    <input
+      type="color"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full h-7 cursor-pointer rounded border border-gray-300"
+    />
+  </div>
+);
+
+// ------------------------------------------------------------------
+// Main RichTextEditor component
+// ------------------------------------------------------------------
+const RichTextEditor = forwardRef(({
+  value,
+  onChange,
+  placeholder = "What's on your mind?",
+}, ref) => {
+  // Modal visibility
+  const [showLink, setShowLink] = useState(false);
+  const [showImage, setShowImage] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const [showAudio, setShowAudio] = useState(false);
+
+  // Link modal state
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
+
+  // Image modal state
   const [imageUrl, setImageUrl] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const [selectedFontFamily, setSelectedFontFamily] = useState('');
-  const [selectedFontSize, setSelectedFontSize] = useState('');
-  const [selectedTextColor, setSelectedTextColor] = useState('#000000');
-  const [selectedBgColor, setSelectedBgColor] = useState('#ffffff');
-  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
-  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
-  const [selectedImageId, setSelectedImageId] = useState(null);
-  const [imageUploadMode, setImageUploadMode] = useState('url');
+  const [imageMode, setImageMode] = useState('url'); // 'url' | 'upload'
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [videoUploadMode, setVideoUploadMode] = useState('youtube');
-  const editorRef = useRef(null);
+
+  // Video modal state
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoMode, setVideoMode] = useState('youtube'); // 'youtube' | 'file'
+
+  // Audio modal state
+  const [audioUrl, setAudioUrl] = useState('');
+
+  // Colour picker
+  const [textColor, setTextColor] = useState('#000000');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
   const fileInputRef = useRef(null);
-  const throttleFrameRef = useRef(null);
+  const isInternalChange = useRef(false);
 
+  // ------------------------------------------------------------------
+  // Tiptap editor instance
+  // ------------------------------------------------------------------
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: false }),
+      Heading.configure({ levels: [1, 2, 3] }),
+      Underline,
+      Image.configure({ allowBase64: false, HTMLAttributes: { class: 'editor-img' } }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { class: 'rte-link', target: '_blank', rel: 'noopener noreferrer' },
+      }),
+      Youtube.configure({ nocookie: true, HTMLAttributes: { class: 'editor-youtube' } }),
+      Color.configure({ types: [TextStyle.name, 'heading'] }),
+      TextStyle,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    ],
+    content: value || '',
+    onUpdate: ({ editor }) => {
+      isInternalChange.current = true;
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'rte-body focus:outline-none',
+        'data-placeholder': placeholder,
+      },
+    },
+  });
+
+  // Sync value prop into editor when it changes externally
   useEffect(() => {
-    if (editorRef.current && value !== editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = value || '';
+    if (!editor) return;
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
     }
-  }, [value]);
-
-  useEffect(() => {
-    window.selectImage = (imageId) => selectImageInternal(imageId);
-    window.resizeImage = (imageId, size) => resizeImageInternal(imageId, size);
-    window.positionImage = (imageId, position) => positionImageInternal(imageId, position);
-    window.deleteImage = (imageId) => deleteImageInternal(imageId);
-    window.clearImageSelection = () => clearImageSelectionInternal();
-    window.selectMedia = (mediaId) => selectMediaInternal(mediaId);
-    window.resizeMedia = (mediaId, size) => resizeMediaInternal(mediaId, size);
-    window.positionMedia = (mediaId, position) => positionMediaInternal(mediaId, position);
-    window.deleteMedia = (mediaId) => deleteMediaInternal(mediaId);
-    window.clearMediaSelection = () => clearMediaSelectionInternal();
-
-    const handleEditorClick = (e) => {
-      const target = e.target;
-      
-      if (target.tagName === 'IMG' && target.id && target.id.startsWith('img-')) {
-        const imageId = target.id.replace('img-', '');
-        selectImageInternal(imageId);
-        e.stopPropagation();
-        return;
-      }
-      
-      let mediaWrapper = target;
-      while (mediaWrapper && mediaWrapper !== editorRef.current) {
-        if (mediaWrapper.id && mediaWrapper.id.startsWith('media-')) {
-          const mediaId = mediaWrapper.id.replace('media-', '');
-          selectMediaInternal(mediaId);
-          e.stopPropagation();
-          return;
-        }
-        mediaWrapper = mediaWrapper.parentElement;
-      }
-    };
-
-    let draggedElement = null;
-
-    const handleDragStart = (e) => {
-      const target = e.target;
-      if (target.tagName === 'IMG' && target.id && target.id.startsWith('img-')) {
-        draggedElement = target;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', target.outerHTML);
-        target.style.opacity = '0.5';
-      }
-    };
-
-    const handleDragEnd = (e) => {
-      if (draggedElement) {
-        draggedElement.style.opacity = '';
-        draggedElement = null;
-      }
-    };
-
-    const handleDragOver = (e) => {
-      if (draggedElement) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-      }
-    };
-
-    const handleDrop = (e) => {
-      if (!draggedElement) return;
-      
-      e.preventDefault();
-      e.stopPropagation();
-
-      const range = document.caretRangeFromPoint?.(e.clientX, e.clientY) || 
-                    document.caretPositionFromPoint?.(e.clientX, e.clientY);
-      
-      if (range) {
-        const parent = draggedElement.parentNode;
-        draggedElement.remove();
-        
-        try {
-          range.insertNode(draggedElement);
-          handleInput();
-        } catch (error) {
-          console.error('Drop error:', error);
-          if (parent) parent.appendChild(draggedElement);
-        }
-      }
-      
-      draggedElement.style.opacity = '';
-      draggedElement = null;
-    };
-
-    if (editorRef.current) {
-      editorRef.current.addEventListener('click', handleEditorClick);
-      editorRef.current.addEventListener('dragstart', handleDragStart);
-      editorRef.current.addEventListener('dragend', handleDragEnd);
-      editorRef.current.addEventListener('dragover', handleDragOver);
-      editorRef.current.addEventListener('drop', handleDrop);
+    const incoming = value || '';
+    if (incoming !== editor.getHTML()) {
+      editor.commands.setContent(incoming, false);
     }
+  }, [value, editor]);
 
-    return () => {
-      delete window.selectImage;
-      delete window.resizeImage;
-      delete window.positionImage;
-      delete window.deleteImage;
-      delete window.clearImageSelection;
-      delete window.selectMedia;
-      delete window.resizeMedia;
-      delete window.positionMedia;
-      delete window.deleteMedia;
-      delete window.clearMediaSelection;
-      
-      if (editorRef.current) {
-        editorRef.current.removeEventListener('click', handleEditorClick);
-        editorRef.current.removeEventListener('dragstart', handleDragStart);
-        editorRef.current.removeEventListener('dragend', handleDragEnd);
-        editorRef.current.removeEventListener('dragover', handleDragOver);
-        editorRef.current.removeEventListener('drop', handleDrop);
-      }
-    };
-  }, []);
-
-  // Handle content changes with throttling
-  const handleInput = () => {
-    if (editorRef.current) {
-      if (throttleFrameRef.current) {
-        cancelAnimationFrame(throttleFrameRef.current);
-      }
-      throttleFrameRef.current = requestAnimationFrame(() => {
-        onChange(editorRef.current.innerHTML);
-        throttleFrameRef.current = null;
-      });
-    }
-  };
-
-  // Handle Enter key to preserve formatting
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      
-      if (e.shiftKey) {
-        document.execCommand('insertLineBreak');
-      } else {
-        document.execCommand('insertParagraph');
-        
-        // Ensure new block is a paragraph
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          let node = range.startContainer;
-          
-          while (node && node !== editorRef.current && node.nodeType !== 1) {
-            node = node.parentNode;
-          }
-          
-          if (node && node.tagName === 'DIV') {
-            const p = document.createElement('p');
-            while (node.firstChild) {
-              p.appendChild(node.firstChild);
-            }
-            node.parentNode.replaceChild(p, node);
-            
-            const newRange = document.createRange();
-            newRange.setStart(p, 0);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          }
-        }
-      }
-      
-      handleInput();
-    }
-  };
-
-  // Execute formatting command
-  const execCommand = (command, value = null) => {
-    if (editorRef.current) {
-      // Ensure the editor is focused
-      editorRef.current.focus();
-      
-      // For format commands, ensure there's a selection or content
-      const selection = window.getSelection();
-      if (!selection.rangeCount) {
-        // Create a range at the end of the content
-        const range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-      
-      // Execute the command
-      const success = document.execCommand(command, false, value);
-      console.log(`execCommand(${command}, ${value}):`, success);
-      
-      // Update the content
-      handleInput();
-    }
-  };
-
-  // Handle font family change
-  const handleFontFamilyChange = (e) => {
-    const fontFamily = e.target.value;
-    setSelectedFontFamily(fontFamily);
-    if (fontFamily) {
-      execCommand('fontName', fontFamily);
-    }
-  };
-
-  // Handle font size change
-  const handleFontSizeChange = (e) => {
-    const fontSize = e.target.value;
-    setSelectedFontSize(fontSize);
-    if (fontSize) {
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0 && !selection.isCollapsed) {
-        const range = selection.getRangeAt(0);
-        const span = document.createElement('span');
-        span.style.fontSize = fontSize;
-        range.surroundContents(span);
-        handleInput();
-      }
-    }
-  };
-
-  // Handle text color change
-  const handleTextColorChange = (color) => {
-    setSelectedTextColor(color);
-    execCommand('foreColor', color);
-    setShowTextColorPicker(false);
-  };
-
-  // Handle background color change
-  const handleBgColorChange = (color) => {
-    setSelectedBgColor(color);
-    execCommand('backColor', color);
-    setShowBgColorPicker(false);
-  };
-
-  const fontFamilies = [
-    { value: '', label: 'Default Font' },
-    { value: 'Arial, sans-serif', label: 'Arial' },
-    { value: 'Helvetica, sans-serif', label: 'Helvetica' },
-    { value: 'Times New Roman, serif', label: 'Times New Roman' },
-    { value: 'Georgia, serif', label: 'Georgia' },
-    { value: 'Courier New, monospace', label: 'Courier New' },
-    { value: 'Verdana, sans-serif', label: 'Verdana' },
-    { value: 'Trebuchet MS, sans-serif', label: 'Trebuchet MS' },
-    { value: 'Comic Sans MS, cursive', label: 'Comic Sans MS' },
-    { value: 'Impact, sans-serif', label: 'Impact' },
-    { value: 'Palatino, serif', label: 'Palatino' },
-    { value: 'Garamond, serif', label: 'Garamond' },
-  ];
-
-  const fontSizes = [
-    { value: '', label: 'Default Size' },
-    { value: '8px', label: '8px' },
-    { value: '10px', label: '10px' },
-    { value: '12px', label: '12px' },
-    { value: '14px', label: '14px' },
-    { value: '16px', label: '16px' },
-    { value: '18px', label: '18px' },
-    { value: '20px', label: '20px' },
-    { value: '24px', label: '24px' },
-    { value: '28px', label: '28px' },
-    { value: '32px', label: '32px' },
-    { value: '36px', label: '36px' },
-    { value: '48px', label: '48px' },
-    { value: '60px', label: '60px' },
-    { value: '72px', label: '72px' },
-  ];
-
-  const commonColors = [
-    '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF',
-    '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080',
-    '#008000', '#800000', '#808080', '#C0C0C0', '#FFD700',
-  ];
-
-  const ensureFocusAndSelection = () => {
-    if (!editorRef.current) return false;
-    
-    // Ensure the editor is focused
-    editorRef.current.focus();
-    
-    // Ensure there's a selection
-    const selection = window.getSelection();
-    if (!selection.rangeCount) {
-      // Create a range at the end of the content
-      const range = document.createRange();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-    
-    return true;
-  };
-
+  // Expose modal openers via ref (backwards-compatible API)
   useImperativeHandle(ref, () => ({
-    openLinkModal: () => setShowLinkModal(true),
-    openImageModal: () => setShowImageModal(true),
-    openVideoModal: () => setShowVideoModal(true),
-    openAudioModal: () => setShowAudioModal(true),
+    openLinkModal: () => setShowLink(true),
+    openImageModal: () => setShowImage(true),
+    openVideoModal: () => setShowVideo(true),
+    openAudioModal: () => setShowAudio(true),
   }));
 
-  // Insert link
-  const insertLink = () => {
-    if (!linkUrl) return;
-    
+  // ------------------------------------------------------------------
+  // Link insertion
+  // ------------------------------------------------------------------
+  const handleInsertLink = useCallback(() => {
+    if (!linkUrl || !editor) return;
     const url = linkUrl.startsWith('http') ? linkUrl : `https://${linkUrl}`;
-    const text = linkText || url;
-    
-    const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${text}</a>`;
-    
-    // Ensure focus and selection before insert
-    if (ensureFocusAndSelection()) {
-      const success = document.execCommand('insertHTML', false, linkHtml);
-      console.log('insertLink success:', success);
+    const { empty } = editor.state.selection;
+
+    if (!empty) {
+      editor.chain().focus().setLink({ href: url }).run();
+    } else if (linkText) {
+      editor.chain().focus()
+        .insertContent(`<a href="${url}" target="_blank" rel="noopener noreferrer">${linkText}</a> `)
+        .run();
+    } else {
+      editor.chain().focus()
+        .insertContent(`<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a> `)
+        .run();
     }
-    
-    setShowLinkModal(false);
+    setShowLink(false);
     setLinkUrl('');
     setLinkText('');
-    handleInput();
-  };
+  }, [linkUrl, linkText, editor]);
 
-  // Handle file upload to Cloudinary
-  const handleImageFileUpload = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
+  // ------------------------------------------------------------------
+  // Image insertion — URL
+  // ------------------------------------------------------------------
+  const handleInsertImageUrl = useCallback(() => {
+    if (!imageUrl || !editor) return;
+    const src = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
+    editor.chain().focus().setImage({ src }).run();
+    setShowImage(false);
+    setImageUrl('');
+  }, [imageUrl, editor]);
+
+  // ------------------------------------------------------------------
+  // Image insertion — file upload to Cloudinary
+  // ------------------------------------------------------------------
+  const handleImageFileUpload = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
     setIsUploadingImage(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append(
-        'upload_preset',
-        process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'demo-preset'
+      formData.append('upload_preset', process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'demo-preset');
+      const cloud = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'demo-cloud-name';
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloud}/image/upload`,
+        { method: 'POST', body: formData }
       );
-      const cloudName =
-        process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'demo-cloud-name';
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-      const data = await response.json();
-      
-      // Insert the uploaded image
-      const imageId = Date.now();
-      const imageHtml = `<img id="img-${imageId}" src="${data.secure_url}" alt="${file.name}" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" draggable="true" /><p><br></p>`;
-      
-      // Ensure focus and selection before insert
-      if (ensureFocusAndSelection()) {
-        const success = document.execCommand('insertHTML', false, imageHtml);
-        console.log('insertImage from upload success:', success);
-      }
-      
-      setShowImageModal(false);
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      editor.chain().focus().setImage({ src: data.secure_url, alt: file.name }).run();
+      setShowImage(false);
       setImageUrl('');
-      setImageUploadMode('url');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      handleInput();
-    } catch (error) {
-      console.error('Image upload error:', error);
-      alert('Upload failed. Please try again.');
+      setImageMode('url');
+    } catch {
+      alert('Image upload failed. Check your Cloudinary credentials in .env.local.');
     } finally {
       setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  };
+  }, [editor]);
 
-  // Insert image with controls (from URL)
-  const insertImage = () => {
-    if (!imageUrl) return;
-    
-    const url = imageUrl.startsWith('http') ? imageUrl : `https://${imageUrl}`;
-    const imageId = Date.now();
-    const imageHtml = `<img id="img-${imageId}" src="${url}" alt="Uploaded image" class="size-medium position-center" data-size="medium" data-position="center" style="cursor: pointer;" onclick="window.selectImage('${imageId}')" draggable="true" /><p><br></p>`;
-    
-    // Ensure focus and selection before insert
-    if (ensureFocusAndSelection()) {
-      const success = document.execCommand('insertHTML', false, imageHtml);
-      console.log('insertImage success:', success);
-    }
-    
-    setShowImageModal(false);
-    setImageUrl('');
-    setImageUploadMode('url');
-    handleInput();
-  };
-
-  // Extract video ID from YouTube/Vimeo URL
-  const extractVideoId = (url) => {
-    // YouTube patterns
-    const youtubePatterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-      /youtube\.com\/watch\?.*v=([^&\n?#]+)/
-    ];
-    
-    for (const pattern of youtubePatterns) {
-      const match = url.match(pattern);
-      if (match) return { type: 'youtube', id: match[1] };
-    }
-    
-    // Vimeo pattern
-    const vimeoPattern = /vimeo\.com\/(\d+)/;
-    const vimeoMatch = url.match(vimeoPattern);
-    if (vimeoMatch) return { type: 'vimeo', id: vimeoMatch[1] };
-    
-    return null;
-  };
-
-  // Insert video embed
-  const insertVideo = () => {
-    if (!videoUrl) return;
-    
-    const mediaId = Date.now();
-    let embedHtml = '';
-    
-    if (videoUploadMode === 'youtube') {
-      // YouTube/Vimeo mode
-      const videoInfo = extractVideoId(videoUrl);
-      if (!videoInfo) {
-        alert('Please enter a valid YouTube or Vimeo URL');
-        return;
-      }
-      
-      if (videoInfo.type === 'youtube') {
-        embedHtml = `
-          <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
-            <iframe 
-              src="https://www.youtube.com/embed/${videoInfo.id}" 
-              frameborder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-              allowfullscreen
-              class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
-              style="pointer-events: none;"
-            ></iframe>
-          </div><p><br></p>
-        `;
-      } else if (videoInfo.type === 'vimeo') {
-        embedHtml = `
-          <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" onclick="window.selectMedia('${mediaId}')">
-            <iframe 
-              src="https://player.vimeo.com/video/${videoInfo.id}" 
-              frameborder="0" 
-              allow="autoplay; fullscreen; picture-in-picture" 
-              allowfullscreen
-              class="absolute top-0 left-0 w-full h-full rounded-lg shadow-md"
-              style="pointer-events: none;"
-            ></iframe>
-          </div><p><br></p>
-        `;
-      }
+  // ------------------------------------------------------------------
+  // Video insertion
+  // ------------------------------------------------------------------
+  const handleInsertVideo = useCallback(() => {
+    if (!videoUrl || !editor) return;
+    if (videoMode === 'youtube') {
+      editor.chain().focus().setYoutubeVideo({ src: videoUrl }).run();
     } else {
-      const url = videoUrl.startsWith('http') ? videoUrl : `https://${videoUrl}`;
-      embedHtml = `
-        <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="video" contenteditable="false" style="cursor: pointer; position: relative;" onclick="window.selectMedia('${mediaId}')">
-          <video 
-            controls
-            class="w-full rounded-lg shadow-md"
-            style="max-width: 100%; height: auto;"
-          >
-            <source src="${url}" type="video/mp4">
-            <source src="${url}" type="video/webm">
-            <source src="${url}" type="video/ogg">
-            Your browser does not support the video tag.
-          </video>
-        </div><p><br></p>
-      `;
+      const src = videoUrl.startsWith('http') ? videoUrl : `https://${videoUrl}`;
+      editor.chain().focus().insertContent(
+        `<video controls style="width:100%;border-radius:8px;margin:0.5em 0;">` +
+        `<source src="${src}" type="video/mp4">` +
+        `<source src="${src}" type="video/webm">` +
+        `Your browser does not support video.</video>`
+      ).run();
     }
-    
-    // Ensure focus and selection before insert
-    if (ensureFocusAndSelection()) {
-      const success = document.execCommand('insertHTML', false, embedHtml);
-      console.log('insertVideo success:', success);
-    }
-    
-    setShowVideoModal(false);
+    setShowVideo(false);
     setVideoUrl('');
-    setVideoUploadMode('youtube');
-    handleInput();
-  };
+  }, [videoUrl, videoMode, editor]);
 
-  // Insert audio embed
-  const insertAudio = () => {
-    if (!audioUrl) return;
-    
-    const url = audioUrl.startsWith('http') ? audioUrl : `https://${audioUrl}`;
-    const mediaId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-    const audioHtml = `
-      <div id="media-${mediaId}" class="media-wrapper size-medium position-center" data-size="medium" data-position="center" data-media-type="audio" contenteditable="false" style="cursor: pointer; position: relative;" onclick="window.selectMedia('${mediaId}')">
-        <audio controls class="w-full rounded-lg shadow-md" style="max-width: 100%; height: auto;">
-          <source src="${url}" type="audio/mpeg">
-          <source src="${url}" type="audio/ogg">
-          <source src="${url}" type="audio/wav">
-          Your browser does not support the audio element.
-        </audio>
-      </div><p><br></p>
-    `;
-    
-    // Ensure focus and selection before insert
-    if (ensureFocusAndSelection()) {
-      const success = document.execCommand('insertHTML', false, audioHtml);
-      console.log('insertAudio success:', success);
-    }
-    
-    setShowAudioModal(false);
+  // ------------------------------------------------------------------
+  // Audio insertion
+  // ------------------------------------------------------------------
+  const handleInsertAudio = useCallback(() => {
+    if (!audioUrl || !editor) return;
+    const src = audioUrl.startsWith('http') ? audioUrl : `https://${audioUrl}`;
+    editor.chain().focus().insertContent(
+      `<audio controls style="width:100%;margin:0.5em 0;">` +
+      `<source src="${src}" type="audio/mpeg">` +
+      `<source src="${src}" type="audio/ogg">` +
+      `Your browser does not support audio.</audio>`
+    ).run();
+    setShowAudio(false);
     setAudioUrl('');
-    handleInput();
-  };
+  }, [audioUrl, editor]);
 
-  const selectMediaInternal = (mediaId) => {
-    setSelectedImageId(mediaId);
-    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
-    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
-    document.querySelectorAll('.floating-toolbar').forEach((el) => el.remove());
-    
-    const img = document.getElementById(`img-${mediaId}`);
-    const media = document.getElementById(`media-${mediaId}`);
-    const element = img || media;
-    
-    if (!element) return;
-    element.classList.add('selected-image');
-    
-    const updatePositions = (toolbar, handles) => {
-      const rect = element.getBoundingClientRect();
-      if (toolbar) {
-        const toolbarTop = Math.max(10, rect.top - 50);
-        const toolbarLeft = Math.max(10, rect.left);
-        toolbar.style.top = `${toolbarTop}px`;
-        toolbar.style.left = `${toolbarLeft}px`;
-      }
-      if (handles) {
-        handles.forEach(({ pos, el }) => {
-          if (pos.includes('n')) el.style.top = `${rect.top - 6}px`;
-          if (pos.includes('s')) el.style.top = `${rect.bottom - 6}px`;
-          if (pos.includes('w')) el.style.left = `${rect.left - 6}px`;
-          if (pos.includes('e')) el.style.left = `${rect.right - 6}px`;
-        });
-      }
-    };
-    
-    const toolbar = document.createElement('div');
-    toolbar.className = 'floating-toolbar';
-    toolbar.style.position = 'fixed';
-    toolbar.style.zIndex = '1002';
-    toolbar.innerHTML = `
-      <button onclick="window.resizeMedia('${mediaId}', 'small')" class="toolbar-btn">Small</button>
-      <button onclick="window.resizeMedia('${mediaId}', 'medium')" class="toolbar-btn">Medium</button>
-      <button onclick="window.resizeMedia('${mediaId}', 'large')" class="toolbar-btn">Large</button>
-      <button onclick="window.resizeMedia('${mediaId}', 'full')" class="toolbar-btn">Full</button>
-      <span class="toolbar-separator">|</span>
-      <button onclick="window.positionMedia('${mediaId}', 'left')" class="toolbar-btn">← Left</button>
-      <button onclick="window.positionMedia('${mediaId}', 'center')" class="toolbar-btn">Center</button>
-      <button onclick="window.positionMedia('${mediaId}', 'right')" class="toolbar-btn">Right →</button>
-      <span class="toolbar-separator">|</span>
-      <button onclick="window.positionMedia('${mediaId}', 'wrap-left')" class="toolbar-btn">Wrap Left</button>
-      <button onclick="window.positionMedia('${mediaId}', 'wrap-right')" class="toolbar-btn">Wrap Right</button>
-      <span class="toolbar-separator">|</span>
-      <button onclick="window.deleteMedia('${mediaId}')" class="toolbar-btn" style="color:#dc3545;">Delete</button>
-      <button onclick="window.clearMediaSelection()" class="toolbar-btn close-btn">×</button>
-    `;
-    document.body.appendChild(toolbar);
-    
-    const handles = [];
-    if (img) {
-      const positions = ['nw', 'ne', 'sw', 'se'];
-      positions.forEach((pos) => {
-        const handle = document.createElement('div');
-        handle.className = `resize-handle resize-handle-${pos}`;
-        handle.style.position = 'fixed';
-        handle.style.width = '12px';
-        handle.style.height = '12px';
-        handle.style.background = '#667eea';
-        handle.style.border = '2px solid white';
-        handle.style.borderRadius = '50%';
-        handle.style.zIndex = '1001';
-        handle.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        handle.style.cursor = `${pos.includes('n') ? (pos.includes('w') ? 'nw' : 'ne') : (pos.includes('w') ? 'sw' : 'se')}-resize`;
-        handle.style.pointerEvents = 'auto';
-        
-        handle.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const startX = e.clientX;
-          const startWidth = img.offsetWidth;
-          
-          const onMouseMove = (moveEvt) => {
-            const deltaX = moveEvt.clientX - startX;
-            let newWidth = startWidth;
-            if (pos.includes('e')) newWidth = startWidth + deltaX;
-            else if (pos.includes('w')) newWidth = startWidth - deltaX;
-            
-            if (newWidth > 100 && newWidth < 1200) {
-              img.style.width = `${newWidth}px`;
-              img.style.height = 'auto';
-              img.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
-              img.setAttribute('data-size', 'custom');
-              updatePositions(toolbar, handles);
-            }
-          };
-          
-          const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-            handleInput();
-          };
-          
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
-        });
-        
-        document.body.appendChild(handle);
-        handles.push({ pos, el: handle });
-      });
-    }
-    
-    updatePositions(toolbar, handles);
-    
-    const onScrollOrResize = () => updatePositions(toolbar, handles);
-    window.addEventListener('scroll', onScrollOrResize, true);
-    window.addEventListener('resize', onScrollOrResize);
-    
-    toolbar.dataset.scrollListener = 'true';
-    toolbar.dataset.resizeListener = 'true';
-  };
+  if (!editor) return null;
 
-  const resizeMediaInternal = (mediaId, size) => {
-    const img = document.getElementById(`img-${mediaId}`);
-    const media = document.getElementById(`media-${mediaId}`);
-    const element = img || media;
-    if (!element) return;
-    element.style.width = '';
-    element.style.height = '';
-    element.classList.remove('size-small', 'size-medium', 'size-large', 'size-full');
-    element.classList.add(`size-${size}`);
-    element.setAttribute('data-size', size);
-    handleInput();
-  };
-
-  const positionMediaInternal = (mediaId, position) => {
-    const img = document.getElementById(`img-${mediaId}`);
-    const media = document.getElementById(`media-${mediaId}`);
-    const element = img || media;
-    if (!element) return;
-    element.classList.remove('position-left', 'position-center', 'position-right', 'position-wrap-left', 'position-wrap-right');
-    element.classList.add(`position-${position}`);
-    element.setAttribute('data-position', position);
-    
-    if (position === 'wrap-left' || position === 'wrap-right') {
-      const nextSibling = element.nextElementSibling;
-      if (nextSibling) {
-        nextSibling.classList.remove('clear-both');
-      }
-    } else {
-      const nextSibling = element.nextElementSibling;
-      if (nextSibling) {
-        nextSibling.classList.add('clear-both');
-      }
-    }
-    
-    handleInput();
-  };
-
-  const deleteMediaInternal = (mediaId) => {
-    const img = document.getElementById(`img-${mediaId}`);
-    const media = document.getElementById(`media-${mediaId}`);
-    const element = img || media;
-    if (!element) return;
-    const wrapper = element.parentElement;
-    if (wrapper && wrapper.classList.contains('image-wrapper-resizable')) {
-      wrapper.remove();
-    } else {
-      element.remove();
-    }
-    document.querySelectorAll('.floating-toolbar').forEach(el => el.remove());
-    document.querySelectorAll('.resize-handle').forEach(el => el.remove());
-    setSelectedImageId(null);
-    handleInput();
-  };
-
-  const clearMediaSelectionInternal = () => {
-    document.querySelectorAll('.selected-image').forEach((el) => el.classList.remove('selected-image'));
-    document.querySelectorAll('.resize-handle').forEach((el) => el.remove());
-    document.querySelectorAll('.floating-toolbar').forEach((el) => {
-      if (el.dataset.scrollListener) {
-        window.removeEventListener('scroll', () => {}, true);
-      }
-      if (el.dataset.resizeListener) {
-        window.removeEventListener('resize', () => {});
-      }
-      el.remove();
-    });
-    setSelectedImageId(null);
-  };
-
-  const resizeImageInternal = resizeMediaInternal;
-  const positionImageInternal = positionMediaInternal;
-  const deleteImageInternal = deleteMediaInternal;
-  const clearImageSelectionInternal = clearMediaSelectionInternal;
-  const selectImageInternal = selectMediaInternal;
-
-  // Toolbar button component
-  const ToolbarButton = ({ icon: Icon, onClick, title, active = false }) => (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
-      onMouseDown={(e) => e.preventDefault()}
-      title={title}
-      className={`p-2 rounded hover:bg-gray-200 transition ${active ? 'bg-gray-200' : ''}`}
-    >
-      <Icon size={18} className="text-gray-700" />
-    </button>
-  );
+  const isActive = (name, attrs) => editor.isActive(name, attrs);
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+    <div className="border border-gray-300 rounded-xl overflow-visible bg-white shadow-sm">
       <style>{`
-        [contenteditable][data-placeholder]:empty:before {
-          content: attr(data-placeholder);
-          color: #9CA3AF;
-          pointer-events: none;
+        /* Editor typography */
+        .rte-body {
+          padding: 1rem;
+          min-height: 400px;
+          line-height: 1.65;
+          color: #111827;
+          font-size: 15px;
         }
-        
-        /* Editor content spacing - fix excessive paragraph gaps */
-        .editor-content {
-          line-height: 1.5;
+        .rte-body p { margin: 0 0 0.65em; }
+        .rte-body p:last-child { margin-bottom: 0; }
+        .rte-body h1 { font-size: 1.875em; font-weight: 700; margin: 1.2em 0 0.5em; line-height: 1.2; }
+        .rte-body h2 { font-size: 1.5em; font-weight: 700; margin: 1.1em 0 0.5em; line-height: 1.25; }
+        .rte-body h3 { font-size: 1.2em; font-weight: 600; margin: 1em 0 0.4em; line-height: 1.3; }
+        .rte-body a.rte-link { color: #2563eb; text-decoration: underline; }
+        .rte-body a.rte-link:hover { color: #1d4ed8; }
+        .rte-body ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+        .rte-body ol { list-style: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+        .rte-body li { margin: 0.2em 0; }
+        .rte-body blockquote {
+          border-left: 3px solid #d1d5db;
+          padding: 0.5em 1em;
+          margin: 0.8em 0;
+          color: #6b7280;
+          font-style: italic;
+          background: #f9fafb;
+          border-radius: 0 6px 6px 0;
         }
-        .editor-content p,
-        .editor-content div:not(.media-wrapper),
-        .editor-content ul,
-        .editor-content ol {
-          margin: 0 0 0.6em;
+        .rte-body code {
+          background: #f3f4f6;
+          padding: 2px 5px;
+          border-radius: 4px;
+          font-size: 0.875em;
+          font-family: monospace;
         }
-        .editor-content p:last-child,
-        .editor-content div:last-child {
-          margin-bottom: 0;
+        .rte-body pre {
+          background: #1f2937;
+          color: #f9fafb;
+          padding: 1em;
+          border-radius: 8px;
+          overflow-x: auto;
+          margin: 1em 0;
         }
-        .editor-content ul,
-        .editor-content ol {
-          padding-left: 1.5em;
-        }
-        
-        /* Media (images, videos, iframes) spacing and sizing */
-        .editor-content img,
-        .editor-content .media-wrapper {
-          display: block;
-          margin-block: 0.6em;
+        .rte-body pre code { background: none; padding: 0; color: inherit; }
+        .rte-body img.editor-img {
           max-width: 100%;
-        }
-        .editor-content img {
           height: auto;
+          border-radius: 8px;
+          margin: 0.8em auto;
+          display: block;
         }
-        
-        /* Media size classes */
-        .size-small { width: 25%; }
-        .size-medium { width: 50%; }
-        .size-large { width: 75%; }
-        .size-full { width: 100%; }
-        
-        /* Media position classes */
-        .position-left { margin-left: 0; margin-right: auto; }
-        .position-center { margin-left: auto; margin-right: auto; }
-        .position-right { margin-left: auto; margin-right: 0; }
-        
-        /* Media wrap classes for text wrapping */
-        .position-wrap-left {
+        .rte-body iframe.editor-youtube {
+          width: 100%;
+          aspect-ratio: 16/9;
+          border: 0;
+          border-radius: 8px;
+          margin: 1em 0;
+          display: block;
+        }
+        .rte-body video { width: 100%; border-radius: 8px; margin: 0.5em 0; display: block; }
+        .rte-body audio { width: 100%; margin: 0.5em 0; display: block; }
+
+        /* Placeholder */
+        .rte-body p.is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
           float: left;
-          margin-right: 1em;
-          margin-bottom: 0.6em;
+          color: #9ca3af;
+          pointer-events: none;
+          height: 0;
         }
-        .position-wrap-right {
-          float: right;
-          margin-left: 1em;
-          margin-bottom: 0.6em;
+
+        /* Bubble menu */
+        .rte-bubble {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 5px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.12);
         }
-        
-        /* Clear floats after wrapped media */
-        .editor-content::after {
-          content: "";
-          display: table;
-          clear: both;
+        .rte-bubble button {
+          padding: 4px 8px;
+          border-radius: 5px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          border: none;
+          background: transparent;
+          color: #374151;
+          transition: background 0.15s;
+          line-height: 1;
         }
-        
-        /* Clear both class for blocks after wrapped media */
-        .clear-both {
-          clear: both;
-        }
-        
-        /* Draggable images - show grab cursor */
-        .editor-content img[draggable="true"] {
-          cursor: grab;
-          outline: 2px dashed transparent;
-          transition: outline 0.2s;
-        }
-        
-        .editor-content img[draggable="true"]:hover {
-          outline: 2px dashed #3b82f6;
-        }
-        
-        .editor-content img[draggable="true"]:active {
-          cursor: grabbing;
-          opacity: 0.5;
+        .rte-bubble button:hover { background: #f3f4f6; }
+        .rte-bubble button.is-active { background: #3b82f6; color: white; }
+        .rte-bubble .bubble-sep {
+          width: 1px;
+          height: 16px;
+          background: #e5e7eb;
+          margin: 0 2px;
+          align-self: center;
+          flex-shrink: 0;
         }
       `}</style>
-      {/* Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-2">
-        {/* Font Family */}
-        <div className="flex items-center gap-1">
-          <select
-            value={selectedFontFamily}
-            onChange={handleFontFamilyChange}
-            className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            title="Font Family"
+
+      {/* ---- Bubble menu — appears on text selection ---- */}
+      <BubbleMenu
+        editor={editor}
+        tippyOptions={{ duration: 100, placement: 'top' }}
+        className="rte-bubble"
+      >
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={editor.isActive('bold') ? 'is-active' : ''}
+        >
+          <strong>B</strong>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={editor.isActive('italic') ? 'is-active' : ''}
+        >
+          <em>I</em>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          className={editor.isActive('underline') ? 'is-active' : ''}
+          style={{ textDecoration: 'underline' }}
+        >
+          U
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={editor.isActive('strike') ? 'is-active' : ''}
+        >
+          <s>S</s>
+        </button>
+        <div className="bubble-sep" />
+        <button onClick={() => setShowLink(true)}>Link</button>
+        <button
+          onClick={() => editor.chain().focus().unsetLink().run()}
+          style={{ color: '#ef4444' }}
+        >
+          Unlink
+        </button>
+      </BubbleMenu>
+
+      {/* ---- Main toolbar ---- */}
+      <div className="bg-gray-50 border-b border-gray-200 px-2 py-1.5 flex flex-wrap gap-0.5 items-center rounded-t-xl">
+
+        {/* Undo / Redo */}
+        <Btn
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo size={15} />
+        </Btn>
+
+        <Divider />
+
+        {/* Headings */}
+        <Btn
+          onClick={() => editor.chain().focus().setParagraph().run()}
+          active={isActive('paragraph')}
+          title="Paragraph"
+        >
+          ¶
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          active={isActive('heading', { level: 1 })}
+          title="Heading 1"
+        >
+          <Heading1 size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          active={isActive('heading', { level: 2 })}
+          title="Heading 2"
+        >
+          <Heading2 size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          active={isActive('heading', { level: 3 })}
+          title="Heading 3"
+        >
+          <Heading3 size={15} />
+        </Btn>
+
+        <Divider />
+
+        {/* Text formatting */}
+        <Btn
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={isActive('bold')}
+          title="Bold (Ctrl+B)"
+        >
+          <Bold size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={isActive('italic')}
+          title="Italic (Ctrl+I)"
+        >
+          <Italic size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={isActive('underline')}
+          title="Underline (Ctrl+U)"
+        >
+          <UnderlineIcon size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={isActive('strike')}
+          title="Strikethrough"
+        >
+          <Strikethrough size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          active={isActive('code')}
+          title="Inline code"
+        >
+          <Code size={15} />
+        </Btn>
+
+        <Divider />
+
+        {/* Text colour */}
+        <div className="relative">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setShowColorPicker(v => !v)}
+            title="Text colour"
+            className="flex items-center gap-0.5 p-1.5 rounded hover:bg-gray-200 transition-colors cursor-pointer"
           >
-            {fontFamilies.map(font => (
-              <option key={font.value} value={font.value}>{font.label}</option>
-            ))}
-          </select>
+            <Type size={15} className="text-gray-600" />
+            <div
+              className="w-3 h-1 rounded-sm mt-0.5"
+              style={{ backgroundColor: textColor }}
+            />
+          </button>
+          {showColorPicker && (
+            <ColorPicker
+              value={textColor}
+              onChange={(c) => {
+                setTextColor(c);
+                editor.chain().focus().setColor(c).run();
+              }}
+              onClose={() => setShowColorPicker(false)}
+            />
+          )}
         </div>
+        <Btn
+          onClick={() => editor.chain().focus().unsetColor().run()}
+          title="Clear colour"
+        >
+          <span className="text-xs">A</span>
+        </Btn>
 
-        {/* Font Size */}
-        <div className="flex items-center gap-1 border-r border-gray-300 pr-2">
-          <select
-            value={selectedFontSize}
-            onChange={handleFontSizeChange}
-            className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            title="Font Size"
-          >
-            {fontSizes.map(size => (
-              <option key={size.value} value={size.value}>{size.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Text Formatting */}
-        <div className="flex gap-1 border-r border-gray-300 pr-2">
-          <ToolbarButton icon={Bold} onClick={() => execCommand('bold')} title="Bold (Ctrl+B)" />
-          <ToolbarButton icon={Italic} onClick={() => execCommand('italic')} title="Italic (Ctrl+I)" />
-          <ToolbarButton icon={Underline} onClick={() => execCommand('underline')} title="Underline (Ctrl+U)" />
-          <ToolbarButton icon={Strikethrough} onClick={() => execCommand('strikeThrough')} title="Strikethrough" />
-        </div>
-
-        {/* Colors */}
-        <div className="flex gap-1 border-r border-gray-300 pr-2 relative">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowTextColorPicker(!showTextColorPicker)}
-              onMouseDown={(e) => e.preventDefault()}
-              title="Text Color"
-              className="p-2 rounded hover:bg-gray-200 transition flex items-center gap-1"
-            >
-              <Type size={18} className="text-gray-700" />
-              <div className="w-4 h-1 rounded" style={{ backgroundColor: selectedTextColor }}></div>
-            </button>
-            {showTextColorPicker && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-50">
-                <div className="grid grid-cols-5 gap-1 mb-2">
-                  {commonColors.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => handleTextColorChange(color)}
-                      className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition"
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                </div>
-                <input
-                  type="color"
-                  value={selectedTextColor}
-                  onChange={(e) => handleTextColorChange(e.target.value)}
-                  className="w-full h-8 cursor-pointer"
-                />
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowBgColorPicker(!showBgColorPicker)}
-              onMouseDown={(e) => e.preventDefault()}
-              title="Background Color"
-              className="p-2 rounded hover:bg-gray-200 transition flex items-center gap-1"
-            >
-              <Palette size={18} className="text-gray-700" />
-              <div className="w-4 h-1 rounded" style={{ backgroundColor: selectedBgColor }}></div>
-            </button>
-            {showBgColorPicker && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-2 z-50">
-                <div className="grid grid-cols-5 gap-1 mb-2">
-                  {commonColors.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => handleBgColorChange(color)}
-                      className="w-6 h-6 rounded border border-gray-300 hover:scale-110 transition"
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                </div>
-                <input
-                  type="color"
-                  value={selectedBgColor}
-                  onChange={(e) => handleBgColorChange(e.target.value)}
-                  className="w-full h-8 cursor-pointer"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Lists */}
-        <div className="flex gap-1 border-r border-gray-300 pr-2">
-          <ToolbarButton icon={List} onClick={() => execCommand('insertUnorderedList')} title="Bullet List" />
-          <ToolbarButton icon={ListOrdered} onClick={() => execCommand('insertOrderedList')} title="Numbered List" />
-          <ToolbarButton icon={Quote} onClick={() => execCommand('formatBlock', '<blockquote>')} title="Quote" />
-        </div>
+        <Divider />
 
         {/* Alignment */}
-        <div className="flex gap-1 border-r border-gray-300 pr-2">
-          <ToolbarButton icon={AlignLeft} onClick={() => execCommand('justifyLeft')} title="Align Left" />
-          <ToolbarButton icon={AlignCenter} onClick={() => execCommand('justifyCenter')} title="Align Center" />
-          <ToolbarButton icon={AlignRight} onClick={() => execCommand('justifyRight')} title="Align Right" />
-        </div>
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          active={isActive({ textAlign: 'left' })}
+          title="Align left"
+        >
+          <AlignLeft size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          active={isActive({ textAlign: 'center' })}
+          title="Align centre"
+        >
+          <AlignCenter size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          active={isActive({ textAlign: 'right' })}
+          title="Align right"
+        >
+          <AlignRight size={15} />
+        </Btn>
+
+        <Divider />
+
+        {/* Lists & Blocks */}
+        <Btn
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={isActive('bulletList')}
+          title="Bullet list"
+        >
+          <List size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={isActive('orderedList')}
+          title="Numbered list"
+        >
+          <ListOrdered size={15} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={isActive('blockquote')}
+          title="Blockquote"
+        >
+          <Quote size={15} />
+        </Btn>
+
+        <Divider />
 
         {/* Media */}
-        <div className="flex gap-1">
-          <ToolbarButton icon={LinkIcon} onClick={() => setShowLinkModal(true)} title="Insert Link" />
-          <ToolbarButton icon={ImageIcon} onClick={() => setShowImageModal(true)} title="Insert Image" />
-          <ToolbarButton icon={Video} onClick={() => setShowVideoModal(true)} title="Insert Video" />
-          <ToolbarButton icon={Music} onClick={() => setShowAudioModal(true)} title="Insert Audio" />
-        </div>
+        <Btn onClick={() => setShowLink(true)} title="Insert link">
+          <LinkIcon size={15} />
+        </Btn>
+        <Btn onClick={() => setShowImage(true)} title="Insert image">
+          <ImageIcon size={15} />
+        </Btn>
+        <Btn onClick={() => setShowVideo(true)} title="Insert video">
+          <Video size={15} />
+        </Btn>
+        <Btn onClick={() => setShowAudio(true)} title="Insert audio">
+          <Music size={15} />
+        </Btn>
+
       </div>
 
-      {/* Editor Content */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onClick={() => editorRef.current?.focus()}
-        onKeyDown={handleKeyDown}
-        className="p-4 min-h-[120px] max-h-[400px] overflow-y-auto focus:outline-none editor-content cursor-text"
-        style={{ wordWrap: 'break-word' }}
-        suppressContentEditableWarning
-        data-placeholder={placeholder}
-      />
+      {/* ---- Editor content area ---- */}
+      <div onClick={() => editor.commands.focus()} className="cursor-text">
+        <EditorContent editor={editor} />
+      </div>
 
-      {/* Link Modal */}
-      {showLinkModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Insert Link</h3>
-              <button onClick={() => setShowLinkModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
+      {/* ============================================================
+          MODALS
+      ============================================================ */}
+
+      {/* ---- Link modal ---- */}
+      {showLink && (
+        <Modal
+          title="Insert Link"
+          onClose={() => { setShowLink(false); setLinkUrl(''); setLinkText(''); }}
+        >
+          <Field label="URL" hint="e.g. https://example.com">
+            <TextInput
+              type="text"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleInsertLink()}
+            />
+          </Field>
+          <Field label="Link text" hint="Leave blank to use selected text or the URL itself">
+            <TextInput
+              type="text"
+              value={linkText}
+              onChange={(e) => setLinkText(e.target.value)}
+              placeholder="Click here"
+              onKeyDown={(e) => e.key === 'Enter' && handleInsertLink()}
+            />
+          </Field>
+          <ModalActions
+            onCancel={() => { setShowLink(false); setLinkUrl(''); setLinkText(''); }}
+            onConfirm={handleInsertLink}
+            confirmDisabled={!linkUrl}
+          />
+        </Modal>
+      )}
+
+      {/* ---- Image modal ---- */}
+      {showImage && (
+        <Modal
+          title="Insert Image"
+          onClose={() => { setShowImage(false); setImageUrl(''); setImageMode('url'); }}
+        >
+          {/* Tab switcher */}
+          <div className="flex gap-0 border border-gray-200 rounded-lg overflow-hidden text-sm font-medium">
+            {[['url', 'From URL'], ['upload', 'Upload File']].map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setImageMode(m)}
+                className={`flex-1 py-2 transition-colors
+                  ${imageMode === m
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                {label}
               </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-                <input
+            ))}
+          </div>
+
+          {imageMode === 'url' ? (
+            <>
+              <Field label="Image URL" hint="Paste a direct link to any image">
+                <TextInput
                   type="text"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
                   autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleInsertImageUrl()}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Link Text (optional)</label>
-                <input
-                  type="text"
-                  value={linkText}
-                  onChange={(e) => setLinkText(e.target.value)}
-                  placeholder="Click here"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setShowLinkModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={insertLink}
-                  disabled={!linkUrl}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Insert Link
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Modal */}
-      {showImageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Insert Image</h3>
-              <button onClick={() => { setShowImageModal(false); setImageUploadMode('url'); setImageUrl(''); }} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Tab Switcher */}
-            <div className="flex gap-2 mb-4 border-b border-gray-200">
-              <button
-                onClick={() => setImageUploadMode('url')}
-                className={`px-4 py-2 font-medium transition ${
-                  imageUploadMode === 'url'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                From URL
-              </button>
-              <button
-                onClick={() => setImageUploadMode('upload')}
-                className={`px-4 py-2 font-medium transition ${
-                  imageUploadMode === 'upload'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                Upload File
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {imageUploadMode === 'url' ? (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      autoFocus
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Enter the URL of an image from the web</p>
-                  </div>
-                  {imageUrl && (
-                    <div className="border border-gray-200 rounded-lg p-2">
-                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                      <img src={imageUrl} alt="Preview" className="max-w-full h-auto rounded" onError={(e) => e.target.style.display = 'none'} />
-                    </div>
-                  )}
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => { setShowImageModal(false); setImageUploadMode('url'); setImageUrl(''); }}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={insertImage}
-                      disabled={!imageUrl}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      Insert Image
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image</label>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageFileUpload}
-                      accept="image/*"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      disabled={isUploadingImage}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Upload an image from your computer (via Cloudinary)</p>
-                  </div>
-                  {isUploadingImage && (
-                    <div className="flex items-center justify-center gap-2 py-4">
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm text-gray-600">Uploading image...</span>
-                    </div>
-                  )}
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => { setShowImageModal(false); setImageUploadMode('url'); setImageUrl(''); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                      disabled={isUploadingImage}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Video Modal */}
-      {showVideoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Video size={20} className="text-blue-600" />
-                Insert Video
-              </h3>
-              <button onClick={() => { setShowVideoModal(false); setVideoUploadMode('youtube'); setVideoUrl(''); }} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Tab Switcher */}
-            <div className="flex gap-2 mb-4 border-b border-gray-200">
-              <button
-                onClick={() => setVideoUploadMode('youtube')}
-                className={`px-4 py-2 font-medium transition ${
-                  videoUploadMode === 'youtube'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Youtube size={16} />
-                  YouTube/Vimeo
+              </Field>
+              {imageUrl && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    className="max-h-40 w-full object-contain bg-gray-50"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
                 </div>
-              </button>
-              <button
-                onClick={() => setVideoUploadMode('custom')}
-                className={`px-4 py-2 font-medium transition ${
-                  videoUploadMode === 'custom'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Film size={16} />
-                  Custom URL
-                </div>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {videoUploadMode === 'youtube' ? (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">YouTube or Vimeo URL</label>
-                    <input
-                      type="text"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      autoFocus
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Supports YouTube and Vimeo links
-                    </p>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm text-blue-800">
-                      <strong>Examples:</strong><br />
-                      • https://www.youtube.com/watch?v=dQw4w9WgXcQ<br />
-                      • https://youtu.be/dQw4w9WgXcQ<br />
-                      • https://vimeo.com/123456789
-                    </p>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => { setShowVideoModal(false); setVideoUploadMode('youtube'); setVideoUrl(''); }}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={insertVideo}
-                      disabled={!videoUrl}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      Insert Video
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
-                    <input
-                      type="text"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="https://example.com/video.mp4"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      autoFocus
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter the URL of a video file from your server
-                    </p>
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-sm text-green-800">
-                      <strong>Supported formats:</strong><br />
-                      • MP4 (.mp4)<br />
-                      • WebM (.webm)<br />
-                      • OGG (.ogg)<br />
-                      Perfect for videos hosted on your own server!
-                    </p>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => { setShowVideoModal(false); setVideoUploadMode('youtube'); setVideoUrl(''); }}
-                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={insertVideo}
-                      disabled={!videoUrl}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                      Insert Video
-                    </button>
-                  </div>
-                </>
               )}
-            </div>
-          </div>
-        </div>
+              <ModalActions
+                onCancel={() => { setShowImage(false); setImageUrl(''); setImageMode('url'); }}
+                onConfirm={handleInsertImageUrl}
+                confirmDisabled={!imageUrl}
+              />
+            </>
+          ) : (
+            <>
+              <Field
+                label="Choose image"
+                hint="Uploads via Cloudinary — configure REACT_APP_CLOUDINARY_* in .env.local"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileUpload}
+                  disabled={isUploadingImage}
+                  className="w-full text-sm text-gray-600 border border-gray-300 rounded-lg
+                    file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium
+                    file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                />
+              </Field>
+              {isUploadingImage && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  Uploading…
+                </div>
+              )}
+              <ModalActions
+                onCancel={() => {
+                  setShowImage(false);
+                  setImageUrl('');
+                  setImageMode('url');
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                onConfirm={() => fileInputRef.current?.click()}
+                confirmLabel={isUploadingImage ? 'Uploading…' : 'Choose File'}
+                confirmDisabled={isUploadingImage}
+              />
+            </>
+          )}
+        </Modal>
       )}
 
-      {/* Audio Modal */}
-      {showAudioModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Music size={20} className="text-purple-600" />
-                Insert Audio
-              </h3>
-              <button onClick={() => setShowAudioModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X size={20} />
+      {/* ---- Video modal ---- */}
+      {showVideo && (
+        <Modal
+          title="Insert Video"
+          onClose={() => { setShowVideo(false); setVideoUrl(''); setVideoMode('youtube'); }}
+        >
+          <div className="flex gap-0 border border-gray-200 rounded-lg overflow-hidden text-sm font-medium">
+            {[['youtube', 'YouTube / Vimeo'], ['file', 'Video File URL']].map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setVideoMode(m)}
+                className={`flex-1 py-2 transition-colors
+                  ${videoMode === m
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                {label}
               </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Audio File URL</label>
-                <input
-                  type="text"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  placeholder="https://example.com/audio.mp3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter the URL of an audio file (MP3, OGG, WAV)
-                </p>
-              </div>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                <p className="text-sm text-purple-800">
-                  <strong>Supported formats:</strong><br />
-                  • MP3 (.mp3)<br />
-                  • OGG (.ogg)<br />
-                  • WAV (.wav)<br />
-                  Perfect for podcasts, music, and radio content!
-                </p>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setShowAudioModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={insertAudio}
-                  disabled={!audioUrl}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Insert Audio
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+
+          <Field
+            label={videoMode === 'youtube' ? 'YouTube or Vimeo URL' : 'Video file URL'}
+            hint={
+              videoMode === 'youtube'
+                ? 'e.g. https://youtube.com/watch?v=… or https://vimeo.com/…'
+                : 'Direct link to an MP4 or WebM file'
+            }
+          >
+            <TextInput
+              type="text"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder={
+                videoMode === 'youtube'
+                  ? 'https://www.youtube.com/watch?v=...'
+                  : 'https://example.com/video.mp4'
+              }
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleInsertVideo()}
+            />
+          </Field>
+
+          <ModalActions
+            onCancel={() => { setShowVideo(false); setVideoUrl(''); setVideoMode('youtube'); }}
+            onConfirm={handleInsertVideo}
+            confirmDisabled={!videoUrl}
+          />
+        </Modal>
+      )}
+
+      {/* ---- Audio modal ---- */}
+      {showAudio && (
+        <Modal
+          title="Insert Audio"
+          onClose={() => { setShowAudio(false); setAudioUrl(''); }}
+        >
+          <Field label="Audio file URL" hint="Direct link to an MP3, OGG, or WAV file">
+            <TextInput
+              type="text"
+              value={audioUrl}
+              onChange={(e) => setAudioUrl(e.target.value)}
+              placeholder="https://example.com/audio.mp3"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleInsertAudio()}
+            />
+          </Field>
+          <ModalActions
+            onCancel={() => { setShowAudio(false); setAudioUrl(''); }}
+            onConfirm={handleInsertAudio}
+            confirmDisabled={!audioUrl}
+          />
+        </Modal>
       )}
     </div>
   );

@@ -376,13 +376,32 @@ const BlogPostView = ({ posts }) => {
           margin-bottom: 1rem;
           font-weight: 700;
           line-height: 1.3;
-          color: #111827;
+          /* Do NOT set color here — let inline style="color:..." from the editor win */
         }
         .prose h2 {
           font-size: 2rem;
         }
         .prose h3 {
           font-size: 1.5rem;
+        }
+        /* Responsive YouTube / video iframes from Tiptap */
+        .prose div[data-youtube-video] {
+          position: relative;
+          width: 100%;
+          margin: 1.25em 0;
+        }
+        .prose div[data-youtube-video] iframe,
+        .prose iframe.editor-youtube {
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          height: auto;
+          display: block;
+          border-radius: 8px;
+          border: 0;
+        }
+        /* Preserve text alignment from inline styles */
+        .prose [style*="text-align"] {
+          /* allow inline text-align to show through */
         }
         .prose p {
           margin-bottom: 1.5rem;
