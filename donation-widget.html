@@ -111,6 +111,8 @@
     return null;
   }
 
+  var rejectedForNoAmount = false;
+
   paypal.Buttons({
     style: {
       layout: 'vertical',
@@ -120,9 +122,11 @@
     },
     onClick: function(data, actions) {
       if (!getDonationAmount()) {
+        rejectedForNoAmount = true;
         document.getElementById('donation-error').style.display = 'block';
         return actions.reject();
       }
+      rejectedForNoAmount = false;
       document.getElementById('donation-error').style.display = 'none';
       return actions.resolve();
     },
@@ -161,6 +165,10 @@
       });
     },
     onError: function(err) {
+      if (rejectedForNoAmount) {
+        rejectedForNoAmount = false;
+        return;
+      }
       console.error('PayPal error:', err);
       alert('There was a problem processing your donation. Please try again.');
     }
