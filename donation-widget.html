@@ -59,9 +59,16 @@
     font-weight: bold;
     display: none;
   }
+  #donation-error {
+    margin-top: 0.5rem;
+    color: #c0392b;
+    font-weight: bold;
+    display: none;
+  }
 </style>
 
 <p>Please select a donation amount:</p>
+<div id="donation-error">Please select or enter a donation amount before continuing.</div>
 <div class="donation-wrapper">
   <label class="donation-option">
     <input type="radio" name="donation-amount" value="20.00" />
@@ -111,12 +118,16 @@
       shape: 'rect',
       label: 'donate'
     },
+    onClick: function(data, actions) {
+      if (!getDonationAmount()) {
+        document.getElementById('donation-error').style.display = 'block';
+        return actions.reject();
+      }
+      document.getElementById('donation-error').style.display = 'none';
+      return actions.resolve();
+    },
     createOrder: function(data, actions) {
       var amount = getDonationAmount();
-      if (!amount) {
-        alert('Please select or enter a donation amount.');
-        return;
-      }
       return fetch('https://illustrious-brigadeiros-f596f3.netlify.app/.netlify/functions/paypal-create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
