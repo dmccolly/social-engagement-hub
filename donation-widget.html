@@ -1,0 +1,157 @@
+<!--
+  PayPal Donation Widget
+
+  HOW TO EMBED IN WEBFLOW:
+  Copy the entire contents of this file into a Webflow Embed block.
+
+  HIDING PAYPAL CREDIT:
+  The SDK URL uses disable-funding=credit,paylater which is the documented
+  PayPal approach. Do NOT add components=buttons alongside disable-funding
+  in the same SDK URL — they conflict and cause the onError to fire on load.
+
+  If PayPal Credit still appears despite the URL parameter, disable it from
+  your PayPal business account: Account Settings > Website Payments >
+  PayPal Credit > disable.
+-->
+
+<style>
+  .donation-wrapper {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+  .donation-option {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #ffffff;
+  }
+  .donation-option input[type="radio"] {
+    accent-color: #0070ba;
+  }
+  .custom-amount-box {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #ffffff;
+    gap: 0.25rem;
+  }
+  .custom-amount-box input {
+    border: none;
+    outline: none;
+    width: 5rem;
+    font-size: 1rem;
+  }
+  #paypal-button-container {
+    display: flex;
+    flex-direction: column;
+  }
+  #success-message {
+    margin-top: 1rem;
+    color: green;
+    font-weight: bold;
+    display: none;
+  }
+</style>
+
+<p>Please select a donation amount:</p>
+<div class="donation-wrapper">
+  <label class="donation-option">
+    <input type="radio" name="donation-amount" value="20.00" />
+    $20
+  </label>
+  <label class="donation-option">
+    <input type="radio" name="donation-amount" value="50.00" />
+    $50
+  </label>
+  <label class="donation-option">
+    <input type="radio" name="donation-amount" value="100.00" />
+    $100
+  </label>
+  <div class="custom-amount-box">
+    <label for="custom-amount-input">Custom: $</label>
+    <input id="custom-amount-input" type="number" min="1" step="0.01" placeholder="Enter amount" />
+  </div>
+  <div id="paypal-button-container"></div>
+</div>
+<div id="success-message">Thank you for your generous donation! Your payment has been processed.</div>
+
+<!--
+  IMPORTANT: disable-funding=credit,paylater suppresses the PayPal Credit and
+  Pay Later buttons. Do NOT add components=buttons to this URL — that parameter
+  conflicts with disable-funding and causes immediate onError on page load.
+-->
+<script src="https://www.paypal.com/sdk/js?client-id=AfCKo4YL3prO6tidYqubpVp80j0RlUwZFuLZxKf_R_pc-E9cW09d-WxcEO3N0QVaVrS6eUwoleNQd_GK&currency=USD&disable-funding=credit,paylater"></script>
+
+<script>
+  function getDonationAmount() {
+    var checkedRadio = document.querySelector('input[name="donation-amount"]:checked');
+    if (checkedRadio) {
+      return checkedRadio.value;
+    }
+    var customInput = document.getElementById('custom-amount-input');
+    var customValue = parseFloat(customInput.value);
+    if (!isNaN(customValue) && customValue > 0) {
+      return customValue.toFixed(2);
+    }
+    return null;
+  }
+
+  paypal.Buttons({
+    style: {
+      layout: 'vertical',
+      color: 'gold',
+      shape: 'rect',
+      label: 'donate'
+    },
+    createOrder: function(data, actions) {
+      var amount = getDonationAmount();
+      if (!amount) {
+        alert('Please select or enter a donation amount.');
+        return;
+      }
+      return fetch('https://illustrious-brigadeiros-f596f3.netlify.app/.netlify/functions/paypal-create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amount })
+      })
+      .then(function(res) {
+        if (!res.ok) {
+          throw new Error('Error creating PayPal order.');
+        }
+        return res.json();
+      })
+      .then(function(data) {
+        return data.id;
+      });
+    },
+    onApprove: function(data, actions) {
+      return fetch('https://illustrious-brigadeiros-f596f3.netlify.app/.netlify/functions/paypal-capture-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderID: data.orderID })
+      })
+      .then(function(res) {
+        if (!res.ok) {
+          throw new Error('Error capturing PayPal order.');
+        }
+        return res.json();
+      })
+      .then(function(details) {
+        document.getElementById('success-message').style.display = 'block';
+        console.log('Capture result', details);
+      });
+    },
+    onError: function(err) {
+      console.error('PayPal error:', err);
+      alert('There was a problem processing your donation. Please try again.');
+    }
+  }).render('#paypal-button-container');
+</script>
